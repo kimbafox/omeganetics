@@ -144,6 +144,8 @@ nav a:hover {
   border: 1px solid #222;
   position: relative;
   animation: aparecer 0.4s ease;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .close {
@@ -256,10 +258,16 @@ nav a:hover {
   .grupo-miembros {
     flex-direction: column;
     gap: 15px;
+    align-items: center;
+  }
+
+  .toggle-expand {
+    display: inline-block;
   }
 
   .card-miembro {
     width: 100%;
+    max-width: 100%;
   }
 }
 /* MEJORAS MODAL */
@@ -283,6 +291,29 @@ nav a:hover {
   padding: 25px;
   margin-bottom: 20px;
   background: rgba(212, 175, 55, 0.1);
+  transition: max-height 0.35s ease;
+}
+
+.principal.collapsed {
+  max-height: 170px;
+  overflow: hidden;
+}
+
+.card-miembro {
+  cursor: pointer;
+}
+
+.card-miembro.collapsed p,
+.principal.collapsed p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.card-miembro.expanded p,
+.principal.expanded p {
+  display: block;
 }
 
 .principal img {
@@ -295,6 +326,28 @@ nav a:hover {
 
 .principal h3 {
   color: #f7d56f;
+}
+
+.toggle-expand {
+  display: none;
+  margin-top: 15px;
+  padding: 10px 16px;
+  border: 1px solid #d4af37;
+  border-radius: 999px;
+  background: transparent;
+  color: #f7d56f;
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.toggle-expand:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toggle-expand:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
 }
 
 .social-section {
@@ -336,16 +389,20 @@ nav a:hover {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
 }
 
 /* CARDS MEJORADAS */
 .card-miembro {
   background: #0f0f0f;
   padding: 20px;
-  width: 48%;
+  width: calc(50% - 10px);
+  min-width: 240px;
   border: 1px solid #222;
   transition: 0.3s;
 }
+
 
 .card-miembro:hover {
   border-color: white;
@@ -357,6 +414,7 @@ nav a:hover {
   height: 120px;
   object-fit: cover;
   margin-bottom: 10px;
+  cursor: pointer;
 }
 
 .card-miembro h4 {
