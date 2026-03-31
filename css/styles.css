@@ -94,6 +94,79 @@ nav a:hover {
   margin-bottom: 15px;
 }
 
+.eventos-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 60px 50px;
+  background: #050505;
+}
+
+.eventos-contenido {
+  width: 55%;
+}
+
+.eventos-contenido h2 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.eventos-contenido p {
+  color: #ccc;
+  line-height: 1.7;
+  margin-bottom: 15px;
+}
+
+.eventos-imagen {
+  width: 40%;
+}
+
+.eventos-imagen img,
+.desarrollo-imagen img {
+  width: 100%;
+  border-radius: 18px;
+  box-shadow: 0 25px 65px rgba(0, 0, 0, 0.35);
+}
+
+.eventos-section,
+.desarrollo-section {
+  margin-bottom: 40px;
+}
+
+.desarrollo-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 60px 50px;
+  background: #050505;
+}
+
+.desarrollo-imagen {
+  width: 40%;
+}
+
+.desarrollo-imagen img {
+  width: 100%;
+  border-radius: 18px;
+}
+
+.desarrollo-contenido {
+  width: 55%;
+}
+
+.desarrollo-contenido h2 {
+  font-size: 32px;
+  margin-bottom: 20px;
+}
+
+.desarrollo-contenido p {
+  color: #ccc;
+  line-height: 1.7;
+  margin-bottom: 15px;
+}
+
 .contenido-texto p {
   color: #aaa;
   line-height: 1.5;
@@ -243,6 +316,28 @@ nav a:hover {
     width: 100%;
     padding: 25px;
     max-width: 95%;
+  }
+
+  .eventos-section {
+    flex-direction: column;
+    padding: 30px 25px;
+  }
+
+  .eventos-contenido,
+  .eventos-imagen,
+  .desarrollo-contenido,
+  .desarrollo-imagen {
+    width: 100%;
+  }
+
+  .eventos-imagen,
+  .desarrollo-imagen {
+    margin-top: 20px;
+  }
+
+  .desarrollo-section {
+    flex-direction: column;
+    padding: 30px 25px;
   }
 
   .miembro {
