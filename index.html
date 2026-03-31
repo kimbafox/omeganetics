@@ -71,12 +71,14 @@
 
         <div>
           <h3>PRESIDENTE - EMPERADOR KIMBA</h3>
-          <p>
-            Fundador de Omeganetics y líder del imperio. Responsable de la visión,
-            expansión y control de la comunidad, supervisando proyectos, torneos
-            y el desarrollo estratégico del sistema.
-          </p>
-          <button type="button" class="toggle-expand">Ver más</button>
+          <div class="principal-body collapsed">
+            <p>
+              Fundador de Omeganetics y líder del imperio. Responsable de la visión,
+              expansión y control de la comunidad, supervisando proyectos, torneos
+              y el desarrollo estratégico del sistema.
+            </p>
+            <button type="button" class="toggle-expand">Ver más</button>
+          </div>
         </div>
       </div>
 
@@ -146,15 +148,18 @@
     });
 
     const principalCard = document.querySelector('.principal');
+    const principalBody = document.querySelector('.principal-body');
     const toggleButton = document.querySelector('.toggle-expand');
 
-    if (principalCard && toggleButton) {
+    if (principalCard && principalBody && toggleButton) {
       const setCollapsed = () => {
         if (window.innerWidth <= 900) {
-          principalCard.classList.add('collapsed');
+          principalBody.classList.add('collapsed');
+          principalBody.classList.remove('expanded');
           toggleButton.textContent = 'Ver más';
         } else {
-          principalCard.classList.remove('collapsed');
+          principalBody.classList.remove('collapsed');
+          principalBody.classList.remove('expanded');
           toggleButton.textContent = 'Ver menos';
         }
       };
@@ -165,7 +170,8 @@
       const toggleCollapsed = (event) => {
         if (window.innerWidth > 900) return;
         event.stopPropagation();
-        const isCollapsed = principalCard.classList.toggle('collapsed');
+        const isCollapsed = principalBody.classList.toggle('collapsed');
+        principalBody.classList.toggle('expanded', !isCollapsed);
         toggleButton.textContent = isCollapsed ? 'Ver más' : 'Ver menos';
       };
 
