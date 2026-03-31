@@ -236,6 +236,31 @@ nav a:hover {
     flex-direction: column;
     gap: 10px;
   }
+
+  .modal-content {
+    width: 100%;
+    padding: 25px;
+    max-width: 95%;
+  }
+
+  .miembro {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .miembro img {
+    margin-bottom: 20px;
+  }
+
+  .grupo-miembros {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .card-miembro {
+    width: 100%;
+  }
 }
 /* MEJORAS MODAL */
 .modal-content h2 {
@@ -252,13 +277,53 @@ nav a:hover {
 /* EMPERADOR DESTACADO */
 .principal {
   align-items: center;
-  border-bottom: 1px solid #222;
-  padding-bottom: 20px;
+  gap: 20px;
+  border: 2px solid #d4af37;
+  border-radius: 18px;
+  padding: 25px;
+  margin-bottom: 20px;
+  background: rgba(212, 175, 55, 0.1);
 }
 
 .principal img {
-  width: 100px;
-  height: 100px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 2px solid #d4af37;
+  object-fit: cover;
+}
+
+.principal h3 {
+  color: #f7d56f;
+}
+
+.social-section {
+  margin: 20px 0 30px;
+  padding: 20px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.social-section h3 {
+  margin-bottom: 10px;
+  color: #f7d56f;
+}
+
+.social-section p {
+  margin-bottom: 10px;
+  color: #ccc;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.social-section a {
+  color: #f9dc78;
+  text-decoration: none;
+}
+
+.social-section a:hover {
+  text-decoration: underline;
 }
 
 /* SUBTÍTULO */
