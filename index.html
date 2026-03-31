@@ -76,6 +76,7 @@
             expansión y control de la comunidad, supervisando proyectos, torneos
             y el desarrollo estratégico del sistema.
           </p>
+          <button type="button" class="toggle-expand">Ver más</button>
         </div>
       </div>
 
@@ -142,6 +143,66 @@
 
     document.querySelectorAll(".anim").forEach(el => {
       observer.observe(el);
+    });
+
+    const principalCard = document.querySelector('.principal');
+    const toggleButton = document.querySelector('.toggle-expand');
+
+    if (principalCard && toggleButton) {
+      const setCollapsed = () => {
+        if (window.innerWidth <= 900) {
+          principalCard.classList.add('collapsed');
+          toggleButton.textContent = 'Ver más';
+        } else {
+          principalCard.classList.remove('collapsed');
+          toggleButton.textContent = 'Ver menos';
+        }
+      };
+
+      setCollapsed();
+      window.addEventListener('resize', setCollapsed);
+
+      const toggleCollapsed = (event) => {
+        if (window.innerWidth > 900) return;
+        event.stopPropagation();
+        const isCollapsed = principalCard.classList.toggle('collapsed');
+        toggleButton.textContent = isCollapsed ? 'Ver más' : 'Ver menos';
+      };
+
+      principalCard.addEventListener('click', toggleCollapsed);
+      toggleButton.addEventListener('click', toggleCollapsed);
+    }
+
+    const memberCards = document.querySelectorAll('.card-miembro');
+
+    const setMembersCollapsed = () => {
+      memberCards.forEach(card => {
+        if (window.innerWidth <= 900) {
+          card.classList.add('collapsed');
+          card.classList.remove('expanded');
+        } else {
+          card.classList.remove('collapsed');
+          card.classList.remove('expanded');
+        }
+      });
+    };
+
+    setMembersCollapsed();
+    window.addEventListener('resize', setMembersCollapsed);
+
+    memberCards.forEach(card => {
+      const image = card.querySelector('img');
+      const toggleMember = (event) => {
+        if (window.innerWidth > 900) return;
+        event.stopPropagation();
+        const isCollapsed = card.classList.toggle('collapsed');
+        card.classList.toggle('expanded', !isCollapsed);
+      };
+
+      if (image) {
+        image.addEventListener('click', toggleMember);
+      }
+      card.addEventListener('click', toggleMember);
     });
   </script>
 
