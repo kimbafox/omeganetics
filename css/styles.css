@@ -294,17 +294,12 @@ nav a:hover {
   transition: max-height 0.35s ease;
 }
 
-.principal.collapsed {
-  max-height: 170px;
-  overflow: hidden;
-}
-
 .card-miembro {
   cursor: pointer;
 }
 
 .card-miembro.collapsed p,
-.principal.collapsed p {
+.principal-body.collapsed p {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -312,8 +307,12 @@ nav a:hover {
 }
 
 .card-miembro.expanded p,
-.principal.expanded p {
+.principal-body.expanded p {
   display: block;
+}
+
+.principal-body {
+  overflow: hidden;
 }
 
 .principal img {
