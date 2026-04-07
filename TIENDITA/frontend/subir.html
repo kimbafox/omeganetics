@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Subir Proyecto</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo-container">
+    <img src="assets/logo.png" class="logo">
+    <h1>Omeganetics Realm</h1>
+  </div>
+
+  <nav>
+    <a href="index.html" class="btn">Inicio</a>
+    <a href="admin.html" class="btn">Panel Admin</a>
+    <button id="btnLogout" class="btn" onclick="cerrarSesion()">Cerrar sesión</button>
+  </nav>
+</header>
+
+<div class="upload-container">
+
+  <!-- FORM -->
+  <div class="upload-form">
+
+    <h2>📜 Crear Artefacto</h2>
+
+    <input type="text" id="nombre" placeholder="Nombre del proyecto">
+
+    <select id="categoria">
+      <option value="omegacraft">Omegacraft</option>
+      <option value="herramientas">Herramientas</option>
+      <option value="juegos">Juegos</option>
+    </select>
+
+    <textarea id="descripcion" placeholder="Descripción del proyecto"></textarea>
+
+    <label>Portada</label>
+    <input type="file" id="portada" onchange="previewPortada()">
+
+    <label>Archivo</label>
+    <input type="file" id="archivo">
+
+    <button onclick="subirProyecto()">Publicar</button>
+
+  </div>
+
+  <!-- PREVIEW -->
+  <div class="upload-preview">
+    <h3>🧾 Vista previa</h3>
+    <img id="imgPreview">
+    <p id="tituloPreview"></p>
+    <p id="fechaPreview"></p>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
