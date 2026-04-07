@@ -23,8 +23,34 @@ let tienditaEnabled = false;
 let initDatabase = async () => {};
 
 function resolveDatabaseUrl() {
-  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
-  if (process.env.DATABASE_PUBLIC_URL) return process.env.DATABASE_PUBLIC_URL;
+  const directCandidates = [
+    "DATABASE_URL",
+    "DATABASE_PUBLIC_URL",
+    "DATABASE_PRIVATE_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL",
+    "POSTGRES_URI",
+    "POSTGRES_PRISMA_URL",
+    "POSTGRESQL_URL",
+    "PG_URL"
+  ];
+
+  for (const key of directCandidates) {
+    const value = process.env[key];
+    if (value && /^postgres(ql)?:\/\//i.test(value)) {
+      return value;
+    }
+  }
+
+  // Busca cualquier variable que parezca URL de Postgres.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue;
+    const looksLikeDbKey = /(database|postgres|pg).*(url|uri)/i.test(key);
+    const looksLikeDbValue = /^postgres(ql)?:\/\//i.test(value);
+    if (looksLikeDbKey && looksLikeDbValue) {
+      return value;
+    }
+  }
 
   const {
     PGHOST,
@@ -39,6 +65,21 @@ function resolveDatabaseUrl() {
     const password = encodeURIComponent(PGPASSWORD);
     const database = encodeURIComponent(PGDATABASE);
     return `postgresql://${user}:${password}@${PGHOST}:${PGPORT}/${database}`;
+  }
+
+  const {
+    POSTGRES_HOST,
+    POSTGRES_PORT,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB
+  } = process.env;
+
+  if (POSTGRES_HOST && POSTGRES_PORT && POSTGRES_USER && POSTGRES_PASSWORD && POSTGRES_DB) {
+    const user = encodeURIComponent(POSTGRES_USER);
+    const password = encodeURIComponent(POSTGRES_PASSWORD);
+    const database = encodeURIComponent(POSTGRES_DB);
+    return `postgresql://${user}:${password}@${POSTGRES_HOST}:${POSTGRES_PORT}/${database}`;
   }
 
   return null;
