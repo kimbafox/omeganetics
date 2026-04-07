@@ -22,7 +22,33 @@ app.use(express.static(__dirname));
 let tienditaEnabled = false;
 let initDatabase = async () => {};
 
-if (process.env.DATABASE_URL) {
+function resolveDatabaseUrl() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.DATABASE_PUBLIC_URL) return process.env.DATABASE_PUBLIC_URL;
+
+  const {
+    PGHOST,
+    PGPORT,
+    PGUSER,
+    PGPASSWORD,
+    PGDATABASE
+  } = process.env;
+
+  if (PGHOST && PGPORT && PGUSER && PGPASSWORD && PGDATABASE) {
+    const user = encodeURIComponent(PGUSER);
+    const password = encodeURIComponent(PGPASSWORD);
+    const database = encodeURIComponent(PGDATABASE);
+    return `postgresql://${user}:${password}@${PGHOST}:${PGPORT}/${database}`;
+  }
+
+  return null;
+}
+
+const resolvedDatabaseUrl = resolveDatabaseUrl();
+
+if (resolvedDatabaseUrl) {
+  process.env.DATABASE_URL = resolvedDatabaseUrl;
+
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");
   tienditaEnabled = true;
   initDatabase = tienditaInit;
@@ -33,7 +59,7 @@ if (process.env.DATABASE_URL) {
   // API + uploads de TIENDITA bajo el mismo servidor
   app.use(tienditaApp);
 } else {
-  console.warn("TIENDITA deshabilitada: falta DATABASE_URL en variables de entorno.");
+  console.warn("TIENDITA deshabilitada: falta configuracion de base de datos (DATABASE_URL/PG*). ");
 }
 
 app.get("/", (req, res) => {
