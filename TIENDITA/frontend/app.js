@@ -141,8 +141,18 @@ function buildUploadUrl(fileName) {
 let proyectosCache = [];
 
 function resumenTexto(texto, max = 90) {
-  if (!texto) return "Sin descripcion";
+  if (!texto) return "Sin descripción";
   return texto.length > max ? `${texto.slice(0, max).trim()}...` : texto;
+}
+
+function formatearCategoria(categoria) {
+  const categorias = {
+    omegacraft: "⛏️ Omegacraft",
+    herramientas: "🛠️ Herramientas",
+    juegos: "🎮 Juegos"
+  };
+
+  return categorias[categoria] || categoria || "Sin categoría";
 }
 
 function tarjetaProyectoHTML(p) {
@@ -154,9 +164,9 @@ function tarjetaProyectoHTML(p) {
         <img class="card-portada" src="${portadaUrl}" alt="Portada de ${p.nombre}">
       </div>
       <h3 class="card-titulo">${p.nombre}</h3>
-      <p class="card-categoria">${p.categoria}</p>
+      <p class="card-categoria">${formatearCategoria(p.categoria)}</p>
       <p class="card-descripcion">${resumenTexto(p.descripcion)}</p>
-      <small>${new Date(p.fecha).toLocaleDateString()}</small>
+      <small class="card-fecha">🗓️ ${new Date(p.fecha).toLocaleDateString()}</small>
       <button class="btn btn-ver-detalle" data-id="${p.id}">Ver proyecto</button>
     </article>
   `;
@@ -223,12 +233,24 @@ function pintarProyectos(data) {
   const cont = document.getElementById("proyectos");
   if (!cont) return;
 
-  proyectosCache = data;
+  const lista = Array.isArray(data) ? data : [];
 
-  cont.innerHTML = "";
+  if (lista.length === 0) {
+    cont.innerHTML = `
+      <div class="empty-state">
+        <h3>No hay reliquias disponibles</h3>
+        <p>Pronto aparecerán nuevos proyectos en este reino.</p>
+      </div>
+    `;
+    return;
+  }
 
-  data.forEach(p => {
-    cont.innerHTML += tarjetaProyectoHTML(p);
+  cont.innerHTML = lista.map(tarjetaProyectoHTML).join("");
+}
+
+function actualizarBotonesFiltro(cat) {
+  document.querySelectorAll(".filtro-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.cat === cat);
   });
 }
 
@@ -239,13 +261,31 @@ async function cargar() {
   const cont = document.getElementById("proyectos");
   if (!cont) return;
 
+  cont.innerHTML = `
+    <div class="empty-state loading-state">
+      <h3>Cargando catálogo...</h3>
+      <p>Invocando reliquias del reino.</p>
+    </div>
+  `;
+
   try {
     const res = await fetch(`${API_BASE}/proyectos/listar`);
     const data = await res.json();
-    pintarProyectos(data);
+
+    proyectosCache = Array.isArray(data)
+      ? [...data].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+      : [];
+
+    actualizarBotonesFiltro("todos");
+    pintarProyectos(proyectosCache);
 
   } catch (err) {
-    cont.innerHTML = "<p>Error cargando proyectos</p>";
+    cont.innerHTML = `
+      <div class="empty-state">
+        <h3>Error cargando proyectos</h3>
+        <p>Hubo un problema al conectar con el servidor.</p>
+      </div>
+    `;
   }
 }
 
@@ -253,14 +293,22 @@ async function cargar() {
 // 🔍 FILTRAR (FRONTEND)
 // ===============================
 async function filtrar(cat) {
-  const res = await fetch(`${API_BASE}/proyectos/listar`);
-  const data = await res.json();
+  actualizarBotonesFiltro(cat);
 
-  let filtrados = data;
-
-  if (cat !== "todos") {
-    filtrados = data.filter(p => p.categoria === cat);
+  if (!proyectosCache.length) {
+    try {
+      const res = await fetch(`${API_BASE}/proyectos/listar`);
+      const data = await res.json();
+      proyectosCache = Array.isArray(data) ? data : [];
+    } catch {
+      pintarProyectos([]);
+      return;
+    }
   }
+
+  const filtrados = cat === "todos"
+    ? proyectosCache
+    : proyectosCache.filter(p => p.categoria === cat);
 
   pintarProyectos(filtrados);
 }
