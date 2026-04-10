@@ -1,78 +1,257 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Omeganetics Realm</title>
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omeganetics</title>
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
 </head>
 <body>
-<div class="page-glow" aria-hidden="true"></div>
 
-<header class="header">
-  <div class="logo-container">
-    <img src="assets/logo.png" class="logo" alt="Logo de Omeganetics Realm">
-    <div>
-      <h1>Omeganetics Realm</h1>
-      <p class="logo-subtitle">Tienda épica para creadores del reino</p>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/logo.png" class="logo">
+      <h1>Omeganetics</h1>
     </div>
+
+    <nav>
+      <ul>
+        <li><a href="#" id="openInfo">Quiénes somos</a></li>
+        <li><a href="/tiendita/">Tiendita</a></li>
+        <li><a href="https://discord.gg/bCWjyns8U5" target="_blank">Discord</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+
+    <div class="soldado-container">
+      <img src="assets/soldado.png" class="soldado">
+    </div>
+
+    <div class="contenido-texto anim">
+      <h2>Únete a la evolución</h2>
+
+      <p>
+        Omeganetics es una comunidad donde la estrategia y la evolución definen el futuro.
+        Participa, compite y forma parte de algo más grande.
+      </p>
+
+      <a href="https://discord.gg/bCWjyns8U5" target="_blank" class="btn">
+        Unete a nuestra comunidad
+      </a>
+    </div>
+
+  </section>
+
+  <!-- EVENTOS -->
+  <section class="eventos-section">
+    <div class="eventos-contenido anim">
+      <h2>EVENTOS DE COMUNIDAD</h2>
+      <div class="eventos-imagen anim">
+      <img src="assets/eventos 1.png" alt="Eventos de comunidad Omeganetics">
+      </div>
+      <p>
+        Los eventos de comunidad en Omeganetics están orientados a la participación activa de los miembros mediante torneos y actividades organizadas. Se desarrollan bajo horarios definidos, con formatos competitivos estructurados y supervisión administrativa.
+      </p>
+      <p>
+        Los participantes compiten por recompensas en Omegacoin, fomentando la interacción, el crecimiento de la comunidad y la consolidación de equipos.
+      </p>
+      <p>
+        Ejemplos de estos eventos incluyen torneos como Valorant Uprising y Duality en Yu-Gi-Oh Master Duel.
+      </p>
+    </div>
+    
+  </section>
+
+  <!-- DESARROLLO -->
+  <section class="desarrollo-section">
+    
+    <div class="desarrollo-contenido anim">
+      <h2>DESARROLLO DE JUEGOS Y COMPLEMENTOS</h2>
+      <div class="desarrollo-imagen anim">
+      <img src="assets/DESARROLLO DE JUEGOS Y COMPLEMENTOS.png" alt="Desarrollo de juegos Omeganetics">
+      </div>
+      <p>
+        Esta categoría abarca la creación y desarrollo de proyectos propios dentro del ecosistema Omeganetics. Incluye servidores personalizados, sistemas internos, mods, datapacks y experiencias de juego únicas.
+      </p>
+      <p>
+        Se diseñan mecánicas innovadoras como progresión de jugadores, sistemas económicos basados en Omegacoin y eventos dinámicos dentro de los juegos.
+      </p>
+      <p>
+        Proyectos como Omegacraft, Steel Ball Craft, Culling Game y sistemas como Erudito o Cofu representan esta línea de desarrollo.
+      </p>
+    </div>
+  </section>
+
+  <!-- MODAL MEJORADO -->
+  <div id="modalInfo" class="modal">
+
+    <div class="modal-content">
+
+      <span class="close">&times;</span>
+
+      <h2>Omeganetics</h2>
+
+      <p class="intro">
+        Omeganetics es un imperio digital donde la estrategia, la competencia y la evolución
+        definen a sus miembros. Una comunidad enfocada en el crecimiento, la disciplina
+        y la innovación dentro del entorno gaming.
+      </p>
+
+      <!-- EMPERADOR -->
+      <div class="miembro principal">
+        <img src="assets/kimba.png" onerror="this.src='assets/default.png'">
+
+        <div>
+          <h3>PRESIDENTE - EMPERADOR KIMBA</h3>
+          <div class="principal-body collapsed">
+            <p>
+              Fundador de Omeganetics y líder del imperio. Responsable de la visión,
+              expansión y control de la comunidad, supervisando proyectos, torneos
+              y el desarrollo estratégico del sistema.
+            </p>
+            <button type="button" class="toggle-expand">Ver más</button>
+          </div>
+          <div class="social-section">
+            <h3>Redes sociales</h3>
+            <p>Instagram: <a href="https://www.instagram.com/kimba_zorro/?hl=es" target="_blank">Instagram</a></p>
+            <p>TikTok: <a href="https://www.tiktok.com/@kimba_omega" target="_blank">TikTok</a></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASCENDIDOS -->
+      <h3 class="subtitulo">Ascendidos</h3>
+
+      <div class="grupo-miembros">
+
+        <!-- SEBILLAS -->
+        <div class="card-miembro">
+          <img src="assets/ACENDIDO 1.png">
+          <h4>Sebillas</h4>
+          <p>
+            Estudiante de Ingeniería en Sistemas, especializado en programación.
+            Apoya en marketing y es apasionado por los juegos de estrategia y aventura.
+          </p>
+        </div>
+
+        <!-- ANXPO -->
+        <div class="card-miembro">
+          <img src="assets/anxpo.png">
+          <h4>Anxpo</h4>
+          <p>
+            Estudiante de Programación Informática. Interesado en juegos de estrategia
+            y TCG, aportando al desarrollo del sistema Omeganetics.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+
   </div>
 
-  <nav>
-    <a href="login.html" id="btnEntrar" class="btn btn-secondary">Entrar</a>
-    <a href="admin.html" id="btnAdmin" class="btn" style="display:none;">Panel Admin</a>
-    <button id="btnLogout" class="btn btn-secondary" style="display:none;" onclick="cerrarSesion()">Cerrar sesión</button>
-  </nav>
-</header>
+  <!-- SCRIPT -->
+  <script>
+    const openBtn = document.getElementById("openInfo");
+    const modal = document.getElementById("modalInfo");
+    const closeBtn = document.querySelector(".close");
 
-<main class="landing">
-  <section class="hero-panel">
-    <div class="hero-copy hero-copy-minimal">
-      <span class="eyebrow">⚔️ Mercado del Reino</span>
-      <h2>Omeganetics Realm</h2>
-    </div>
-  </section>
+    openBtn.onclick = () => modal.classList.add("show");
+    closeBtn.onclick = () => modal.classList.remove("show");
 
-  <section class="carousel-shell">
-    <div class="section-minihead">🌌 Destacados de la semana</div>
-    <section class="carousel">
-      <div class="slide active">
-        <img src="assets/slide1.jpg" alt="Nuevas reliquias">
-        <div class="texto">⚔️ Nuevas reliquias</div>
-      </div>
+    window.onclick = (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("show");
+      }
+    };
 
-      <div class="slide">
-        <img src="assets/slide2.jpg" alt="Herramientas legendarias">
-        <div class="texto">🛡️ Herramientas legendarias</div>
-      </div>
+    // ANIMACIÓN SCROLL
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+        }
+      });
+    });
 
-      <div class="slide">
-        <img src="assets/slide3.jpg" alt="Juegos del reino">
-        <div class="texto">🎮 Juegos del reino</div>
-      </div>
-    </section>
-  </section>
+    document.querySelectorAll(".anim").forEach(el => {
+      observer.observe(el);
+    });
 
-  <section id="catalogo" class="catalogo-shell">
-    <div class="section-heading">
-      <div>
-        <span class="eyebrow">📚 Catálogo</span>
-        <h2>Explora las reliquias del aventurero</h2>
-        <p>Filtra por clase y descubre proyectos con una presentación más cuidada.</p>
-      </div>
-    </div>
+    const principalCard = document.querySelector('.principal');
+    const principalBody = document.querySelector('.principal-body');
+    const toggleButton = document.querySelector('.toggle-expand');
 
-    <section class="categorias">
-      <button class="filtro-btn active" data-cat="todos" onclick="filtrar('todos')">✨ Todos</button>
-      <button class="filtro-btn" data-cat="omegacraft" onclick="filtrar('omegacraft')">⛏️ Omegacraft</button>
-      <button class="filtro-btn" data-cat="herramientas" onclick="filtrar('herramientas')">🛠️ Herramientas</button>
-      <button class="filtro-btn" data-cat="juegos" onclick="filtrar('juegos')">🎮 Juegos</button>
-    </section>
+    if (principalCard && principalBody && toggleButton) {
+      const setCollapsed = () => {
+        if (window.innerWidth <= 900) {
+          principalBody.classList.add('collapsed');
+          principalBody.classList.remove('expanded');
+          toggleButton.textContent = 'Ver más';
+        } else {
+          principalBody.classList.remove('collapsed');
+          principalBody.classList.remove('expanded');
+          toggleButton.textContent = 'Ver menos';
+        }
+      };
 
-    <section id="proyectos" class="grid"></section>
-  </section>
-</main>
+      setCollapsed();
+      window.addEventListener('resize', setCollapsed);
 
-<script src="app.js"></script>
+      const toggleCollapsed = (event) => {
+        if (window.innerWidth > 900) return;
+        event.stopPropagation();
+        const isCollapsed = principalBody.classList.toggle('collapsed');
+        principalBody.classList.toggle('expanded', !isCollapsed);
+        toggleButton.textContent = isCollapsed ? 'Ver más' : 'Ver menos';
+      };
+
+      principalCard.addEventListener('click', toggleCollapsed);
+      toggleButton.addEventListener('click', toggleCollapsed);
+    }
+
+    const memberCards = document.querySelectorAll('.card-miembro');
+
+    const setMembersCollapsed = () => {
+      memberCards.forEach(card => {
+        if (window.innerWidth <= 900) {
+          card.classList.add('collapsed');
+          card.classList.remove('expanded');
+        } else {
+          card.classList.remove('collapsed');
+          card.classList.remove('expanded');
+        }
+      });
+    };
+
+    setMembersCollapsed();
+    window.addEventListener('resize', setMembersCollapsed);
+
+    memberCards.forEach(card => {
+      const image = card.querySelector('img');
+      const toggleMember = (event) => {
+        if (window.innerWidth > 900) return;
+        event.stopPropagation();
+        const isCollapsed = card.classList.toggle('collapsed');
+        card.classList.toggle('expanded', !isCollapsed);
+      };
+
+      if (image) {
+        image.addEventListener('click', toggleMember);
+      }
+      card.addEventListener('click', toggleMember);
+    });
+  </script>
+
 </body>
 </html>
+
