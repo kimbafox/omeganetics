@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken'); // NUEVO: Para la seguridad
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATABASE_URL = process.env.DATABASE_URL;
+const uploadsDir = path.join(__dirname, 'uploads');
+const publicDir = path.join(__dirname, 'public');
 
 // Configuración de Seguridad del Admin (Se leerán desde Railway o el archivo .env)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "juegocrisger@gmail.com";
@@ -17,7 +19,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "170893666Lp.";
 const ADMIN_KEYWORD = process.env.ADMIN_KEYWORD || "evolucion";
 const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_super_hacker_123";
 
-if (!fs.existsSync('./uploads')){ fs.mkdirSync('./uploads'); }
+if (!fs.existsSync(uploadsDir)) { fs.mkdirSync(uploadsDir, { recursive: true }); }
 
 let pool = null;
 const dbEnabled = Boolean(DATABASE_URL);
@@ -45,7 +47,7 @@ if (dbEnabled) {
 }
 
 const storage = multer.diskStorage({
-    destination: './uploads/',
+    destination: uploadsDir,
     filename: function(req, file, cb) {
         cb(null, 'lore-' + Date.now() + path.extname(file.originalname));
     }
@@ -54,8 +56,8 @@ const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use(express.static(publicDir));
+app.use('/uploads', express.static(uploadsDir));
 
 // --- NUEVO: RUTA DE LOGIN ---
 app.post('/api/login', (req, res) => {
