@@ -136,6 +136,37 @@ nav a:hover {
     margin-top: 0;
 }
 
+.lore-description {
+    line-height: 1.85;
+    font-size: 1.08rem;
+    max-width: 68ch;
+    margin: 24px auto 0;
+    text-align: left;
+    color: #2f2315;
+}
+
+.lore-description p {
+    margin: 0 0 14px;
+}
+
+.lore-description h3 {
+    margin: 20px 0 10px;
+    color: #5c2e0b;
+    font-size: 1.1rem;
+    letter-spacing: 0.4px;
+    border-left: 4px solid #8b4513;
+    padding-left: 10px;
+}
+
+.lore-description ul {
+    margin: 0 0 16px;
+    padding-left: 24px;
+}
+
+.lore-description li {
+    margin-bottom: 8px;
+}
+
 .form-group {
     margin-bottom: 15px;
     display: flex;
@@ -174,8 +205,9 @@ nav a:hover {
 
 .lore-images {
     display: flex;
+    flex-wrap: wrap;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 26px;
     justify-content: center;
 }
 
