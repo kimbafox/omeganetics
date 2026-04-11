@@ -1,142 +1,144 @@
-require('dotenv').config();
-const express = require('express');
-const { Pool } = require('pg');
-const multer = require('multer');
-const path = require('path');
-const cors = require('cors');
-const fs = require('fs');
-const jwt = require('jsonwebtoken'); // NUEVO: Para la seguridad
+const express = require("express");
+const path = require("path");
 
 const app = express();
-const PORT = process.env.PORT || 3001;
-const DATABASE_URL = process.env.DATABASE_URL;
-const uploadsDir = path.join(__dirname, 'uploads');
-const publicDir = path.join(__dirname, 'public');
 
-// Configuración de Seguridad del Admin (Se leerán desde Railway o el archivo .env)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "juegocrisger@gmail.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "170893666Lp.";
-const ADMIN_KEYWORD = process.env.ADMIN_KEYWORD || "evolucion";
-const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_super_hacker_123";
+const PORT = process.env.PORT || 3000;
 
-if (!fs.existsSync(uploadsDir)) { fs.mkdirSync(uploadsDir, { recursive: true }); }
+// Redirige a HTTPS solo en produccion detras de proxy (Railway/Heroku-like).
+app.use((req, res, next) => {
+  const isProduction = process.env.NODE_ENV === "production";
+  const proto = req.headers["x-forwarded-proto"];
 
-let pool = null;
-const dbEnabled = Boolean(DATABASE_URL);
+  if (isProduction && proto && proto !== "https") {
+    return res.redirect("https://" + req.headers.host + req.url);
+  }
+  next();
+});
 
-if (dbEnabled) {
-    pool = new Pool({
-        connectionString: DATABASE_URL,
-        ssl: { rejectUnauthorized: false }
-    });
+// Sitio principal Omeganetics
+app.use(express.static(__dirname));
+
+const { app: wikiApp } = require("./mi-wiki-hacker/server");
+app.use("/wiki", wikiApp);
+
+let tienditaEnabled = false;
+let initDatabase = async () => {};
+
+function resolveDatabaseUrl() {
+  const directCandidates = [
+    "DATABASE_URL",
+    "DATABASE_PUBLIC_URL",
+    "DATABASE_PRIVATE_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL",
+    "POSTGRES_URI",
+    "POSTGRES_PRISMA_URL",
+    "POSTGRESQL_URL",
+    "PG_URL"
+  ];
+
+  for (const key of directCandidates) {
+    const value = process.env[key];
+    if (value && /^postgres(ql)?:\/\//i.test(value)) {
+      return value;
+    }
+  }
+
+  // Busca cualquier variable que parezca URL de Postgres.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue;
+    const looksLikeDbKey = /(database|postgres|pg).*(url|uri)/i.test(key);
+    const looksLikeDbValue = /^postgres(ql)?:\/\//i.test(value);
+    if (looksLikeDbKey && looksLikeDbValue) {
+      return value;
+    }
+  }
+
+  const {
+    PGHOST,
+    PGPORT,
+    PGUSER,
+    PGPASSWORD,
+    PGDATABASE
+  } = process.env;
+
+  if (PGHOST && PGPORT && PGUSER && PGPASSWORD && PGDATABASE) {
+    const user = encodeURIComponent(PGUSER);
+    const password = encodeURIComponent(PGPASSWORD);
+    const database = encodeURIComponent(PGDATABASE);
+    return `postgresql://${user}:${password}@${PGHOST}:${PGPORT}/${database}`;
+  }
+
+  const {
+    POSTGRES_HOST,
+    POSTGRES_PORT,
+    POSTGRES_USER,
+    POSTGRES_PASSWORD,
+    POSTGRES_DB
+  } = process.env;
+
+  if (POSTGRES_HOST && POSTGRES_PORT && POSTGRES_USER && POSTGRES_PASSWORD && POSTGRES_DB) {
+    const user = encodeURIComponent(POSTGRES_USER);
+    const password = encodeURIComponent(POSTGRES_PASSWORD);
+    const database = encodeURIComponent(POSTGRES_DB);
+    return `postgresql://${user}:${password}@${POSTGRES_HOST}:${POSTGRES_PORT}/${database}`;
+  }
+
+  return null;
+}
+
+const resolvedDatabaseUrl = resolveDatabaseUrl();
+
+if (resolvedDatabaseUrl) {
+  process.env.DATABASE_URL = resolvedDatabaseUrl;
+
+  const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");
+  tienditaEnabled = true;
+  initDatabase = tienditaInit;
+
+  // Frontend de TIENDITA bajo el mismo dominio
+  app.use("/tiendita", express.static(path.join(__dirname, "TIENDITA", "frontend")));
+
+  // API + uploads de TIENDITA bajo el mismo servidor
+  app.use(tienditaApp);
 } else {
-    console.warn('> BASE_DE_DATOS_DESHABILITADA: define DATABASE_URL para activar las rutas de lore.');
+  console.warn("TIENDITA deshabilitada: falta configuracion de base de datos (DATABASE_URL/PG*). ");
 }
 
-if (dbEnabled) {
-    pool.query(`
-        CREATE TABLE IF NOT EXISTS lore (
-            id SERIAL PRIMARY KEY,
-            title VARCHAR(255) UNIQUE NOT NULL,
-            description TEXT NOT NULL,
-            img1 VARCHAR(255) NOT NULL,
-            img2 VARCHAR(255),
-            img3 VARCHAR(255)
-        );
-    `).catch(err => console.error("Error creando tabla:", err));
-}
-
-const storage = multer.diskStorage({
-    destination: uploadsDir,
-    filename: function(req, file, cb) {
-        cb(null, 'lore-' + Date.now() + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static(publicDir));
-app.use('/uploads', express.static(uploadsDir));
-
-// --- NUEVO: RUTA DE LOGIN ---
-app.post('/api/login', (req, res) => {
-    const { email, password, keyword } = req.body;
-
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD && keyword === ADMIN_KEYWORD) {
-        // Si todo coincide, creamos un token válido por 2 horas
-        const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
-        res.json({ token });
-    } else {
-        res.status(401).json({ error: "> ACCESO_DENEGADO: Credenciales incorrectas o nivel de seguridad insuficiente." });
-    }
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// --- NUEVO: MIDDLEWARE DE SEGURIDAD ---
-// Esta función verifica que tengas el "pase VIP" antes de dejarte subir imágenes
-const verificarToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // El token viene como "Bearer [token]"
+app.get("/tiendita", (req, res) => {
+  if (!tienditaEnabled) {
+    return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
+  }
+  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "index.html"));
+});
 
-    if (!token) return res.status(403).json({ error: "> ERROR_FATAL: Se requiere autenticación." });
+app.get("/tiendita/", (req, res) => {
+  if (!tienditaEnabled) {
+    return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
+  }
+  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "index.html"));
+});
 
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) return res.status(403).json({ error: "> SESIÓN_EXPIRADA_O_INVÁLIDA" });
-        next(); // Todo está bien, pasa a la siguiente función
+app.get("/wiki", (req, res) => {
+  res.redirect("/wiki/");
+});
+
+// iniciar servidor
+async function start() {
+  try {
+    await initDatabase();
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log("Servidor corriendo en puerto", PORT);
     });
-};
-
-// --- RUTAS DE LORE ---
-app.get('/api/lore/:title', async (req, res) => {
-    if (!dbEnabled) {
-        return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: define DATABASE_URL." });
-    }
-
-    try {
-        const { title } = req.params;
-        const result = await pool.query('SELECT * FROM lore WHERE LOWER(title) = LOWER($1)', [title]);
-        
-        if (result.rows.length > 0) res.json(result.rows[0]);
-        else res.status(404).json({ message: "Lore no encontrado" });
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-const cpUpload = upload.fields([{ name: 'img1', maxCount: 1 }, { name: 'img2', maxCount: 1 }, { name: 'img3', maxCount: 1 }]);
-
-// NOTA: Añadimos 'verificarToken' justo antes de la función de subida
-app.post('/api/lore', verificarToken, cpUpload, async (req, res) => {
-    if (!dbEnabled) {
-        return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: no se puede guardar lore." });
-    }
-
-    try {
-        const { title, description } = req.body;
-        const img1 = req.files['img1'] ? `/uploads/${req.files['img1'][0].filename}` : null;
-        const img2 = req.files['img2'] ? `/uploads/${req.files['img2'][0].filename}` : null;
-        const img3 = req.files['img3'] ? `/uploads/${req.files['img3'][0].filename}` : null;
-
-        if (!img1) return res.status(400).json({ error: "La imagen 1 es obligatoria" });
-
-        const newLore = await pool.query(
-            'INSERT INTO lore (title, description, img1, img2, img3) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [title, description, img1, img2, img3]
-        );
-        res.status(201).json(newLore.rows[0]);
-    } catch (err) {
-        if (err.code === '23505') res.status(400).json({ error: "Ese título de lore ya existe." });
-        else res.status(500).json({ error: err.message });
-    }
-});
-
-function start() {
-    app.listen(PORT, () => console.log(`> PROTOCOLO_DE_SEGURIDAD_ACTIVO_EN_PUERTO_${PORT}`));
+  } catch (error) {
+    console.error("Error iniciando servidor:", error.message);
+    process.exit(1);
+  }
 }
 
-if (require.main === module) {
-    start();
-}
-
-module.exports = {
-    app,
-    start
-};
+start();
