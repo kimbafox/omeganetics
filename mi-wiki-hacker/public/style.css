@@ -1,219 +1,204 @@
-:root {
-    --hacker-green: #0f0;
-    --hacker-dark: #001100;
+const searchInput = document.getElementById('searchInput');
+const resultSection = document.getElementById('resultSection');
+const uploadSection = document.getElementById('uploadSection');
+const searchSection = document.getElementById('searchSection');
+const loginSection = document.getElementById('loginSection'); // NUEVO
+const uploadForm = document.getElementById('uploadForm');
+const loginForm = document.getElementById('loginForm'); // NUEVO
+const searchError = document.getElementById('searchError');
+const loginError = document.getElementById('loginError'); // NUEVO
+
+const BASE_PATH = window.location.pathname.startsWith('/wiki') ? '/wiki' : '';
+
+function buildApiUrl(endpoint) {
+    return `${BASE_PATH}/api${endpoint}`;
 }
 
-body, html {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background-color: black;
-    color: var(--hacker-green);
-    font-family: 'Courier New', Courier, monospace;
-    overflow-x: hidden;
+function normalizeImageSrc(imgSrc) {
+    if (!imgSrc) return imgSrc;
+    if (imgSrc.startsWith('/uploads/')) {
+        return `${BASE_PATH}${imgSrc}`;
+    }
+    return imgSrc;
 }
 
-.bg-faded {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, rgba(0, 255, 0, 0.15) 0%, rgba(0, 0, 0, 0.9) 60%);
-    z-index: -1;
-    pointer-events: none;
+function renderLoreDescription(rawText) {
+    const descContainer = document.getElementById('loreDesc');
+    descContainer.innerHTML = '';
+
+    const text = (rawText || '').replace(/\r\n/g, '\n').trim();
+    if (!text) {
+        const emptyParagraph = document.createElement('p');
+        emptyParagraph.textContent = 'Sin descripcion disponible.';
+        descContainer.appendChild(emptyParagraph);
+        return;
+    }
+
+    const blocks = text.split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+        const isList = lines.length > 0 && lines.every(line => /^[-*]\s+/.test(line));
+
+        if (isList) {
+            const list = document.createElement('ul');
+            lines.forEach(line => {
+                const item = document.createElement('li');
+                item.textContent = line.replace(/^[-*]\s+/, '');
+                list.appendChild(item);
+            });
+            descContainer.appendChild(list);
+            return;
+        }
+
+        if (lines.length === 1 && /:$/.test(lines[0])) {
+            const heading = document.createElement('h3');
+            heading.textContent = lines[0].replace(/:$/, '');
+            descContainer.appendChild(heading);
+            return;
+        }
+
+        const paragraph = document.createElement('p');
+        paragraph.textContent = lines.join(' ');
+        descContainer.appendChild(paragraph);
+    });
 }
 
-.scanline {
-    width: 100%;
-    height: 100px;
-    background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,0,0.1) 50%, rgba(0,0,0,0) 100%);
-    opacity: 0.1;
-    position: absolute;
-    bottom: 100%;
-    animation: scanline 8s linear infinite;
-    pointer-events: none;
-    z-index: 10;
+function showSection(section) {
+    // Ocultar todo primero
+    resultSection.style.display = 'none';
+    searchSection.style.display = 'none';
+    uploadSection.style.display = 'none';
+    loginSection.style.display = 'none';
+    searchError.style.display = 'none';
+    loginError.style.display = 'none';
+
+    if (section === 'search') {
+        searchSection.style.display = 'flex';
+        searchInput.focus();
+    } else if (section === 'upload') {
+        // Verificar si existe el token de seguridad en la memoria del navegador
+        const token = localStorage.getItem('wikiAdminToken');
+        if (token) {
+            uploadSection.style.display = 'block'; // Ya está logueado
+        } else {
+            loginSection.style.display = 'flex'; // Requiere login
+        }
+    }
 }
 
-@keyframes scanline {
-    0% { bottom: 100%; }
-    100% { bottom: -100px; }
-}
+// Búsqueda (Se mantiene igual)
+let debounceTimer;
+searchInput.addEventListener('input', function(e) {
+    clearTimeout(debounceTimer);
+    const keyword = e.target.value.trim();
+    if (keyword === "") { resultSection.style.display = 'none'; searchError.style.display = 'none'; return; }
 
-nav {
-    padding: 15px;
-    border-bottom: 1px solid var(--hacker-green);
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    text-shadow: 0 0 5px var(--hacker-green);
-}
+    debounceTimer = setTimeout(async () => {
+        try {
+            const response = await fetch(buildApiUrl(`/lore/${encodeURIComponent(keyword)}`));
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('loreTitle').innerText = data.title.toUpperCase();
+                renderLoreDescription(data.description);
+                const imgContainer = document.getElementById('loreImagesContainer');
+                imgContainer.innerHTML = ''; 
+                [data.img1, data.img2, data.img3].forEach(imgSrc => {
+                    if (imgSrc) {
+                        const img = document.createElement('img'); img.src = normalizeImageSrc(imgSrc); imgContainer.appendChild(img);
+                    }
+                });
+                resultSection.style.display = 'block';
+                searchError.style.display = 'none';
+            } else {
+                resultSection.style.display = 'none';
+                searchError.innerText = "> LORE_NO_ENCONTRADO_EN_LA_BASE_DE_DATOS";
+                searchError.style.display = 'block';
+            }
+        } catch (error) { console.error("Error:", error); }
+    }, 500); 
+});
 
-nav a {
-    color: var(--hacker-green);
-    text-decoration: none;
-    font-weight: bold;
-    cursor: pointer;
-}
+// NUEVO: Manejar el inicio de sesión
+loginForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    loginError.style.display = 'none';
 
-nav a:hover {
-    color: white;
-    text-shadow: 0 0 10px white;
-}
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const keyword = document.getElementById('loginKeyword').value;
 
-.search-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 40vh;
-    text-align: center;
-}
+    try {
+        const response = await fetch(buildApiUrl('/login'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, keyword })
+        });
 
-.typing-text {
-    font-size: 24px;
-    margin-bottom: 20px;
-    border-right: 2px solid var(--hacker-green);
-    white-space: nowrap;
-    overflow: hidden;
-    animation: typing 2s steps(30, end), blink-caret .75s step-end infinite;
-}
+        const data = await response.json();
 
-@keyframes typing { from { width: 0 } to { width: 350px } }
-@keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--hacker-green); } }
+        if (response.ok) {
+            // Guardar el token secreto en el navegador
+            localStorage.setItem('wikiAdminToken', data.token);
+            // Limpiar formulario y mostrar la sección de subida
+            loginForm.reset();
+            showSection('upload');
+        } else {
+            loginError.innerText = data.error;
+            loginError.style.display = 'block';
+        }
+    } catch (error) {
+        loginError.innerText = "> ERROR_DE_CONEXIÓN_CON_SERVIDOR_CENTRAL";
+        loginError.style.display = 'block';
+    }
+});
 
-.search-box {
-    background: transparent;
-    border: 1px solid var(--hacker-green);
-    color: var(--hacker-green);
-    padding: 15px 20px;
-    font-size: 20px;
-    width: 50%;
-    max-width: 600px;
-    font-family: 'Courier New', Courier, monospace;
-    outline: none;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
-}
+// Subir formulario (Actualizado con seguridad)
+uploadForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(uploadForm);
+    const submitBtn = document.querySelector('.btn-submit');
+    submitBtn.innerText = "Sellando..."; submitBtn.disabled = true;
 
-.search-box:focus {
-    box-shadow: 0 0 20px rgba(0, 255, 0, 0.6);
-    background: rgba(0, 255, 0, 0.05);
-}
+    // Recuperar el token para enviarlo como pase VIP
+    const token = localStorage.getItem('wikiAdminToken');
 
-.error-text {
-    color: red;
-    margin-top: 15px;
-    text-shadow: 0 0 5px red;
-}
+    try {
+        const response = await fetch(buildApiUrl('/lore'), {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}` // NUEVO: Enviar credencial
+            },
+            body: formData 
+        });
 
-.parchment-container {
-    display: none;
-    background-color: #f4e3c5;
-    background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
-    color: #3b2b18;
-    margin: 20px auto;
-    width: 80%;
-    max-width: 800px;
-    padding: 40px;
-    border-radius: 5px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 50px rgba(139, 69, 19, 0.3);
-    border: 2px solid #8b4513;
-    font-family: 'Georgia', serif;
-    animation: unfold 0.5s ease-out;
-}
+        const result = await response.json();
 
-@keyframes unfold {
-    0% { transform: scaleY(0); opacity: 0; }
-    100% { transform: scaleY(1); opacity: 1; }
-}
+        if (response.ok) {
+            alert(`¡El conocimiento sobre "${result.title}" ha sido sellado en el pergamino!`);
+            uploadForm.reset();
+            showSection('search');
+            searchInput.value = result.title;
+            searchInput.dispatchEvent(new Event('input'));
+        } else {
+            alert("Error: " + result.error);
+            // Si el error es por token expirado, forzar login de nuevo
+            if(response.status === 403) {
+                localStorage.removeItem('wikiAdminToken');
+                showSection('upload'); // Esto detectará que no hay token y mostrará el login
+            }
+        }
+    } catch (error) {
+        alert("Ocurrió un error en el servidor.");
+    } finally {
+        submitBtn.innerText = "Sellar en el Pergamino"; submitBtn.disabled = false;
+    }
+});
 
-.parchment-container h2 {
-    text-align: center;
-    border-bottom: 2px dashed #8b4513;
-    padding-bottom: 10px;
-    margin-top: 0;
-}
-
-.lore-description {
-    line-height: 1.85;
-    font-size: 1.08rem;
-    max-width: 68ch;
-    margin: 24px auto 0;
-    text-align: left;
-    color: #2f2315;
-}
-
-.lore-description p {
-    margin: 0 0 14px;
-}
-
-.lore-description h3 {
-    margin: 20px 0 10px;
-    color: #5c2e0b;
-    font-size: 1.1rem;
-    letter-spacing: 0.4px;
-    border-left: 4px solid #8b4513;
-    padding-left: 10px;
-}
-
-.lore-description ul {
-    margin: 0 0 16px;
-    padding-left: 24px;
-}
-
-.lore-description li {
-    margin-bottom: 8px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.form-group input[type="text"], .form-group textarea {
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid #8b4513;
-    font-family: 'Georgia', serif;
-}
-
-.btn-submit {
-    background-color: #8b4513;
-    color: #f4e3c5;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    font-family: 'Georgia', serif;
-    font-weight: bold;
-    transition: 0.3s;
-    width: 100%;
-    margin-top: 10px;
-}
-
-.btn-submit:hover {
-    background-color: #5c2e0b;
-}
-
-.lore-images {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 26px;
-    justify-content: center;
-}
-
-.lore-images img {
-    max-width: 32%;
-    border: 2px solid #8b4513;
-    border-radius: 4px;
-    object-fit: cover;
+// Botón secreto para cerrar sesión (Opcional, lo puedes poner en la consola del navegador)
+window.logoutAdmin = function() {
+    localStorage.removeItem('wikiAdminToken');
+    alert("Sesión cerrada. Acceso revocado.");
+    showSection('search');
 }
