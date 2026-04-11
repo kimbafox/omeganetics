@@ -19,6 +19,9 @@ app.use((req, res, next) => {
 // Sitio principal Omeganetics
 app.use(express.static(__dirname));
 
+const { app: wikiApp } = require("./mi-wiki-hacker/server");
+app.use("/wiki", wikiApp);
+
 let tienditaEnabled = false;
 let initDatabase = async () => {};
 
@@ -119,6 +122,10 @@ app.get("/tiendita/", (req, res) => {
     return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
   }
   res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "index.html"));
+});
+
+app.get("/wiki", (req, res) => {
+  res.redirect("/wiki/");
 });
 
 // iniciar servidor
