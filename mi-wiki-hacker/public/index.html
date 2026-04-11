@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki System - Terminal Access</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-faded"></div>
+    <div class="scanline"></div>
+
+    <nav>
+        <a onclick="showSection('search')">[BUSCADOR]</a>
+        <a onclick="showSection('upload')">[SISTEMA_DE_APORTES (Admin)]</a>
+    </nav>
+
+    <main>
+        <div id="searchSection" class="search-container">
+            <div class="typing-text">> INICIALIZANDO_SISTEMA_WIKI...</div>
+            <input type="text" id="searchInput" class="search-box" placeholder="> Ingrese palabra clave del Lore..." autocomplete="off">
+            <div id="searchError" class="error-text" style="display: none;"></div>
+        </div>
+
+        <div id="resultSection" class="parchment-container">
+            <h2 id="loreTitle"></h2>
+            <p id="loreDesc"></p>
+            <div class="lore-images" id="loreImagesContainer"></div>
+        </div>
+
+        <div id="loginSection" class="search-container" style="display: none;">
+            <div class="typing-text" style="color: red;">> PROTOCOLO_DE_ACCESO_RESTRINGIDO</div>
+            <p style="color: var(--hacker-green); margin-bottom: 20px;">Identificación requerida para alterar los registros del pergamino.</p>
+
+            <form id="loginForm" style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                <input type="email" id="loginEmail" class="search-box" placeholder="> Correo..." required>
+                <input type="password" id="loginPassword" class="search-box" placeholder="> Contraseña..." required>
+                <input type="password" id="loginKeyword" class="search-box" placeholder="> Palabra Clave Maestra..." required>
+
+                <button type="submit" class="search-box" style="cursor: pointer; font-weight: bold; margin-top: 10px;">
+                    [ INICIAR_SECUECIA_DE_ENLACE ]
+                </button>
+            </form>
+            <div id="loginError" class="error-text" style="display: none;"></div>
+        </div>
+
+        <div id="uploadSection" class="parchment-container">
+            <h2>Añadir Nuevo Conocimiento al Pergamino</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Título / Palabra Clave:</label>
+                    <input type="text" id="formTitle" name="title" required placeholder="Ej: Dragón Anciano">
+                </div>
+                <div class="form-group">
+                    <label>Descripción del Lore:</label>
+                    <textarea id="formDesc" name="description" rows="6" required placeholder="Escribe la historia aquí..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Imagen Principal (Obligatoria):</label>
+                    <input type="file" id="img1" name="img1" accept="image/*" required>
+                </div>
+                <div class="form-group">
+                    <label>Imágenes Adicionales (Opcionales):</label>
+                    <input type="file" id="img2" name="img2" accept="image/*">
+                    <input type="file" id="img3" name="img3" accept="image/*">
+                </div>
+                <button type="submit" class="btn-submit">Sellar en el Pergamino</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
