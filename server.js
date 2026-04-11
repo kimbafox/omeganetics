@@ -19,9 +19,6 @@ app.use((req, res, next) => {
 // Sitio principal Omeganetics
 app.use(express.static(__dirname));
 
-const { app: wikiApp } = require("./mi-wiki-hacker/server");
-app.use("/wiki", wikiApp);
-
 let tienditaEnabled = false;
 let initDatabase = async () => {};
 
@@ -92,6 +89,12 @@ const resolvedDatabaseUrl = resolveDatabaseUrl();
 
 if (resolvedDatabaseUrl) {
   process.env.DATABASE_URL = resolvedDatabaseUrl;
+}
+
+const { app: wikiApp } = require("./mi-wiki-hacker/server");
+app.use("/wiki", wikiApp);
+
+if (resolvedDatabaseUrl) {
 
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");
   tienditaEnabled = true;
