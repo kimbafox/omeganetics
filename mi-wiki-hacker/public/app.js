@@ -22,6 +22,48 @@ function normalizeImageSrc(imgSrc) {
     return imgSrc;
 }
 
+function renderLoreDescription(rawText) {
+    const descContainer = document.getElementById('loreDesc');
+    descContainer.innerHTML = '';
+
+    const text = (rawText || '').replace(/\r\n/g, '\n').trim();
+    if (!text) {
+        const emptyParagraph = document.createElement('p');
+        emptyParagraph.textContent = 'Sin descripcion disponible.';
+        descContainer.appendChild(emptyParagraph);
+        return;
+    }
+
+    const blocks = text.split(/\n{2,}/).map(block => block.trim()).filter(Boolean);
+
+    blocks.forEach(block => {
+        const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+        const isList = lines.length > 0 && lines.every(line => /^[-*]\s+/.test(line));
+
+        if (isList) {
+            const list = document.createElement('ul');
+            lines.forEach(line => {
+                const item = document.createElement('li');
+                item.textContent = line.replace(/^[-*]\s+/, '');
+                list.appendChild(item);
+            });
+            descContainer.appendChild(list);
+            return;
+        }
+
+        if (lines.length === 1 && /:$/.test(lines[0])) {
+            const heading = document.createElement('h3');
+            heading.textContent = lines[0].replace(/:$/, '');
+            descContainer.appendChild(heading);
+            return;
+        }
+
+        const paragraph = document.createElement('p');
+        paragraph.textContent = lines.join(' ');
+        descContainer.appendChild(paragraph);
+    });
+}
+
 function showSection(section) {
     // Ocultar todo primero
     resultSection.style.display = 'none';
@@ -58,7 +100,7 @@ searchInput.addEventListener('input', function(e) {
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('loreTitle').innerText = data.title.toUpperCase();
-                document.getElementById('loreDesc').innerText = data.description;
+                renderLoreDescription(data.description);
                 const imgContainer = document.getElementById('loreImagesContainer');
                 imgContainer.innerHTML = ''; 
                 [data.img1, data.img2, data.img3].forEach(imgSrc => {
