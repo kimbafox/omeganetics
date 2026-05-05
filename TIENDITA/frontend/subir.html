@@ -5,7 +5,7 @@
 <title>Subir Proyecto</title>
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="upload-page storefront-page">
 
 <header class="header">
   <div class="logo-container">
@@ -14,7 +14,7 @@
   </div>
 
   <nav>
-    <a href="index.html" class="btn">Inicio</a>
+    <a href="indextienda.html" class="btn">Inicio</a>
     <a href="admin.html" class="btn">Panel Admin</a>
     <button id="btnLogout" class="btn" onclick="cerrarSesion()">Cerrar sesión</button>
   </nav>
@@ -25,7 +25,8 @@
   <!-- FORM -->
   <div class="upload-form">
 
-    <h2>📜 Crear Artefacto</h2>
+    <h2>Crear ficha del catálogo</h2>
+    <p class="form-intro">Añade una descripción más completa y hasta seis imágenes extra para mostrar mejor cada proyecto.</p>
 
     <input type="text" id="nombre" placeholder="Nombre del proyecto">
 
@@ -33,12 +34,17 @@
       <option value="omegacraft">Omegacraft</option>
       <option value="herramientas">Herramientas</option>
       <option value="juegos">Juegos</option>
+      <option value="libros">Libros</option>
     </select>
 
-    <textarea id="descripcion" placeholder="Descripción del proyecto"></textarea>
+    <textarea id="descripcion" rows="8" placeholder="Descripción amplia del proyecto, qué incluye, para quién es y qué lo hace especial"></textarea>
 
     <label>Portada</label>
-    <input type="file" id="portada" onchange="previewPortada()">
+    <input type="file" id="portada" accept="image/*" onchange="previewPortada()">
+
+    <label>Galería de imágenes</label>
+    <input type="file" id="imagenes" accept="image/*" multiple onchange="previewGaleria()">
+    <small class="field-help">Puedes subir hasta 6 imágenes adicionales.</small>
 
     <label>Archivo</label>
     <input type="file" id="archivo">
@@ -49,10 +55,12 @@
 
   <!-- PREVIEW -->
   <div class="upload-preview">
-    <h3>🧾 Vista previa</h3>
+    <h3>Vista previa</h3>
     <img id="imgPreview">
     <p id="tituloPreview"></p>
     <p id="fechaPreview"></p>
+    <p id="descripcionPreview" class="descripcion-preview"></p>
+    <div id="galeriaPreview" class="preview-gallery"></div>
   </div>
 
 </div>

@@ -21,6 +21,7 @@ router.post(
   verificarToken,
   upload.fields([
     { name: "portada", maxCount: 1 },
+    { name: "imagenes", maxCount: 6 },
     { name: "archivo", maxCount: 1 }
   ]),
   ctrl.subirProyecto

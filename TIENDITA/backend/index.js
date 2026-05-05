@@ -41,6 +41,7 @@ async function crearTablas() {
   // Migra tablas ya existentes sin romper datos previos.
   await pool.query("ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS descripcion TEXT");
   await pool.query("ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS archivo TEXT");
+  await pool.query("ALTER TABLE proyectos ADD COLUMN IF NOT EXISTS imagenes TEXT");
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS usuarios (

@@ -34,19 +34,55 @@
   <section class="hero">
 
     <div class="soldado-container">
-      <img src="assets/soldado.png" class="soldado">
+      <div class="soldado-visual">
+        <img src="assets/soldado.png" class="soldado">
+      </div>
+
+      <div class="servicios-floating anim">
+        <div class="servicio-display">
+          <span class="servicio-label">Servicios</span>
+          <h3 class="servicio-display-title">Diseño web</h3>
+          <p class="servicio-display-body">
+            Creamos sitios y plataformas con identidad visual clara, estructura funcional y enfoque profesional.
+          </p>
+        </div>
+
+        <div class="servicio-numeros" aria-label="Selector de servicios">
+          <button
+            type="button"
+            class="servicio-numero active"
+            data-title="Diseño web"
+            data-body="Creamos sitios y plataformas con identidad visual clara, estructura funcional y enfoque profesional."
+          >01</button>
+
+          <button
+            type="button"
+            class="servicio-numero"
+            data-title="Sistemas a medida"
+            data-body="Implementamos soluciones adaptadas a cada necesidad para optimizar procesos y operaciones digitales."
+          >02</button>
+
+          <button
+            type="button"
+            class="servicio-numero"
+            data-title="Gaming y comunidad"
+            data-body="Desarrollamos proyectos propios y organizamos eventos competitivos para fortalecer la comunidad gamer."
+          >03</button>
+        </div>
+      </div>
     </div>
 
     <div class="contenido-texto anim">
-      <h2>Únete a la evolución</h2>
+      <span class="hero-kicker">Estudio digital y comunidad competitiva</span>
+      <h2>Soluciones tecnológicas y entretenimiento digital</h2>
 
-      <p>
-        Omeganetics es una comunidad donde la estrategia y la evolución definen el futuro.
-        Participa, compite y forma parte de algo más grande.
+      <p class="hero-copy">
+        En Omeganetics desarrollamos experiencias digitales con un enfoque profesional,
+        combinando diseño web, desarrollo de sistemas y proyectos interactivos para comunidades y marcas.
       </p>
 
       <a href="https://discord.gg/bCWjyns8U5" target="_blank" class="btn">
-        Unete a nuestra comunidad
+        Conoce nuestra comunidad
       </a>
     </div>
 
@@ -250,6 +286,25 @@
         image.addEventListener('click', toggleMember);
       }
       card.addEventListener('click', toggleMember);
+    });
+
+    const serviceButtons = document.querySelectorAll('.servicio-numero');
+    const serviceTitle = document.querySelector('.servicio-display-title');
+    const serviceBody = document.querySelector('.servicio-display-body');
+
+    serviceButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        serviceButtons.forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+
+        if (serviceTitle) {
+          serviceTitle.textContent = button.dataset.title || '';
+        }
+
+        if (serviceBody) {
+          serviceBody.textContent = button.dataset.body || '';
+        }
+      });
     });
   </script>
 

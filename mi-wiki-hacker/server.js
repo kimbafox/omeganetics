@@ -39,11 +39,31 @@ if (dbEnabled) {
             id SERIAL PRIMARY KEY,
             title VARCHAR(255) UNIQUE NOT NULL,
             description TEXT NOT NULL,
+            short_description TEXT,
+            category VARCHAR(120),
+            timeline TEXT,
+            canon_type VARCHAR(80),
+            other_names TEXT,
+            appearances TEXT,
+            additional_notes TEXT,
             img1 VARCHAR(255) NOT NULL,
             img2 VARCHAR(255),
-            img3 VARCHAR(255)
+            img3 VARCHAR(255),
+            created_at TIMESTAMP DEFAULT NOW()
         );
     `).catch(err => console.error("Error creando tabla:", err));
+
+    pool.query(`
+        ALTER TABLE lore
+        ADD COLUMN IF NOT EXISTS short_description TEXT,
+        ADD COLUMN IF NOT EXISTS category VARCHAR(120),
+        ADD COLUMN IF NOT EXISTS timeline TEXT,
+        ADD COLUMN IF NOT EXISTS canon_type VARCHAR(80),
+        ADD COLUMN IF NOT EXISTS other_names TEXT,
+        ADD COLUMN IF NOT EXISTS appearances TEXT,
+        ADD COLUMN IF NOT EXISTS additional_notes TEXT,
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+    `).catch(err => console.error("Error actualizando tabla lore:", err));
 }
 
 const storage = multer.diskStorage({
@@ -87,6 +107,24 @@ const verificarToken = (req, res, next) => {
 };
 
 // --- RUTAS DE LORE ---
+app.get('/api/lore/recent', async (req, res) => {
+    if (!dbEnabled) {
+        return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: define DATABASE_URL." });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT id, title, description, short_description, category, timeline, canon_type, other_names, appearances, additional_notes, img1, img2, img3, created_at
+            FROM lore
+            ORDER BY created_at DESC, id DESC
+            LIMIT 4
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/lore/:title', async (req, res) => {
     if (!dbEnabled) {
         return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: define DATABASE_URL." });
@@ -94,7 +132,17 @@ app.get('/api/lore/:title', async (req, res) => {
 
     try {
         const { title } = req.params;
-        const result = await pool.query('SELECT * FROM lore WHERE LOWER(title) = LOWER($1)', [title]);
+        const result = await pool.query(
+            `
+                SELECT id, title, description, short_description, category, timeline, canon_type, other_names, appearances, additional_notes, img1, img2, img3, created_at
+                FROM lore
+                WHERE LOWER(title) = LOWER($1)
+                OR LOWER(title) LIKE LOWER($2)
+                ORDER BY CASE WHEN LOWER(title) = LOWER($1) THEN 0 ELSE 1 END, created_at DESC, id DESC
+                LIMIT 1
+            `,
+            [title, `%${title}%`]
+        );
         
         if (result.rows.length > 0) res.json(result.rows[0]);
         else res.status(404).json({ message: "Lore no encontrado" });
@@ -110,16 +158,60 @@ app.post('/api/lore', verificarToken, cpUpload, async (req, res) => {
     }
 
     try {
-        const { title, description } = req.body;
+        const {
+            title,
+            description,
+            shortDescription,
+            category,
+            timeline,
+            canonType,
+            otherNames,
+            appearances,
+            additionalNotes
+        } = req.body;
         const img1 = req.files['img1'] ? `/uploads/${req.files['img1'][0].filename}` : null;
         const img2 = req.files['img2'] ? `/uploads/${req.files['img2'][0].filename}` : null;
         const img3 = req.files['img3'] ? `/uploads/${req.files['img3'][0].filename}` : null;
 
         if (!img1) return res.status(400).json({ error: "La imagen 1 es obligatoria" });
 
+        if (!title || !description || !category || !shortDescription) {
+            return res.status(400).json({ error: "Titulo, categoria, mini descripcion y descripcion completa son obligatorios." });
+        }
+
         const newLore = await pool.query(
-            'INSERT INTO lore (title, description, img1, img2, img3) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [title, description, img1, img2, img3]
+            `
+                INSERT INTO lore (
+                    title,
+                    description,
+                    short_description,
+                    category,
+                    timeline,
+                    canon_type,
+                    other_names,
+                    appearances,
+                    additional_notes,
+                    img1,
+                    img2,
+                    img3
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                RETURNING *
+            `,
+            [
+                title,
+                description,
+                shortDescription,
+                category,
+                timeline || null,
+                canonType || null,
+                otherNames || null,
+                appearances || null,
+                additionalNotes || null,
+                img1,
+                img2,
+                img3
+            ]
         );
         res.status(201).json(newLore.rows[0]);
     } catch (err) {

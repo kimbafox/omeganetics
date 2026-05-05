@@ -28,7 +28,7 @@ async function loginReal() {
       if (data.rol === "admin") {
         window.location.href = "admin.html";
       } else {
-        window.location.href = "index.html";
+        window.location.href = "indextienda.html";
       }
     } else {
       alert(data.error || "Error login");
@@ -85,10 +85,16 @@ async function subirProyecto() {
   const categoria = document.getElementById("categoria").value;
   const descripcion = document.getElementById("descripcion")?.value || "";
   const portada = document.getElementById("portada").files[0];
+  const imagenes = Array.from(document.getElementById("imagenes")?.files || []);
   const archivo = document.getElementById("archivo")?.files[0];
 
   if (!nombre || !categoria || !portada) {
     alert("Completa todos los campos");
+    return;
+  }
+
+  if (imagenes.length > 6) {
+    alert("Solo puedes subir hasta 6 imágenes adicionales");
     return;
   }
 
@@ -97,6 +103,7 @@ async function subirProyecto() {
   formData.append("categoria", categoria);
   formData.append("descripcion", descripcion);
   formData.append("portada", portada);
+  imagenes.forEach(imagen => formData.append("imagenes", imagen));
   if (archivo) {
     formData.append("archivo", archivo);
   }
@@ -124,8 +131,8 @@ async function subirProyecto() {
     const data = await res.json();
 
     if (data.ok) {
-      alert("Proyecto subido 🔥");
-      window.location.href = "index.html";
+      alert("Proyecto subido correctamente");
+      window.location.href = "indextienda.html";
     } else {
       alert("Error al subir");
     }
@@ -147,9 +154,10 @@ function resumenTexto(texto, max = 90) {
 
 function formatearCategoria(categoria) {
   const categorias = {
-    omegacraft: "⛏️ Omegacraft",
-    herramientas: "🛠️ Herramientas",
-    juegos: "🎮 Juegos"
+    omegacraft: "Omegacraft",
+    herramientas: "Herramientas",
+    juegos: "Juegos",
+    libros: "Libros"
   };
 
   return categorias[categoria] || categoria || "Sin categoría";
@@ -157,6 +165,8 @@ function formatearCategoria(categoria) {
 
 function tarjetaProyectoHTML(p) {
   const portadaUrl = buildUploadUrl(p.portada);
+  const imagenes = Array.isArray(p.imagenes) ? p.imagenes : [];
+  const resumen = resumenTexto(p.descripcion, 180);
 
   return `
     <article class="card-proyecto">
@@ -165,8 +175,9 @@ function tarjetaProyectoHTML(p) {
       </div>
       <h3 class="card-titulo">${p.nombre}</h3>
       <p class="card-categoria">${formatearCategoria(p.categoria)}</p>
-      <p class="card-descripcion">${resumenTexto(p.descripcion)}</p>
-      <small class="card-fecha">🗓️ ${new Date(p.fecha).toLocaleDateString()}</small>
+      <p class="card-descripcion">${resumen}</p>
+      <p class="card-resumen-extra">${imagenes.length} imagen${imagenes.length === 1 ? "" : "es"} en galería</p>
+      <small class="card-fecha">${new Date(p.fecha).toLocaleDateString()}</small>
       <button class="btn btn-ver-detalle" data-id="${p.id}">Ver proyecto</button>
     </article>
   `;
@@ -202,17 +213,27 @@ function abrirDetalleProyecto(id) {
   const archivoBoton = proyecto.archivo
     ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Descargar archivo</a>`
     : `<span class="sin-archivo">Sin archivo adjunto</span>`;
+  const galeria = [proyecto.portada, ...(Array.isArray(proyecto.imagenes) ? proyecto.imagenes : [])]
+    .filter(Boolean)
+    .map((imagen, index) => `
+      <button class="galeria-thumb ${index === 0 ? "active" : ""}" type="button" data-galeria-src="${buildUploadUrl(imagen)}">
+        <img src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${proyecto.nombre}">
+      </button>
+    `)
+    .join("");
 
   body.innerHTML = `
     <div class="modal-grid">
       <div class="modal-imagen-wrap">
-        <img class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
+        <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
+        <div class="galeria-thumbs">${galeria}</div>
       </div>
 
       <div class="modal-info">
         <h2>${proyecto.nombre}</h2>
-        <p><strong>Categoria:</strong> ${proyecto.categoria}</p>
+        <p><strong>Categoria:</strong> ${formatearCategoria(proyecto.categoria)}</p>
         <p><strong>Fecha:</strong> ${new Date(proyecto.fecha).toLocaleDateString()}</p>
+        <p><strong>Resumen:</strong> ${resumenTexto(proyecto.descripcion, 240)}</p>
         <p><strong>Descripcion:</strong></p>
         <p class="modal-descripcion">${proyecto.descripcion || "Sin descripcion"}</p>
         <div class="acciones-proyecto">${archivoBoton}</div>
@@ -386,6 +407,8 @@ function actualizarEstadoLoginPage() {
 function previewPortada() {
   const file = document.getElementById("portada").files[0];
   const img = document.getElementById("imgPreview");
+  const descripcion = document.getElementById("descripcion")?.value || "";
+  const descripcionPreview = document.getElementById("descripcionPreview");
 
   if (file) {
     img.src = URL.createObjectURL(file);
@@ -396,6 +419,28 @@ function previewPortada() {
 
   document.getElementById("fechaPreview").innerText =
     "Fecha: " + new Date().toLocaleDateString();
+
+  if (descripcionPreview) {
+    descripcionPreview.innerText = descripcion || "Añade una descripción amplia para ver cómo se mostrará la ficha.";
+  }
+}
+
+function previewGaleria() {
+  const files = Array.from(document.getElementById("imagenes")?.files || []);
+  const cont = document.getElementById("galeriaPreview");
+
+  if (!cont) return;
+
+  if (!files.length) {
+    cont.innerHTML = "";
+    return;
+  }
+
+  cont.innerHTML = files.slice(0, 6).map(file => `
+    <div class="preview-gallery-item">
+      <img src="${URL.createObjectURL(file)}" alt="Vista previa ${file.name}">
+    </div>
+  `).join("");
 }
 
 // ===============================
@@ -430,10 +475,33 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const galeriaBtn = e.target.closest("[data-galeria-src]");
+    if (galeriaBtn) {
+      const principal = document.getElementById("modalImagenPrincipal");
+      if (principal) {
+        principal.src = galeriaBtn.dataset.galeriaSrc;
+      }
+
+      document.querySelectorAll(".galeria-thumb").forEach(btn => btn.classList.remove("active"));
+      galeriaBtn.classList.add("active");
+      return;
+    }
+
     if (e.target.matches("[data-cerrar-modal='true']") || e.target.id === "modalProyecto") {
       cerrarDetalleProyecto();
     }
   });
+
+  const nombreInput = document.getElementById("nombre");
+  const descripcionInput = document.getElementById("descripcion");
+
+  if (nombreInput) {
+    nombreInput.addEventListener("input", previewPortada);
+  }
+
+  if (descripcionInput) {
+    descripcionInput.addEventListener("input", previewPortada);
+  }
 
   cargar();
   iniciarCarrusel();

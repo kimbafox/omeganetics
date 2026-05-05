@@ -6,6 +6,7 @@ exports.subirProyecto = async (req, res) => {
   try {
     const { nombre, categoria, descripcion } = req.body;
     const portada = req.files?.portada?.[0]?.filename;
+    const imagenes = (req.files?.imagenes || []).map(file => file.filename);
     const archivo = req.files?.archivo?.[0]?.filename || null;
 
     if (!portada) {
@@ -13,8 +14,8 @@ exports.subirProyecto = async (req, res) => {
     }
 
     await pool.query(
-      "INSERT INTO proyectos(nombre, categoria, descripcion, portada, archivo) VALUES($1,$2,$3,$4,$5)",
-      [nombre, categoria, descripcion || "", portada, archivo]
+      "INSERT INTO proyectos(nombre, categoria, descripcion, portada, archivo, imagenes) VALUES($1,$2,$3,$4,$5,$6)",
+      [nombre, categoria, descripcion || "", portada, archivo, JSON.stringify(imagenes)]
     );
 
     res.json({ ok: true });
@@ -30,7 +31,22 @@ exports.obtenerProyectos = async (req, res) => {
     "SELECT * FROM proyectos ORDER BY fecha DESC"
   );
 
-  res.json(result.rows);
+  const proyectos = result.rows.map(proyecto => {
+    let imagenes = [];
+
+    try {
+      imagenes = proyecto.imagenes ? JSON.parse(proyecto.imagenes) : [];
+    } catch {
+      imagenes = [];
+    }
+
+    return {
+      ...proyecto,
+      imagenes: Array.isArray(imagenes) ? imagenes : []
+    };
+  });
+
+  res.json(proyectos);
 };
 
 // ELIMINAR (ADMIN)

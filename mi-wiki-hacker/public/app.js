@@ -7,6 +7,11 @@ const uploadForm = document.getElementById('uploadForm');
 const loginForm = document.getElementById('loginForm'); // NUEVO
 const searchError = document.getElementById('searchError');
 const loginError = document.getElementById('loginError'); // NUEVO
+const recentLoreGrid = document.getElementById('recentLoreGrid');
+const loreCategory = document.getElementById('loreCategory');
+const loreShortDesc = document.getElementById('loreShortDesc');
+const loreMetaChips = document.getElementById('loreMetaChips');
+const loreDetails = document.getElementById('loreDetails');
 
 const BASE_PATH = window.location.pathname.startsWith('/wiki') ? '/wiki' : '';
 
@@ -20,6 +25,33 @@ function normalizeImageSrc(imgSrc) {
         return `${BASE_PATH}${imgSrc}`;
     }
     return imgSrc;
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function splitValues(value) {
+    return (value || '')
+        .split(/\n|,/)
+        .map(item => item.trim())
+        .filter(Boolean);
+}
+
+function formatArchiveDate(value) {
+    if (!value) return 'Fecha sin registro';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 }
 
 function renderLoreDescription(rawText) {
@@ -64,6 +96,167 @@ function renderLoreDescription(rawText) {
     });
 }
 
+function renderMetaChips(data) {
+    loreMetaChips.innerHTML = '';
+    const chips = [
+        data.timeline ? `Cronologia: ${data.timeline}` : null,
+        data.canon_type ? `Estado: ${data.canon_type}` : null,
+        data.created_at ? `Subido: ${formatArchiveDate(data.created_at)}` : null
+    ].filter(Boolean);
+
+    chips.forEach(text => {
+        const chip = document.createElement('span');
+        chip.className = 'meta-chip';
+        chip.textContent = text;
+        loreMetaChips.appendChild(chip);
+    });
+}
+
+function renderLoreDetails(data) {
+    const aliases = splitValues(data.other_names);
+    const appearances = splitValues(data.appearances);
+    const sections = [
+        {
+            title: 'Identidad',
+            open: true,
+            content: `
+                <div class="detail-grid">
+                    <div>
+                        <span class="detail-label">Categoria</span>
+                        <p>${escapeHtml(data.category || 'Sin categoria')}</p>
+                    </div>
+                    <div>
+                        <span class="detail-label">Estado</span>
+                        <p>${escapeHtml(data.canon_type || 'Sin definir')}</p>
+                    </div>
+                </div>
+                ${aliases.length ? `<div><span class="detail-label">Otros nombres</span><div class="token-list">${aliases.map(alias => `<span>${escapeHtml(alias)}</span>`).join('')}</div></div>` : ''}
+            `
+        },
+        {
+            title: 'Cronologia',
+            content: `
+                <div class="detail-grid">
+                    <div>
+                        <span class="detail-label">Periodo</span>
+                        <p>${escapeHtml(data.timeline || 'No especificado')}</p>
+                    </div>
+                    <div>
+                        <span class="detail-label">Fecha de carga</span>
+                        <p>${escapeHtml(formatArchiveDate(data.created_at))}</p>
+                    </div>
+                </div>
+            `
+        },
+        {
+            title: 'Apariciones',
+            content: appearances.length
+                ? `<div><span class="detail-label">Registros asociados</span><div class="token-list">${appearances.map(item => `<span>${escapeHtml(item)}</span>`).join('')}</div></div>`
+                : '<p class="detail-empty">Sin apariciones registradas.</p>'
+        },
+        {
+            title: 'Notas adicionales',
+            content: data.additional_notes
+                ? `<p>${escapeHtml(data.additional_notes).replace(/\n/g, '<br>')}</p>`
+                : '<p class="detail-empty">No hay notas adicionales.</p>'
+        }
+    ];
+
+    loreDetails.innerHTML = sections.map(section => `
+        <details class="info-accordion" ${section.open ? 'open' : ''}>
+            <summary>${section.title}</summary>
+            <div class="info-panel">${section.content}</div>
+        </details>
+    `).join('');
+}
+
+function renderLoreResult(data) {
+    document.getElementById('loreTitle').innerText = (data.title || '').toUpperCase();
+    loreCategory.textContent = data.category ? `Archivo ${data.category}` : 'Archivo de lore';
+    loreShortDesc.textContent = data.short_description || 'Sin mini descripcion archivada.';
+    renderMetaChips(data);
+    renderLoreDetails(data);
+    renderLoreDescription(data.description);
+
+    const imgContainer = document.getElementById('loreImagesContainer');
+    imgContainer.innerHTML = '';
+    [data.img1, data.img2, data.img3].forEach(imgSrc => {
+        if (imgSrc) {
+            const img = document.createElement('img');
+            img.src = normalizeImageSrc(imgSrc);
+            img.alt = data.title || 'Imagen de lore';
+            imgContainer.appendChild(img);
+        }
+    });
+
+    resultSection.style.display = 'block';
+}
+
+async function loadLore(keyword) {
+    const response = await fetch(buildApiUrl(`/lore/${encodeURIComponent(keyword)}`));
+    if (!response.ok) {
+        throw new Error('not_found');
+    }
+
+    const data = await response.json();
+    renderLoreResult(data);
+    searchError.style.display = 'none';
+}
+
+async function loadRecentLore() {
+    try {
+        const response = await fetch(buildApiUrl('/lore/recent'));
+        if (!response.ok) {
+            recentLoreGrid.innerHTML = '<div class="recent-empty">No fue posible cargar los registros recientes.</div>';
+            return;
+        }
+
+        const items = await response.json();
+        if (!items.length) {
+            recentLoreGrid.innerHTML = '<div class="recent-empty">Todavia no hay entradas publicadas.</div>';
+            return;
+        }
+
+        const [featured, ...secondary] = items;
+        const renderCard = (item, variant, label) => `
+            <article class="recent-card ${variant}" data-title="${escapeHtml(item.title)}">
+                <div class="recent-image-wrap">
+                    <img src="${escapeHtml(normalizeImageSrc(item.img1))}" alt="${escapeHtml(item.title)}">
+                </div>
+                <div class="recent-content">
+                    <p class="recent-label">${label}</p>
+                    <h3>${escapeHtml(item.title)}</h3>
+                    <p class="recent-meta">${escapeHtml(item.category || 'Sin categoria')} · ${escapeHtml(formatArchiveDate(item.created_at))}</p>
+                    <p>${escapeHtml(item.short_description || item.description || 'Sin resumen disponible.')}</p>
+                </div>
+            </article>
+        `;
+
+        recentLoreGrid.innerHTML = `
+            ${renderCard(featured, 'featured', 'ULTIMO REGISTRO')}
+            <div class="recent-side-column">
+                ${secondary.map(item => renderCard(item, 'compact', 'ARCHIVO RECIENTE')).join('')}
+            </div>
+        `;
+
+        recentLoreGrid.querySelectorAll('[data-title]').forEach(card => {
+            card.addEventListener('click', async () => {
+                const title = card.getAttribute('data-title');
+                searchInput.value = title;
+                try {
+                    await loadLore(title);
+                } catch (error) {
+                    resultSection.style.display = 'none';
+                    searchError.innerText = '> LORE_NO_ENCONTRADO_EN_LA_BASE_DE_DATOS';
+                    searchError.style.display = 'block';
+                }
+            });
+        });
+    } catch (error) {
+        recentLoreGrid.innerHTML = '<div class="recent-empty">No fue posible conectar con el archivo reciente.</div>';
+    }
+}
+
 function showSection(section) {
     // Ocultar todo primero
     resultSection.style.display = 'none';
@@ -96,26 +289,13 @@ searchInput.addEventListener('input', function(e) {
 
     debounceTimer = setTimeout(async () => {
         try {
-            const response = await fetch(buildApiUrl(`/lore/${encodeURIComponent(keyword)}`));
-            if (response.ok) {
-                const data = await response.json();
-                document.getElementById('loreTitle').innerText = data.title.toUpperCase();
-                renderLoreDescription(data.description);
-                const imgContainer = document.getElementById('loreImagesContainer');
-                imgContainer.innerHTML = ''; 
-                [data.img1, data.img2, data.img3].forEach(imgSrc => {
-                    if (imgSrc) {
-                        const img = document.createElement('img'); img.src = normalizeImageSrc(imgSrc); imgContainer.appendChild(img);
-                    }
-                });
-                resultSection.style.display = 'block';
-                searchError.style.display = 'none';
-            } else {
-                resultSection.style.display = 'none';
-                searchError.innerText = "> LORE_NO_ENCONTRADO_EN_LA_BASE_DE_DATOS";
-                searchError.style.display = 'block';
-            }
-        } catch (error) { console.error("Error:", error); }
+            await loadLore(keyword);
+        } catch (error) {
+            resultSection.style.display = 'none';
+            searchError.innerText = '> LORE_NO_ENCONTRADO_EN_LA_BASE_DE_DATOS';
+            searchError.style.display = 'block';
+            console.error("Error:", error);
+        }
     }, 500); 
 });
 
@@ -178,6 +358,7 @@ uploadForm.addEventListener('submit', async function(e) {
         if (response.ok) {
             alert(`¡El conocimiento sobre "${result.title}" ha sido sellado en el pergamino!`);
             uploadForm.reset();
+            await loadRecentLore();
             showSection('search');
             searchInput.value = result.title;
             searchInput.dispatchEvent(new Event('input'));
@@ -202,3 +383,5 @@ window.logoutAdmin = function() {
     alert("Sesión cerrada. Acceso revocado.");
     showSection('search');
 }
+
+loadRecentLore();
