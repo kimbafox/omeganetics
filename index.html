@@ -29,13 +29,28 @@
 
     <nav>
       <ul>
-        <li><a href="#" id="openInfo">Quiénes somos</a></li>
+        <li><button type="button" id="teamToggle" class="nav-toggle-link" aria-expanded="false" aria-controls="teamDropdown">Quiénes somos</button></li>
         <li><a href="/wiki/">wikiprins</a></li>
         <li><a href="/tiendita/indextienda.html">Realm</a></li>
+        <li><a href="/admin-equipo.html">Panel</a></li>
         <li><a href="https://discord.gg/bCWjyns8U5" target="_blank">Discord</a></li>
       </ul>
     </nav>
   </header>
+
+  <section id="teamDropdown" class="team-dropdown" aria-hidden="true">
+    <div class="team-dropdown-inner">
+      <div class="team-dropdown-header">
+        <div>
+          <span class="team-eyebrow">Quienes somos</span>
+          <h2 id="teamTitle">Cargando estructura de Omeganetics...</h2>
+        </div>
+        <button type="button" id="teamClose" class="team-close-button" aria-label="Cerrar quienes somos">Cerrar</button>
+      </div>
+      <p id="teamDescription" class="team-dropdown-copy">Preparando perfiles, roles y accesos.</p>
+      <div id="teamCardsGrid" class="team-dropdown-grid"></div>
+    </div>
+  </section>
 
   <!-- HERO -->
   <section class="hero">
@@ -135,90 +150,8 @@
     </div>
   </section>
 
-  <!-- MODAL MEJORADO -->
-  <div id="modalInfo" class="modal">
-
-    <div class="modal-content">
-
-      <span class="close">&times;</span>
-
-      <h2>Omeganetics</h2>
-
-      <p class="intro">
-        Omeganetics es un imperio digital donde la estrategia, la competencia y la evolución
-        definen a sus miembros. Una comunidad enfocada en el crecimiento, la disciplina
-        y la innovación dentro del entorno gaming.
-      </p>
-
-      <!-- EMPERADOR -->
-      <div class="miembro principal">
-        <img src="assets/kimba.png" onerror="this.src='assets/default.png'">
-
-        <div>
-          <h3>PRESIDENTE - EMPERADOR KIMBA</h3>
-          <div class="principal-body collapsed">
-            <p>
-              Fundador de Omeganetics y líder del imperio. Responsable de la visión,
-              expansión y control de la comunidad, supervisando proyectos, torneos
-              y el desarrollo estratégico del sistema.
-            </p>
-            <button type="button" class="toggle-expand">Ver más</button>
-          </div>
-          <div class="social-section">
-            <h3>Redes sociales</h3>
-            <p>Instagram: <a href="https://www.instagram.com/kimba_zorro/?hl=es" target="_blank">Instagram</a></p>
-            <p>TikTok: <a href="https://www.tiktok.com/@kimba_omega" target="_blank">TikTok</a></p>
-          </div>
-        </div>
-      </div>
-
-      <!-- ASCENDIDOS -->
-      <h3 class="subtitulo">Ascendidos</h3>
-
-      <div class="grupo-miembros">
-
-        <!-- SEBILLAS -->
-        <div class="card-miembro">
-          <img src="assets/ACENDIDO 1.png">
-          <h4>Sebillas</h4>
-          <p>
-            Estudiante de Ingeniería en Sistemas, especializado en programación.
-            Apoya en marketing y es apasionado por los juegos de estrategia y aventura.
-          </p>
-        </div>
-
-        <!-- ANXPO -->
-        <div class="card-miembro">
-          <img src="assets/anxpo.png">
-          <h4>Anxpo</h4>
-          <p>
-            Estudiante de Programación Informática. Interesado en juegos de estrategia
-            y TCG, aportando al desarrollo del sistema Omeganetics.
-          </p>
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
   <!-- SCRIPT -->
   <script>
-    const openBtn = document.getElementById("openInfo");
-    const modal = document.getElementById("modalInfo");
-    const closeBtn = document.querySelector(".close");
-
-    openBtn.onclick = () => modal.classList.add("show");
-    closeBtn.onclick = () => modal.classList.remove("show");
-
-    window.onclick = (e) => {
-      if (e.target === modal) {
-        modal.classList.remove("show");
-      }
-    };
-
-    // ANIMACIÓN SCROLL
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -231,68 +164,40 @@
       observer.observe(el);
     });
 
-    const principalCard = document.querySelector('.principal');
-    const principalBody = document.querySelector('.principal-body');
-    const toggleButton = document.querySelector('.toggle-expand');
+    const teamToggle = document.getElementById('teamToggle');
+    const teamDropdown = document.getElementById('teamDropdown');
+    const teamClose = document.getElementById('teamClose');
 
-    if (principalCard && principalBody && toggleButton) {
-      const setCollapsed = () => {
-        if (window.innerWidth <= 900) {
-          principalBody.classList.add('collapsed');
-          principalBody.classList.remove('expanded');
-          toggleButton.textContent = 'Ver más';
-        } else {
-          principalBody.classList.remove('collapsed');
-          principalBody.classList.remove('expanded');
-          toggleButton.textContent = 'Ver menos';
-        }
-      };
-
-      setCollapsed();
-      window.addEventListener('resize', setCollapsed);
-
-      const toggleCollapsed = (event) => {
-        if (window.innerWidth > 900) return;
-        event.stopPropagation();
-        const isCollapsed = principalBody.classList.toggle('collapsed');
-        principalBody.classList.toggle('expanded', !isCollapsed);
-        toggleButton.textContent = isCollapsed ? 'Ver más' : 'Ver menos';
-      };
-
-      principalCard.addEventListener('click', toggleCollapsed);
-      toggleButton.addEventListener('click', toggleCollapsed);
-    }
-
-    const memberCards = document.querySelectorAll('.card-miembro');
-
-    const setMembersCollapsed = () => {
-      memberCards.forEach(card => {
-        if (window.innerWidth <= 900) {
-          card.classList.add('collapsed');
-          card.classList.remove('expanded');
-        } else {
-          card.classList.remove('collapsed');
-          card.classList.remove('expanded');
-        }
-      });
+    const setTeamDropdown = (isOpen) => {
+      if (!teamToggle || !teamDropdown) return;
+      teamDropdown.classList.toggle('open', isOpen);
+      teamDropdown.setAttribute('aria-hidden', String(!isOpen));
+      teamToggle.setAttribute('aria-expanded', String(isOpen));
     };
 
-    setMembersCollapsed();
-    window.addEventListener('resize', setMembersCollapsed);
+    if (teamToggle && teamDropdown) {
+      teamToggle.addEventListener('click', () => {
+        const isOpen = teamDropdown.classList.contains('open');
+        setTeamDropdown(!isOpen);
+      });
+    }
 
-    memberCards.forEach(card => {
-      const image = card.querySelector('img');
-      const toggleMember = (event) => {
-        if (window.innerWidth > 900) return;
-        event.stopPropagation();
-        const isCollapsed = card.classList.toggle('collapsed');
-        card.classList.toggle('expanded', !isCollapsed);
-      };
+    if (teamClose) {
+      teamClose.addEventListener('click', () => setTeamDropdown(false));
+    }
 
-      if (image) {
-        image.addEventListener('click', toggleMember);
+    window.addEventListener('click', (event) => {
+      if (!teamDropdown || !teamToggle) return;
+      const clickedInside = teamDropdown.contains(event.target) || teamToggle.contains(event.target);
+      if (!clickedInside) {
+        setTeamDropdown(false);
       }
-      card.addEventListener('click', toggleMember);
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setTeamDropdown(false);
+      }
     });
 
     const serviceButtons = document.querySelectorAll('.servicio-numero');
@@ -314,6 +219,7 @@
       });
     });
   </script>
+  <script src="js/team-home.js"></script>
 
 </body>
 </html>
