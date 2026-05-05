@@ -101,6 +101,20 @@ function setAuthStatus(text, tone = 'neutral') {
   node.dataset.tone = tone;
 }
 
+function setStorageModeBadge(storageMode, databaseConfigured) {
+  const node = $('storageModeBadge');
+  if (!node) return;
+
+  if (databaseConfigured && storageMode === 'database') {
+    node.textContent = 'Guardando en: base de datos';
+    node.dataset.tone = 'success';
+    return;
+  }
+
+  node.textContent = 'Guardando en: archivo local';
+  node.dataset.tone = 'warning';
+}
+
 function togglePasswordLogin(visible) {
   const form = $('passwordLoginForm');
   if (!form) return;
@@ -571,15 +585,22 @@ async function bootstrapAdmin() {
 
     teamAdminState.authConfig = await response.json();
     teamAdminState.token = getStoredToken();
+    setStorageModeBadge(teamAdminState.authConfig.storageMode, teamAdminState.authConfig.databaseConfigured);
+    const databaseWarning = !teamAdminState.authConfig.databaseConfigured
+      ? 'La base de datos de team no esta configurada. El panel no guardara hasta que definas DATABASE_URL.'
+      : '';
 
     if (teamAdminState.token) {
-      setAuthStatus('Sesion activa', 'success');
-      setAuthMessage('Sesion restaurada.');
+      setAuthStatus(databaseWarning ? 'Sesion activa sin base de datos' : 'Sesion activa', databaseWarning ? 'error' : 'success');
+      setAuthMessage(databaseWarning || 'Sesion restaurada.', Boolean(databaseWarning));
       enableWorkspace();
       await loadContent();
     } else {
       disableWorkspace();
-      setAuthStatus(`Acceso solo para ${teamAdminState.authConfig.adminEmail}`, 'neutral');
+      setAuthStatus(databaseWarning ? 'Base de datos no configurada' : `Acceso solo para ${teamAdminState.authConfig.adminEmail}`, databaseWarning ? 'error' : 'neutral');
+      if (databaseWarning) {
+        setAuthMessage(databaseWarning, true);
+      }
     }
 
     $('adminEmailInput').value = teamAdminState.authConfig.adminEmail || '';
