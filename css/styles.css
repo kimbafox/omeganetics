@@ -1568,6 +1568,10 @@ nav a:hover,
   background: rgba(226, 92, 92, 0.14);
 }
 
+.helper-copy[data-tone="warning"] {
+  color: #f0cf73;
+}
+
 .google-login-mount {
   min-height: 42px;
 }
@@ -1602,6 +1606,13 @@ nav a:hover,
   color: var(--text);
   cursor: pointer;
   transition: 0.2s ease;
+}
+
+.primary-action:disabled,
+.secondary-action:disabled,
+.danger-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .primary-action {

@@ -2,6 +2,7 @@ const teamAdminState = {
   authConfig: null,
   token: null,
   content: null,
+  lastSavedContent: null,
   selectedMemberIndex: -1,
   selectedWorkgroupIndex: -1
 };
@@ -52,6 +53,45 @@ function setSaveMessage(message, isError = false) {
   if (!node) return;
   node.textContent = message;
   node.classList.toggle('error-copy', isError);
+  node.dataset.tone = isError ? 'error' : 'neutral';
+}
+
+function cloneContent(content) {
+  return JSON.parse(JSON.stringify(content));
+}
+
+function hasUnsavedChanges() {
+  if (!teamAdminState.content || !teamAdminState.lastSavedContent) {
+    return false;
+  }
+
+  return JSON.stringify(teamAdminState.content) !== JSON.stringify(teamAdminState.lastSavedContent);
+}
+
+function updateDirtyState() {
+  const saveButton = $('saveContentButton');
+  const resetButton = $('resetContentButton');
+  const isDirty = hasUnsavedChanges();
+
+  if (saveButton) {
+    saveButton.disabled = !isDirty;
+  }
+
+  if (resetButton) {
+    resetButton.disabled = !isDirty;
+  }
+
+  if (!teamAdminState.content) {
+    setSaveMessage('');
+    return;
+  }
+
+  if (isDirty) {
+    setSaveMessage('Hay cambios sin guardar.', false);
+    $('saveMessage').dataset.tone = 'warning';
+  } else {
+    setSaveMessage('Sin cambios pendientes.');
+  }
 }
 
 function setAuthStatus(text, tone = 'neutral') {
@@ -202,6 +242,7 @@ function syncAboutEditor() {
   teamAdminState.content.about.description = $('aboutDescription').value;
   teamAdminState.content.workgroup.title = $('workgroupTitleInput').value;
   teamAdminState.content.workgroup.description = $('workgroupDescriptionInput').value;
+  updateDirtyState();
 }
 
 function syncMemberEditor() {
@@ -230,6 +271,7 @@ function syncMemberEditor() {
   member.id = member.id || member.slug;
   renderMemberList();
   fillMemberEditor();
+  updateDirtyState();
 }
 
 function syncWorkgroupEditor() {
@@ -243,6 +285,7 @@ function syncWorkgroupEditor() {
   member.description = $('workgroupDescriptionField').value;
   renderWorkgroupList();
   fillWorkgroupEditor();
+  updateDirtyState();
 }
 
 async function uploadImage(file) {
@@ -277,7 +320,9 @@ async function handleMemberImageUpload(event) {
       fillMemberEditor();
       renderMemberList();
     }
-    setSaveMessage('Imagen subida correctamente.');
+    updateDirtyState();
+    setSaveMessage('Imagen subida correctamente. Falta guardar los cambios.');
+    $('saveMessage').dataset.tone = 'warning';
   } catch (error) {
     setSaveMessage(error.message, true);
   } finally {
@@ -297,7 +342,9 @@ async function handleWorkgroupImageUpload(event) {
       fillWorkgroupEditor();
       renderWorkgroupList();
     }
-    setSaveMessage('Imagen subida correctamente.');
+    updateDirtyState();
+    setSaveMessage('Imagen subida correctamente. Falta guardar los cambios.');
+    $('saveMessage').dataset.tone = 'warning';
   } catch (error) {
     setSaveMessage(error.message, true);
   } finally {
@@ -326,9 +373,9 @@ async function saveContent() {
       throw new Error(data.error || 'No se pudo guardar el contenido.');
     }
 
-    teamAdminState.content = data;
-    renderAllEditors();
-    setSaveMessage('Cambios guardados correctamente.');
+    await loadContent();
+    setSaveMessage('Cambios guardados correctamente y recargados desde el servidor.');
+    updateDirtyState();
   } catch (error) {
     setSaveMessage(error.message, true);
   }
@@ -349,9 +396,25 @@ async function loadContent() {
   }
 
   teamAdminState.content = await response.json();
+  teamAdminState.lastSavedContent = cloneContent(teamAdminState.content);
   teamAdminState.selectedMemberIndex = teamAdminState.content.members.length ? 0 : -1;
   teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length ? 0 : -1;
   renderAllEditors();
+  updateDirtyState();
+}
+
+async function resetContent() {
+  if (hasUnsavedChanges() && !window.confirm('Se perderan los cambios no guardados. Quieres restablecer el contenido?')) {
+    return;
+  }
+
+  try {
+    setSaveMessage('Restableciendo contenido guardado...');
+    await loadContent();
+    setSaveMessage('Cambios locales descartados. Se restauro la ultima version guardada.');
+  } catch (error) {
+    setSaveMessage(error.message, true);
+  }
 }
 
 function enableWorkspace() {
@@ -498,31 +561,42 @@ function bindInputs() {
     .forEach(id => $(id).addEventListener('input', syncWorkgroupEditor));
 
   $('saveContentButton').addEventListener('click', saveContent);
+  $('resetContentButton').addEventListener('click', resetContent);
 
   $('addMemberButton').addEventListener('click', () => {
     teamAdminState.content.members.push(defaultMember());
     teamAdminState.selectedMemberIndex = teamAdminState.content.members.length - 1;
     renderAllEditors();
+    updateDirtyState();
   });
 
   $('removeMemberButton').addEventListener('click', () => {
     if (teamAdminState.selectedMemberIndex < 0) return;
+    const currentMember = teamAdminState.content.members[teamAdminState.selectedMemberIndex];
+    const confirmed = window.confirm(`Vas a eliminar a ${currentMember?.name || 'este integrante'}. Esta accion se guardara cuando pulses Guardar cambios. Deseas continuar?`);
+    if (!confirmed) return;
     teamAdminState.content.members.splice(teamAdminState.selectedMemberIndex, 1);
     teamAdminState.selectedMemberIndex = teamAdminState.content.members.length ? 0 : -1;
     renderAllEditors();
+    updateDirtyState();
   });
 
   $('addWorkgroupButton').addEventListener('click', () => {
     teamAdminState.content.workgroup.members.push(defaultWorkgroupMember());
     teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length - 1;
     renderAllEditors();
+    updateDirtyState();
   });
 
   $('removeWorkgroupButton').addEventListener('click', () => {
     if (teamAdminState.selectedWorkgroupIndex < 0) return;
+    const currentMember = teamAdminState.content.workgroup.members[teamAdminState.selectedWorkgroupIndex];
+    const confirmed = window.confirm(`Vas a eliminar a ${currentMember?.name || 'este miembro del grupo'}. Esta accion se guardara cuando pulses Guardar cambios. Deseas continuar?`);
+    if (!confirmed) return;
     teamAdminState.content.workgroup.members.splice(teamAdminState.selectedWorkgroupIndex, 1);
     teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length ? 0 : -1;
     renderAllEditors();
+    updateDirtyState();
   });
 
   $('memberImageUpload').addEventListener('change', handleMemberImageUpload);
@@ -537,6 +611,12 @@ function bindInputs() {
   });
 
   $('passwordLoginForm').addEventListener('submit', handlePasswordLogin);
+
+  window.addEventListener('beforeunload', event => {
+    if (!hasUnsavedChanges()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 }
 
 bindInputs();
