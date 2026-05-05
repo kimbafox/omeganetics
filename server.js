@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const bcrypt = require("bcrypt");
+const { Pool } = require("pg");
 
 const app = express();
 
@@ -55,15 +56,6 @@ const uploadStorage = multer.diskStorage({
 });
 
 const uploadTeamImage = multer({ storage: uploadStorage });
-
-function readTeamContent() {
-  const raw = fs.readFileSync(teamDataFile, "utf8");
-  return JSON.parse(raw);
-}
-
-function writeTeamContent(content) {
-  fs.writeFileSync(teamDataFile, JSON.stringify(content, null, 2));
-}
 
 function normalizeSlug(value) {
   return String(value || "")
@@ -154,8 +146,9 @@ function sanitizeTeamContent(content) {
   };
 }
 
-function getPublicTeamContent() {
-  return sanitizeTeamContent(readTeamContent());
+async function getPublicTeamContent() {
+  const content = await readTeamContent();
+  return sanitizeTeamContent(content);
 }
 
 async function verifyGoogleToken(idToken) {
@@ -249,6 +242,9 @@ app.use(express.static(__dirname));
 
 let tienditaEnabled = false;
 let initDatabase = async () => {};
+let teamPool = null;
+let teamStorageMode = "file";
+const TEAM_CONTENT_KEY = "main";
 
 function resolveDatabaseUrl() {
   const directCandidates = [
@@ -317,6 +313,91 @@ const resolvedDatabaseUrl = resolveDatabaseUrl();
 
 if (resolvedDatabaseUrl) {
   process.env.DATABASE_URL = resolvedDatabaseUrl;
+
+  teamPool = new Pool({
+    connectionString: resolvedDatabaseUrl,
+    ssl: resolvedDatabaseUrl.includes("railway")
+      ? { rejectUnauthorized: false }
+      : false
+  });
+  teamStorageMode = "database";
+}
+
+function readTeamContentFromFile() {
+  const raw = fs.readFileSync(teamDataFile, "utf8");
+  return JSON.parse(raw);
+}
+
+function writeTeamContentToFile(content) {
+  fs.writeFileSync(teamDataFile, JSON.stringify(content, null, 2));
+}
+
+async function initTeamStorage() {
+  if (!teamPool) {
+    return;
+  }
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_content (
+      content_key TEXT PRIMARY KEY,
+      payload JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  const existing = await teamPool.query(
+    "SELECT payload FROM team_content WHERE content_key = $1 LIMIT 1",
+    [TEAM_CONTENT_KEY]
+  );
+
+  if (!existing.rows.length) {
+    const fileContent = sanitizeTeamContent(readTeamContentFromFile());
+    await teamPool.query(
+      `
+        INSERT INTO team_content (content_key, payload, updated_at)
+        VALUES ($1, $2::jsonb, NOW())
+      `,
+      [TEAM_CONTENT_KEY, JSON.stringify(fileContent)]
+    );
+  }
+}
+
+async function readTeamContent() {
+  if (!teamPool) {
+    return readTeamContentFromFile();
+  }
+
+  const result = await teamPool.query(
+    "SELECT payload FROM team_content WHERE content_key = $1 LIMIT 1",
+    [TEAM_CONTENT_KEY]
+  );
+
+  if (!result.rows.length) {
+    const fallbackContent = sanitizeTeamContent(readTeamContentFromFile());
+    await writeTeamContent(fallbackContent);
+    return fallbackContent;
+  }
+
+  return result.rows[0].payload;
+}
+
+async function writeTeamContent(content) {
+  if (!teamPool) {
+    writeTeamContentToFile(content);
+    return;
+  }
+
+  await teamPool.query(
+    `
+      INSERT INTO team_content (content_key, payload, updated_at)
+      VALUES ($1, $2::jsonb, NOW())
+      ON CONFLICT (content_key)
+      DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()
+    `,
+    [TEAM_CONTENT_KEY, JSON.stringify(content)]
+  );
+
+  writeTeamContentToFile(content);
 }
 
 app.get("/api/team/auth-config", (req, res) => {
@@ -383,42 +464,55 @@ app.post("/api/team/login/password", async (req, res) => {
   }
 });
 
-app.get("/api/team/content", (req, res) => {
-  res.json(getPublicTeamContent());
-});
-
-app.get("/api/team/members/:slug", (req, res) => {
-  const content = getPublicTeamContent();
-  const member = content.members.find(item => item.slug === normalizeSlug(req.params.slug));
-
-  if (!member) {
-    return res.status(404).json({ error: "Integrante no encontrado." });
+app.get("/api/team/content", async (req, res) => {
+  try {
+    const content = await getPublicTeamContent();
+    res.json(content);
+  } catch (error) {
+    res.status(500).json({ error: "No se pudo cargar el contenido del equipo." });
   }
-
-  return res.json(member);
 });
 
-app.put("/api/team/content", requireTeamAdmin, (req, res) => {
+app.get("/api/team/members/:slug", async (req, res) => {
+  try {
+    const content = await getPublicTeamContent();
+    const member = content.members.find(item => item.slug === normalizeSlug(req.params.slug));
+
+    if (!member) {
+      return res.status(404).json({ error: "Integrante no encontrado." });
+    }
+
+    return res.json(member);
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo cargar el integrante." });
+  }
+});
+
+app.put("/api/team/content", requireTeamAdmin, async (req, res) => {
   const content = sanitizeTeamContent(req.body);
 
-  if (!content.about.title || !content.about.description) {
-    return res.status(400).json({ error: "La seccion principal de quienes somos requiere titulo y descripcion." });
+  try {
+    if (!content.about.title || !content.about.description) {
+      return res.status(400).json({ error: "La seccion principal de quienes somos requiere titulo y descripcion." });
+    }
+
+    if (!content.members.length) {
+      return res.status(400).json({ error: "Debes mantener al menos un integrante." });
+    }
+
+    const duplicateSlug = content.members.find((member, index) => {
+      return content.members.findIndex(item => item.slug === member.slug) !== index;
+    });
+
+    if (duplicateSlug) {
+      return res.status(400).json({ error: `El slug ${duplicateSlug.slug} esta repetido.` });
+    }
+
+    await writeTeamContent(content);
+    return res.json(content);
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo guardar el contenido del equipo." });
   }
-
-  if (!content.members.length) {
-    return res.status(400).json({ error: "Debes mantener al menos un integrante." });
-  }
-
-  const duplicateSlug = content.members.find((member, index) => {
-    return content.members.findIndex(item => item.slug === member.slug) !== index;
-  });
-
-  if (duplicateSlug) {
-    return res.status(400).json({ error: `El slug ${duplicateSlug.slug} esta repetido.` });
-  }
-
-  writeTeamContent(content);
-  return res.json(content);
 });
 
 app.post("/api/team/upload", requireTeamAdmin, uploadTeamImage.single("image"), (req, res) => {
@@ -481,9 +575,10 @@ app.get("/wiki", (req, res) => {
 // iniciar servidor
 async function start() {
   try {
+    await initTeamStorage();
     await initDatabase();
     app.listen(PORT, "0.0.0.0", () => {
-      console.log("Servidor corriendo en puerto", PORT);
+      console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
   } catch (error) {
     console.error("Error iniciando servidor:", error.message);
