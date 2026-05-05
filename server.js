@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const fs = require("fs");
@@ -125,22 +126,83 @@ function sanitizeWorkgroupEntry(entry, fallbackIndex = 0) {
   };
 }
 
-function sanitizeTeamContent(content) {
-  const about = content?.about || {};
-  const workgroup = content?.workgroup || {};
+function createDefaultMemberWorkgroup(member, index = 0) {
+  const memberName = normalizeText(member?.name) || `Integrante ${index + 1}`;
+  const memberRole = normalizeText(member?.role) || normalizeText(member?.tier) || "Lider";
+
+  return {
+    title: `Equipo de ${memberName}`,
+    description: `${memberName} lidera este equipo de trabajo dentro de Omeganetics.`,
+    members: [
+      sanitizeWorkgroupEntry({
+        id: `${normalizeSlug(member?.slug || memberName)}-staff-1`,
+        name: `${memberName} Support`,
+        role: `Apoyo de ${memberRole}`,
+        image: normalizeText(member?.image) || "assets/logo.png",
+        description: `Soporte operativo asignado al equipo de ${memberName}.`,
+        location: member?.location || {}
+      }, 0)
+    ]
+  };
+}
+
+function shouldSeedDefaultMemberWorkgroup(member) {
+  const slug = normalizeSlug(member?.slug || member?.name);
+  return slug === "emperador-kimba" || slug === "sebillas" || slug === "anxpo";
+}
+
+function upgradeLegacyMemberWorkgroups(content) {
   const members = Array.isArray(content?.members) ? content.members : [];
-  const crew = Array.isArray(workgroup?.members) ? workgroup.members : [];
+
+  return {
+    ...content,
+    members: members.map((member, index) => {
+      const sanitizedWorkgroup = sanitizeMemberWorkgroup(member?.workgroup);
+      const hasOwnWorkgroup = sanitizedWorkgroup.title || sanitizedWorkgroup.description || sanitizedWorkgroup.members.length;
+
+      if (hasOwnWorkgroup || !shouldSeedDefaultMemberWorkgroup(member)) {
+        return {
+          ...member,
+          workgroup: sanitizedWorkgroup
+        };
+      }
+
+      return {
+        ...member,
+        workgroup: createDefaultMemberWorkgroup(member, index)
+      };
+    })
+  };
+}
+
+function sanitizeMemberWorkgroup(workgroup) {
+  const members = Array.isArray(workgroup?.members) ? workgroup.members : [];
+
+  return {
+    title: normalizeText(workgroup?.title),
+    description: normalizeText(workgroup?.description),
+    members: members.map((entry, index) => sanitizeWorkgroupEntry(entry, index))
+  };
+}
+
+function sanitizeTeamContent(content) {
+  const upgradedContent = upgradeLegacyMemberWorkgroups(content || {});
+  const members = Array.isArray(upgradedContent?.members) ? upgradedContent.members : [];
+  const crew = Array.isArray(upgradedContent?.workgroup?.members) ? upgradedContent.workgroup.members : [];
 
   return {
     about: {
-      eyebrow: normalizeText(about.eyebrow),
-      title: normalizeText(about.title),
-      description: normalizeText(about.description)
+      eyebrow: normalizeText(upgradedContent?.about?.eyebrow),
+      title: normalizeText(upgradedContent?.about?.title),
+      description: normalizeText(upgradedContent?.about?.description)
     },
-    members: members.map((member, index) => sanitizeMember(member, index)),
+    members: members.map((member, index) => ({
+      ...sanitizeMember(member, index),
+      workgroup: sanitizeMemberWorkgroup(member?.workgroup)
+    })),
     workgroup: {
-      title: normalizeText(workgroup.title),
-      description: normalizeText(workgroup.description),
+      title: normalizeText(upgradedContent?.workgroup?.title),
+      description: normalizeText(upgradedContent?.workgroup?.description),
       members: crew.map((entry, index) => sanitizeWorkgroupEntry(entry, index))
     }
   };
@@ -244,7 +306,8 @@ let tienditaEnabled = false;
 let initDatabase = async () => {};
 let teamPool = null;
 let teamStorageMode = "file";
-const TEAM_CONTENT_KEY = "main";
+const LEGACY_TEAM_CONTENT_KEY = "main";
+const TEAM_SCOPE_KEY = "main";
 
 function resolveDatabaseUrl() {
   const directCandidates = [
@@ -332,34 +395,564 @@ function writeTeamContentToFile(content) {
   fs.writeFileSync(teamDataFile, JSON.stringify(content, null, 2));
 }
 
+async function createTeamSchema() {
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_about (
+      scope_key TEXT PRIMARY KEY,
+      eyebrow TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_members (
+      id TEXT PRIMARY KEY,
+      slug TEXT NOT NULL UNIQUE,
+      name TEXT NOT NULL DEFAULT '',
+      full_name TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT '',
+      tier TEXT NOT NULL DEFAULT '',
+      badge TEXT NOT NULL DEFAULT '',
+      image TEXT NOT NULL DEFAULT '',
+      short_bio TEXT NOT NULL DEFAULT '',
+      summary TEXT NOT NULL DEFAULT '',
+      life_story TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      featured BOOLEAN NOT NULL DEFAULT FALSE,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_member_contacts (
+      member_id TEXT PRIMARY KEY REFERENCES team_members(id) ON DELETE CASCADE,
+      email TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      instagram TEXT NOT NULL DEFAULT '',
+      tiktok TEXT NOT NULL DEFAULT '',
+      discord TEXT NOT NULL DEFAULT '',
+      website TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_member_specialties (
+      id BIGSERIAL PRIMARY KEY,
+      member_id TEXT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      specialty TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_workgroup (
+      scope_key TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_workgroup_members (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT '',
+      image TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_member_workgroups (
+      owner_member_id TEXT PRIMARY KEY REFERENCES team_members(id) ON DELETE CASCADE,
+      title TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query(`
+    CREATE TABLE IF NOT EXISTS team_member_workgroup_members (
+      id TEXT PRIMARY KEY,
+      owner_member_id TEXT NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      name TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT '',
+      image TEXT NOT NULL DEFAULT '',
+      description TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      city TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await teamPool.query("CREATE INDEX IF NOT EXISTS idx_team_members_sort_order ON team_members(sort_order)");
+  await teamPool.query("CREATE INDEX IF NOT EXISTS idx_team_workgroup_members_sort_order ON team_workgroup_members(sort_order)");
+  await teamPool.query("CREATE INDEX IF NOT EXISTS idx_team_member_specialties_member_order ON team_member_specialties(member_id, sort_order)");
+  await teamPool.query("CREATE INDEX IF NOT EXISTS idx_team_member_workgroup_members_owner_order ON team_member_workgroup_members(owner_member_id, sort_order)");
+}
+
+async function readLegacyTeamContentFromDatabase() {
+  const tableCheck = await teamPool.query("SELECT to_regclass('public.team_content') AS table_name");
+  if (!tableCheck.rows[0]?.table_name) {
+    return null;
+  }
+
+  const result = await teamPool.query(
+    "SELECT payload FROM team_content WHERE content_key = $1 LIMIT 1",
+    [LEGACY_TEAM_CONTENT_KEY]
+  );
+
+  if (!result.rows.length) {
+    return null;
+  }
+
+  return sanitizeTeamContent(result.rows[0].payload);
+}
+
+async function writeTeamContentToDatabase(content) {
+  const client = await teamPool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    await client.query(
+      `
+        INSERT INTO team_about (scope_key, eyebrow, title, description, updated_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (scope_key)
+        DO UPDATE SET eyebrow = EXCLUDED.eyebrow, title = EXCLUDED.title, description = EXCLUDED.description, updated_at = NOW()
+      `,
+      [TEAM_SCOPE_KEY, content.about.eyebrow, content.about.title, content.about.description]
+    );
+
+    await client.query(
+      `
+        INSERT INTO team_workgroup (scope_key, title, description, updated_at)
+        VALUES ($1, $2, $3, NOW())
+        ON CONFLICT (scope_key)
+        DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, updated_at = NOW()
+      `,
+      [TEAM_SCOPE_KEY, content.workgroup.title, content.workgroup.description]
+    );
+
+    await client.query("DELETE FROM team_member_specialties");
+    await client.query("DELETE FROM team_member_contacts");
+    await client.query("DELETE FROM team_members");
+
+    for (const [index, member] of content.members.entries()) {
+      await client.query(
+        `
+          INSERT INTO team_members (
+            id, slug, name, full_name, role, tier, badge, image, short_bio, summary,
+            life_story, country, city, featured, sort_order, updated_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+        `,
+        [
+          member.id,
+          member.slug,
+          member.name,
+          member.fullName,
+          member.role,
+          member.tier,
+          member.badge,
+          member.image,
+          member.shortBio,
+          member.summary,
+          member.lifeStory,
+          member.location.country,
+          member.location.city,
+          member.featured,
+          index
+        ]
+      );
+
+      await client.query(
+        `
+          INSERT INTO team_member_contacts (
+            member_id, email, phone, instagram, tiktok, discord, website, updated_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+        `,
+        [
+          member.id,
+          member.contacts.email,
+          member.contacts.phone,
+          member.contacts.instagram,
+          member.contacts.tiktok,
+          member.contacts.discord,
+          member.contacts.website
+        ]
+      );
+
+      for (const [specialtyIndex, specialty] of member.specialties.entries()) {
+        await client.query(
+          `
+            INSERT INTO team_member_specialties (member_id, specialty, sort_order)
+            VALUES ($1, $2, $3)
+          `,
+          [member.id, specialty, specialtyIndex]
+        );
+      }
+    }
+
+    await client.query("DELETE FROM team_member_workgroup_members");
+    await client.query("DELETE FROM team_member_workgroups");
+    await client.query("DELETE FROM team_workgroup_members");
+
+    for (const [index, member] of content.workgroup.members.entries()) {
+      await client.query(
+        `
+          INSERT INTO team_workgroup_members (
+            id, name, role, image, description, country, city, sort_order, updated_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+        `,
+        [
+          member.id,
+          member.name,
+          member.role,
+          member.image,
+          member.description,
+          member.location.country,
+          member.location.city,
+          index
+        ]
+      );
+    }
+
+    for (const member of content.members) {
+      const workgroup = sanitizeMemberWorkgroup(member.workgroup);
+
+      await client.query(
+        `
+          INSERT INTO team_member_workgroups (owner_member_id, title, description, updated_at)
+          VALUES ($1, $2, $3, NOW())
+        `,
+        [member.id, workgroup.title, workgroup.description]
+      );
+
+      for (const [index, entry] of workgroup.members.entries()) {
+        await client.query(
+          `
+            INSERT INTO team_member_workgroup_members (
+              id, owner_member_id, name, role, image, description, country, city, sort_order, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+          `,
+          [
+            entry.id,
+            member.id,
+            entry.name,
+            entry.role,
+            entry.image,
+            entry.description,
+            entry.location.country,
+            entry.location.city,
+            index
+          ]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function readTeamContentFromDatabase() {
+  const aboutResult = await teamPool.query(
+    "SELECT eyebrow, title, description FROM team_about WHERE scope_key = $1 LIMIT 1",
+    [TEAM_SCOPE_KEY]
+  );
+
+  const workgroupResult = await teamPool.query(
+    "SELECT title, description FROM team_workgroup WHERE scope_key = $1 LIMIT 1",
+    [TEAM_SCOPE_KEY]
+  );
+
+  const membersResult = await teamPool.query(
+    `
+      SELECT
+        m.id,
+        m.slug,
+        m.name,
+        m.full_name,
+        m.role,
+        m.tier,
+        m.badge,
+        m.image,
+        m.short_bio,
+        m.summary,
+        m.life_story,
+        m.country,
+        m.city,
+        m.featured,
+        m.sort_order,
+        c.email,
+        c.phone,
+        c.instagram,
+        c.tiktok,
+        c.discord,
+        c.website
+      FROM team_members m
+      LEFT JOIN team_member_contacts c ON c.member_id = m.id
+      ORDER BY m.sort_order ASC, m.name ASC
+    `
+  );
+
+  const specialtiesResult = await teamPool.query(
+    `
+      SELECT member_id, specialty
+      FROM team_member_specialties
+      ORDER BY member_id ASC, sort_order ASC, id ASC
+    `
+  );
+
+  const workgroupMembersResult = await teamPool.query(
+    `
+      SELECT id, name, role, image, description, country, city
+      FROM team_workgroup_members
+      ORDER BY sort_order ASC, name ASC
+    `
+  );
+
+  const memberWorkgroupsResult = await teamPool.query(
+    `
+      SELECT owner_member_id, title, description
+      FROM team_member_workgroups
+      ORDER BY owner_member_id ASC
+    `
+  );
+
+  const memberWorkgroupMembersResult = await teamPool.query(
+    `
+      SELECT owner_member_id, id, name, role, image, description, country, city
+      FROM team_member_workgroup_members
+      ORDER BY owner_member_id ASC, sort_order ASC, name ASC
+    `
+  );
+
+  const specialtyMap = new Map();
+  for (const row of specialtiesResult.rows) {
+    const list = specialtyMap.get(row.member_id) || [];
+    list.push(normalizeText(row.specialty));
+    specialtyMap.set(row.member_id, list);
+  }
+
+  const memberWorkgroupMap = new Map();
+  for (const row of memberWorkgroupsResult.rows) {
+    memberWorkgroupMap.set(row.owner_member_id, {
+      title: normalizeText(row.title),
+      description: normalizeText(row.description),
+      members: []
+    });
+  }
+
+  for (const row of memberWorkgroupMembersResult.rows) {
+    const workgroup = memberWorkgroupMap.get(row.owner_member_id) || {
+      title: '',
+      description: '',
+      members: []
+    };
+
+    workgroup.members.push({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      image: row.image,
+      description: row.description,
+      location: {
+        country: row.country,
+        city: row.city
+      }
+    });
+
+    memberWorkgroupMap.set(row.owner_member_id, workgroup);
+  }
+
+  return sanitizeTeamContent({
+    about: aboutResult.rows[0] || {},
+    members: membersResult.rows.map(row => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      fullName: row.full_name,
+      role: row.role,
+      tier: row.tier,
+      badge: row.badge,
+      image: row.image,
+      shortBio: row.short_bio,
+      summary: row.summary,
+      lifeStory: row.life_story,
+      specialties: specialtyMap.get(row.id) || [],
+      location: {
+        country: row.country,
+        city: row.city
+      },
+      contacts: {
+        email: row.email,
+        phone: row.phone,
+        instagram: row.instagram,
+        tiktok: row.tiktok,
+        discord: row.discord,
+        website: row.website
+      },
+      featured: row.featured,
+      workgroup: memberWorkgroupMap.get(row.id) || { title: '', description: '', members: [] }
+    })),
+    workgroup: {
+      ...(workgroupResult.rows[0] || {}),
+      members: workgroupMembersResult.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        image: row.image,
+        description: row.description,
+        location: {
+          country: row.country,
+          city: row.city
+        }
+      }))
+    }
+  });
+}
+
+async function backfillMemberWorkgroups() {
+  const result = await teamPool.query(
+    `
+      SELECT
+        m.id,
+        m.slug,
+        m.name,
+        m.role,
+        m.tier,
+        m.image,
+        m.country,
+        m.city,
+        mw.owner_member_id
+      FROM team_members m
+      LEFT JOIN team_member_workgroups mw ON mw.owner_member_id = m.id
+      ORDER BY m.sort_order ASC, m.name ASC
+    `
+  );
+
+  const membersToSeed = result.rows
+    .filter(row => !row.owner_member_id && shouldSeedDefaultMemberWorkgroup(row))
+    .map((row, index) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      role: row.role,
+      tier: row.tier,
+      image: row.image,
+      location: {
+        country: row.country,
+        city: row.city
+      },
+      sortIndex: index
+    }));
+
+  if (!membersToSeed.length) {
+    return;
+  }
+
+  const client = await teamPool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    for (const member of membersToSeed) {
+      const workgroup = createDefaultMemberWorkgroup(member, member.sortIndex);
+
+      await client.query(
+        `
+          INSERT INTO team_member_workgroups (owner_member_id, title, description, updated_at)
+          VALUES ($1, $2, $3, NOW())
+          ON CONFLICT (owner_member_id)
+          DO NOTHING
+        `,
+        [member.id, workgroup.title, workgroup.description]
+      );
+
+      for (const [index, entry] of workgroup.members.entries()) {
+        await client.query(
+          `
+            INSERT INTO team_member_workgroup_members (
+              id, owner_member_id, name, role, image, description, country, city, sort_order, updated_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+            ON CONFLICT (id)
+            DO NOTHING
+          `,
+          [
+            entry.id,
+            member.id,
+            entry.name,
+            entry.role,
+            entry.image,
+            entry.description,
+            entry.location.country,
+            entry.location.city,
+            index
+          ]
+        );
+      }
+    }
+
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function initTeamStorage() {
   if (!teamPool) {
     return;
   }
 
-  await teamPool.query(`
-    CREATE TABLE IF NOT EXISTS team_content (
-      content_key TEXT PRIMARY KEY,
-      payload JSONB NOT NULL,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-  `);
+  await createTeamSchema();
 
-  const existing = await teamPool.query(
-    "SELECT payload FROM team_content WHERE content_key = $1 LIMIT 1",
-    [TEAM_CONTENT_KEY]
+  const status = await teamPool.query(
+    `
+      SELECT
+        EXISTS (SELECT 1 FROM team_about WHERE scope_key = $1) AS has_about,
+        EXISTS (SELECT 1 FROM team_members) AS has_members,
+        EXISTS (SELECT 1 FROM team_workgroup WHERE scope_key = $1) AS has_workgroup,
+        EXISTS (SELECT 1 FROM team_workgroup_members) AS has_workgroup_members
+    `,
+    [TEAM_SCOPE_KEY]
   );
 
-  if (!existing.rows.length) {
-    const fileContent = sanitizeTeamContent(readTeamContentFromFile());
-    await teamPool.query(
-      `
-        INSERT INTO team_content (content_key, payload, updated_at)
-        VALUES ($1, $2::jsonb, NOW())
-      `,
-      [TEAM_CONTENT_KEY, JSON.stringify(fileContent)]
-    );
+  const currentStatus = status.rows[0] || {};
+  const hasStructuredData = currentStatus.has_about || currentStatus.has_members || currentStatus.has_workgroup || currentStatus.has_workgroup_members;
+
+  if (!hasStructuredData) {
+    const legacyContent = await readLegacyTeamContentFromDatabase();
+    const seedContent = legacyContent || sanitizeTeamContent(readTeamContentFromFile());
+    await writeTeamContentToDatabase(seedContent);
+    return;
   }
+
+  await backfillMemberWorkgroups();
 }
 
 async function readTeamContent() {
@@ -367,18 +960,7 @@ async function readTeamContent() {
     return readTeamContentFromFile();
   }
 
-  const result = await teamPool.query(
-    "SELECT payload FROM team_content WHERE content_key = $1 LIMIT 1",
-    [TEAM_CONTENT_KEY]
-  );
-
-  if (!result.rows.length) {
-    const fallbackContent = sanitizeTeamContent(readTeamContentFromFile());
-    await writeTeamContent(fallbackContent);
-    return fallbackContent;
-  }
-
-  return result.rows[0].payload;
+  return readTeamContentFromDatabase();
 }
 
 async function writeTeamContent(content) {
@@ -387,24 +969,16 @@ async function writeTeamContent(content) {
     return;
   }
 
-  await teamPool.query(
-    `
-      INSERT INTO team_content (content_key, payload, updated_at)
-      VALUES ($1, $2::jsonb, NOW())
-      ON CONFLICT (content_key)
-      DO UPDATE SET payload = EXCLUDED.payload, updated_at = NOW()
-    `,
-    [TEAM_CONTENT_KEY, JSON.stringify(content)]
-  );
-
-  writeTeamContentToFile(content);
+  await writeTeamContentToDatabase(content);
 }
 
 app.get("/api/team/auth-config", (req, res) => {
   res.json({
     googleClientId: GOOGLE_CLIENT_ID,
     adminEmail: ADMIN_EMAIL,
-    passwordEnabled: Boolean(ADMIN_PASSWORD || ADMIN_PASSWORD_HASH)
+    passwordEnabled: Boolean(ADMIN_PASSWORD || ADMIN_PASSWORD_HASH),
+    databaseConfigured: Boolean(teamPool),
+    storageMode: teamStorageMode
   });
 });
 
@@ -492,6 +1066,10 @@ app.put("/api/team/content", requireTeamAdmin, async (req, res) => {
   const content = sanitizeTeamContent(req.body);
 
   try {
+    if (!teamPool) {
+      return res.status(503).json({ error: "La base de datos de team no esta configurada. Define DATABASE_URL antes de guardar." });
+    }
+
     if (!content.about.title || !content.about.description) {
       return res.status(400).json({ error: "La seccion principal de quienes somos requiere titulo y descripcion." });
     }
@@ -586,4 +1164,12 @@ async function start() {
   }
 }
 
-start();
+if (require.main === module) {
+  start();
+}
+
+module.exports = {
+  app,
+  start,
+  initTeamStorage
+};

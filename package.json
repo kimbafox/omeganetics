@@ -2,7 +2,8 @@
   "name": "omeganetics",
   "version": "1.0.0",
   "scripts": {
-    "start": "node server.js"
+    "start": "node scripts/migrate-team-schema.js && node server.js",
+    "migrate:team": "node scripts/migrate-team-schema.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
