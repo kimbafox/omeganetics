@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anxpo | Omeganetics</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-member-slug="anxpo">
+  <header class="header page-header">
+    <div class="logo-container">
+      <img src="assets/logo.png" class="logo" alt="Omeganetics">
+      <h1>Omeganetics</h1>
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="/index.html#quienes-somos">Volver</a></li>
+        <li><a href="/admin-equipo.html">Panel</a></li>
+        <li><a href="https://discord.gg/bCWjyns8U5" target="_blank">Discord</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="member-page">
+    <section id="memberHero" class="resume-hero skeleton-card"></section>
+
+    <section class="resume-layout">
+      <aside class="resume-sidebar">
+        <div class="resume-panel">
+          <span class="panel-label">Identidad</span>
+          <div id="memberFullName" class="meta-list"></div>
+        </div>
+
+        <div class="resume-panel">
+          <span class="panel-label">Datos clave</span>
+          <div id="memberMeta" class="meta-list"></div>
+        </div>
+
+        <div class="resume-panel">
+          <span class="panel-label">Contacto</span>
+          <div id="memberContacts" class="contact-list"></div>
+        </div>
+      </aside>
+
+      <section class="resume-main-column">
+        <article class="resume-panel resume-panel-featured">
+          <span class="panel-label">Resumen profesional</span>
+          <h2>Perfil ejecutivo</h2>
+          <div id="memberProfile" class="member-copy"></div>
+        </article>
+
+        <article class="resume-panel">
+          <span class="panel-label">Trayectoria</span>
+          <h2>Experiencia y enfoque</h2>
+          <div id="memberStory" class="member-copy"></div>
+        </article>
+
+        <article class="resume-panel">
+          <span class="panel-label">Competencias</span>
+          <h2>Habilidades destacadas</h2>
+          <div id="memberSpecialties" class="tag-list"></div>
+        </article>
+      </section>
+    </section>
+
+    <section class="member-workgroup-card resume-panel">
+      <div class="panel-heading compact">
+        <div>
+          <span class="panel-label">Equipo de trabajo</span>
+          <h3 id="memberWorkgroupTitle">Grupo de trabajo</h3>
+        </div>
+      </div>
+      <p id="memberWorkgroupDescription" class="workgroup-copy"></p>
+      <div id="memberWorkgroupGrid" class="workgroup-grid"></div>
+    </section>
+  </main>
+
+  <script src="js/integrante.js"></script>
+</body>
+</html>
