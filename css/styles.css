@@ -643,6 +643,185 @@ nav a:hover,
     max-width: 100%;
   }
 }
+
+@media (max-width: 600px) {
+  .header {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+
+  .logo-container {
+    gap: 8px;
+  }
+
+  .logo-container h1 {
+    font-size: 22px;
+  }
+
+  nav ul {
+    flex-wrap: wrap;
+    gap: 10px 14px;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .team-dropdown {
+    top: 108px;
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 126px);
+  }
+
+  .team-dropdown-inner {
+    padding: 18px;
+  }
+
+  .team-dropdown-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .team-dropdown-header h2 {
+    font-size: 24px;
+  }
+
+  .team-dropdown-copy {
+    margin: 10px 0 16px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .team-dropdown-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .team-dropdown-card {
+    padding: 18px 16px;
+    gap: 10px;
+  }
+
+  .team-dropdown-avatar-wrap {
+    width: 88px;
+    height: 88px;
+  }
+
+  .team-dropdown-card-copy h4 {
+    font-size: 20px;
+  }
+
+  .hero {
+    gap: 0;
+  }
+
+  .soldado-container {
+    min-height: 320px;
+    padding: 14px 14px 12px;
+    gap: 12px;
+  }
+
+  .soldado-visual {
+    min-height: 220px;
+  }
+
+  .servicios-floating {
+    gap: 10px;
+  }
+
+  .servicio-display {
+    padding: 14px 16px;
+  }
+
+  .servicio-label {
+    margin-bottom: 8px;
+    font-size: 10px;
+  }
+
+  .servicio-display-title {
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
+
+  .servicio-display-body {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .servicio-numeros {
+    gap: 8px;
+  }
+
+  .servicio-numero {
+    width: 46px;
+    height: 46px;
+    font-size: 13px;
+  }
+
+  .contenido-texto {
+    padding: 18px 16px 28px;
+  }
+
+  .hero-kicker {
+    margin-bottom: 12px;
+    padding: 7px 12px;
+    font-size: 10px;
+  }
+
+  .contenido-texto h2 {
+    font-size: 28px;
+    margin-bottom: 12px;
+    line-height: 1.08;
+  }
+
+  .hero-copy,
+  .contenido-texto p {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .btn {
+    margin-top: 18px;
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+
+  .eventos-section,
+  .desarrollo-section {
+    gap: 18px;
+    padding: 22px 16px;
+    margin-bottom: 20px;
+  }
+
+  .eventos-contenido h2,
+  .desarrollo-contenido h2 {
+    font-size: 24px;
+    margin-bottom: 14px;
+  }
+
+  .eventos-contenido p,
+  .desarrollo-contenido p {
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .eventos-imagen,
+  .desarrollo-imagen {
+    margin-top: 8px;
+  }
+
+  .eventos-imagen img,
+  .desarrollo-imagen img {
+    border-radius: 12px;
+  }
+
+  .modal-content {
+    padding: 20px 16px;
+  }
+
+  .principal {
+    padding: 18px;
+  }
+}
 /* MEJORAS MODAL */
 .modal-content h2 {
   text-align: center;
@@ -1133,8 +1312,15 @@ nav a:hover,
 
 .member-content-grid,
 .resume-layout {
+  display: grid;
   grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
   margin-top: 24px;
+}
+
+.resume-layout-profile {
+  grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+  align-items: start;
+  gap: 24px;
 }
 
 .resume-sidebar,
@@ -1142,6 +1328,15 @@ nav a:hover,
   display: grid;
   gap: 18px;
   align-self: start;
+}
+
+.resume-sidebar-profile {
+  position: sticky;
+  top: 104px;
+}
+
+.resume-main-column-profile {
+  grid-auto-rows: minmax(min-content, max-content);
 }
 
 .resume-panel,
@@ -1158,8 +1353,71 @@ nav a:hover,
     rgba(12, 12, 12, 0.88);
 }
 
+.resume-spotlight {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  background: #050505;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.resume-spotlight-media {
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: #000;
+}
+
+.resume-spotlight-copy {
+  display: grid;
+  gap: 14px;
+}
+
+.resume-spotlight-info,
+.resume-spotlight-contacts {
+  display: grid;
+  gap: 10px;
+}
+
+.resume-spotlight-row {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.resume-spotlight-row span {
+  color: #8f8f8f;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.resume-spotlight-row strong {
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.resume-spotlight-contact-block {
+  display: grid;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.resume-spotlight .meta-item {
+  gap: 3px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.resume-spotlight .btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
 .member-workgroup-card {
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .member-copy p {
@@ -1215,6 +1473,12 @@ nav a:hover,
   background: rgba(212, 175, 55, 0.08);
 }
 
+.workgroup-empty {
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.02);
+}
+
 .admin-page {
   display: grid;
   gap: 24px;
@@ -1241,6 +1505,13 @@ nav a:hover,
 
 .google-login-mount {
   min-height: 42px;
+}
+
+.password-login-form {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  margin-top: 18px;
 }
 
 .admin-toolbar {
@@ -1387,6 +1658,7 @@ nav a:hover,
   .team-dropdown-grid,
   .team-main-layout,
   .member-content-grid,
+  .resume-layout,
   .admin-grid,
   .workgroup-grid {
     grid-template-columns: 1fr;
@@ -1402,6 +1674,15 @@ nav a:hover,
   .member-hero-media,
   .resume-hero-media {
     min-height: 260px;
+  }
+
+  .resume-sidebar-profile {
+    position: static;
+    top: auto;
+  }
+
+  .resume-spotlight-media {
+    aspect-ratio: 4 / 3;
   }
 }
 
@@ -1449,6 +1730,8 @@ nav a:hover,
   .members-panel,
   .workgroup-panel,
   .member-workgroup-card,
+  .resume-panel,
+  .resume-spotlight,
   .member-story-card,
   .member-side-panel,
   .admin-card,
@@ -1456,5 +1739,9 @@ nav a:hover,
   .featured-member-card,
   .member-hero {
     padding: 22px;
+  }
+
+  .resume-spotlight-media {
+    aspect-ratio: 1 / 1;
   }
 }

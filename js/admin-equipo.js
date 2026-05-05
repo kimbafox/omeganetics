@@ -61,6 +61,12 @@ function setAuthStatus(text, tone = 'neutral') {
   node.dataset.tone = tone;
 }
 
+function togglePasswordLogin(visible) {
+  const form = $('passwordLoginForm');
+  if (!form) return;
+  form.classList.toggle('hidden', !visible);
+}
+
 function defaultMember() {
   return {
     id: `member-${Date.now()}`,
@@ -384,6 +390,41 @@ async function handleGoogleCredential(response) {
   }
 }
 
+async function handlePasswordLogin(event) {
+  event.preventDefault();
+
+  const email = $('adminEmailInput').value.trim();
+  const password = $('adminPasswordInput').value;
+
+  try {
+    setAuthStatus('Validando acceso por clave...', 'neutral');
+    setAuthMessage('');
+
+    const loginResponse = await fetch('/api/team/login/password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await loginResponse.json();
+    if (!loginResponse.ok) {
+      throw new Error(data.error || 'No fue posible iniciar sesion.');
+    }
+
+    localStorage.setItem('teamAdminToken', data.token);
+    teamAdminState.token = data.token;
+    $('adminPasswordInput').value = '';
+    setAuthStatus(`Sesion iniciada como ${data.email}`, 'success');
+    setAuthMessage('Acceso concedido al panel.');
+    enableWorkspace();
+    await loadContent();
+  } catch (error) {
+    disableWorkspace();
+    setAuthStatus('Acceso denegado', 'error');
+    setAuthMessage(error.message, true);
+  }
+}
+
 function initializeGoogleLogin() {
   const clientId = teamAdminState.authConfig?.googleClientId;
   if (!clientId) {
@@ -431,6 +472,8 @@ async function bootstrapAdmin() {
       setAuthStatus(`Acceso solo para ${teamAdminState.authConfig.adminEmail}`, 'neutral');
     }
 
+    $('adminEmailInput').value = teamAdminState.authConfig.adminEmail || '';
+    togglePasswordLogin(Boolean(teamAdminState.authConfig.passwordEnabled));
     initializeGoogleLogin();
   } catch (error) {
     disableWorkspace();
@@ -492,6 +535,8 @@ function bindInputs() {
     setAuthStatus('Sesion cerrada', 'neutral');
     setAuthMessage('Vuelve a iniciar sesion para editar.');
   });
+
+  $('passwordLoginForm').addEventListener('submit', handlePasswordLogin);
 }
 
 bindInputs();

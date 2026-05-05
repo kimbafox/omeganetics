@@ -1,5 +1,6 @@
 const homeState = {
-  content: null
+  content: null,
+  cardsRendered: false
 };
 
 function teamContactLink(url, label) {
@@ -38,7 +39,7 @@ function renderTeamCards(members) {
   grid.innerHTML = members.map(member => `
     <a href="${memberUrl(member)}" class="team-dropdown-card">
       <div class="team-dropdown-avatar-wrap">
-        <img src="${escapeTeamHtml(member.image)}" alt="${escapeTeamHtml(member.name)}" class="team-dropdown-avatar">
+        <img src="${escapeTeamHtml(member.image)}" alt="${escapeTeamHtml(member.name)}" class="team-dropdown-avatar" loading="lazy" decoding="async">
       </div>
       <div class="team-dropdown-card-copy">
         <span class="member-tier">${escapeTeamHtml(member.tier || 'Integrante')}</span>
@@ -47,6 +48,34 @@ function renderTeamCards(members) {
       </div>
     </a>
   `).join('');
+}
+
+function renderTeamCardsWhenNeeded() {
+  if (homeState.cardsRendered || !homeState.content?.members?.length) {
+    return;
+  }
+
+  renderTeamCards(homeState.content.members);
+  homeState.cardsRendered = true;
+}
+
+function wireTeamDropdownRendering() {
+  const teamToggle = document.getElementById('teamToggle');
+  const teamDropdown = document.getElementById('teamDropdown');
+
+  if (!teamToggle || !teamDropdown) {
+    return;
+  }
+
+  teamToggle.addEventListener('click', () => {
+    if (teamDropdown.classList.contains('open')) {
+      renderTeamCardsWhenNeeded();
+    }
+  });
+
+  if (teamDropdown.classList.contains('open')) {
+    renderTeamCardsWhenNeeded();
+  }
 }
 
 async function loadTeamHome() {
@@ -67,7 +96,10 @@ async function loadTeamHome() {
     if (teamTitle) teamTitle.textContent = about?.title || 'Equipo Omeganetics';
     if (teamDescription) teamDescription.textContent = about?.description || '';
 
-    renderTeamCards(members);
+    wireTeamDropdownRendering();
+    if (document.getElementById('teamDropdown')?.classList.contains('open')) {
+      renderTeamCardsWhenNeeded();
+    }
   } catch (error) {
     const teamTitle = document.getElementById('teamTitle');
     const teamDescription = document.getElementById('teamDescription');
