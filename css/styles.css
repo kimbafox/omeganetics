@@ -187,7 +187,7 @@ nav a:hover,
 .hero {
   display: flex;
   align-items: stretch;
-  min-height: 76vh;
+  min-height: 68vh;
   position: relative;
   background:
     radial-gradient(circle at 18% 42%, rgba(255, 255, 255, 0.04), transparent 28%),
@@ -221,8 +221,7 @@ nav a:hover,
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: 14px;
-  padding: 20px 20px 18px;
+  padding: 8px 20px 18px;
 
   /* 🔥 evita recalculos raros */
   contain: layout paint;
@@ -234,71 +233,105 @@ nav a:hover,
   min-height: 0;
 }
 
+.soldado-visual::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 26%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(5, 5, 5, 0) 0%, rgba(5, 5, 5, 0.28) 38%, rgba(5, 5, 5, 0.74) 72%, rgba(5, 5, 5, 1) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
 .servicios-floating {
-  position: relative;
-  z-index: 2;
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  width: min(520px, 100%);
-}
-
-.servicio-display {
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 0;
-  background: rgba(10, 10, 10, 0.92);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(8px);
+  width: min(520px, calc(100% - 56px));
 }
 
 .servicio-label {
   display: inline-block;
-  margin-bottom: 10px;
   color: var(--text-faint);
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
-.servicio-display-title {
-  margin-bottom: 8px;
-  font-size: 22px;
-  letter-spacing: -0.02em;
+.servicios-accordion {
+  display: grid;
+  grid-template-columns: repeat(3, max-content);
+  gap: 12px;
 }
 
-.servicio-display-body {
+.servicio-item {
+  position: relative;
+  background: transparent;
+  transition: transform 0.25s ease;
+}
+
+.servicio-item:hover,
+.servicio-item.active {
+  transform: translateY(-2px);
+}
+
+.servicio-icono {
+  width: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.servicio-icono-grafico {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0) 100%);
+  transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.servicio-icono-grafico svg {
+  width: 22px;
+  height: 22px;
+  color: #f4f4f4;
+}
+
+.servicio-item:hover .servicio-icono-grafico,
+.servicio-item.active .servicio-icono-grafico {
+  transform: scale(1.04);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08) 58%, rgba(255, 255, 255, 0) 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.servicio-panel {
+  margin-top: 10px;
+  padding: 12px 14px;
+  max-width: 220px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(7, 7, 7, 0.94);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(10px);
+}
+
+.servicio-panel p {
   color: var(--text-soft);
   font-size: 14px;
   line-height: 1.6;
-}
-
-.servicio-numeros {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.servicio-numero {
-  width: 56px;
-  height: 56px;
-  border: 1px solid var(--border);
-  border-radius: 0;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-faint);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: transform 0.25s ease, border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
-}
-
-.servicio-numero:hover,
-.servicio-numero.active {
-  color: #fff;
-  border-color: #111;
-  background: #111;
-  transform: translateY(-2px);
 }
 
 .soldado {
@@ -316,8 +349,8 @@ nav a:hover,
   will-change: transform;
 
   /* 🔥 DIFUMINADO REAL */
-  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 56%, rgba(0, 0, 0, 0.82) 68%, rgba(0, 0, 0, 0.38) 82%, transparent 100%);
-  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 56%, rgba(0, 0, 0, 0.82) 68%, rgba(0, 0, 0, 0.38) 82%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 54%, rgba(0, 0, 0, 0.96) 66%, rgba(0, 0, 0, 0.76) 78%, rgba(0, 0, 0, 0.34) 90%, transparent 100%);
+  mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 54%, rgba(0, 0, 0, 0.96) 66%, rgba(0, 0, 0, 0.76) 78%, rgba(0, 0, 0, 0.34) 90%, transparent 100%);
 }
 
 /* TEXTO */
@@ -326,7 +359,7 @@ nav a:hover,
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 36px 32px;
+  padding: 24px 32px 30px;
   position: relative;
   z-index: 1;
   background: linear-gradient(180deg, rgba(8, 8, 8, 0.78), rgba(8, 8, 8, 0.54));
@@ -569,16 +602,17 @@ nav a:hover,
   }
 
   .servicios-floating {
-    width: 100%;
+    top: 24px;
+    left: 20px;
+    width: min(460px, calc(100% - 40px));
   }
 
   .soldado-visual {
     min-height: 280px;
   }
 
-  .servicio-numeros {
-    width: 100%;
-    justify-content: space-between;
+  .servicios-accordion {
+    grid-template-columns: 1fr;
   }
 
   .soldado {
@@ -742,7 +776,6 @@ nav a:hover,
   .soldado-container {
     min-height: 320px;
     padding: 14px 14px 12px;
-    gap: 12px;
   }
 
   .soldado-visual {
@@ -750,36 +783,42 @@ nav a:hover,
   }
 
   .servicios-floating {
+    top: 14px;
+    left: 14px;
+    width: calc(100% - 28px);
     gap: 10px;
   }
 
-  .servicio-display {
-    padding: 14px 16px;
-  }
-
   .servicio-label {
-    margin-bottom: 8px;
     font-size: 10px;
   }
 
-  .servicio-display-title {
-    margin-bottom: 6px;
-    font-size: 18px;
+  .servicio-icono {
+    padding: 0;
   }
 
-  .servicio-display-body {
+  .servicio-icono-grafico {
+    width: 42px;
+    height: 42px;
+  }
+
+  .servicio-icono-grafico svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .servicio-indice {
+    font-size: 13px;
+  }
+
+  .servicio-panel {
+    padding: 12px 14px;
+    max-width: none;
+  }
+
+  .servicio-panel p {
     font-size: 13px;
     line-height: 1.45;
-  }
-
-  .servicio-numeros {
-    gap: 8px;
-  }
-
-  .servicio-numero {
-    width: 46px;
-    height: 46px;
-    font-size: 13px;
   }
 
   .contenido-texto {
