@@ -123,7 +123,12 @@ function defaultMember() {
     specialties: [],
     location: { country: '', city: '' },
     contacts: { email: '', phone: '', instagram: '', tiktok: '', discord: '', website: '' },
-    featured: false
+    featured: false,
+    workgroup: {
+      title: '',
+      description: '',
+      members: []
+    }
   };
 }
 
@@ -136,6 +141,19 @@ function defaultWorkgroupMember() {
     description: '',
     location: { country: '', city: '' }
   };
+}
+
+function getSelectedMember() {
+  return teamAdminState.content?.members?.[teamAdminState.selectedMemberIndex] || null;
+}
+
+function getSelectedMemberWorkgroup() {
+  const member = getSelectedMember();
+  if (!member) return null;
+
+  member.workgroup = member.workgroup || { title: '', description: '', members: [] };
+  member.workgroup.members = Array.isArray(member.workgroup.members) ? member.workgroup.members : [];
+  return member.workgroup;
 }
 
 function renderMemberList() {
@@ -152,17 +170,23 @@ function renderMemberList() {
   list.querySelectorAll('[data-member-index]').forEach(button => {
     button.addEventListener('click', () => {
       teamAdminState.selectedMemberIndex = Number(button.dataset.memberIndex);
+      const workgroup = getSelectedMemberWorkgroup();
+      teamAdminState.selectedWorkgroupIndex = workgroup?.members?.length ? 0 : -1;
       renderMemberList();
       fillMemberEditor();
+      renderWorkgroupList();
+      fillWorkgroupEditor();
+      fillSelectedWorkgroupHeader();
     });
   });
 }
 
 function renderWorkgroupList() {
   const list = $('workgroupList');
-  if (!list || !teamAdminState.content) return;
+  const workgroup = getSelectedMemberWorkgroup();
+  if (!list || !teamAdminState.content || !workgroup) return;
 
-  list.innerHTML = teamAdminState.content.workgroup.members.map((member, index) => `
+  list.innerHTML = workgroup.members.map((member, index) => `
     <button type="button" class="admin-list-item ${index === teamAdminState.selectedWorkgroupIndex ? 'active' : ''}" data-workgroup-index="${index}">
       <span>${member.name}</span>
       <small>${member.role || 'Sin rol'}</small>
@@ -182,8 +206,19 @@ function fillAboutEditor() {
   $('aboutEyebrow').value = teamAdminState.content.about.eyebrow || '';
   $('aboutTitle').value = teamAdminState.content.about.title || '';
   $('aboutDescription').value = teamAdminState.content.about.description || '';
-  $('workgroupTitleInput').value = teamAdminState.content.workgroup.title || '';
-  $('workgroupDescriptionInput').value = teamAdminState.content.workgroup.description || '';
+}
+
+function fillSelectedWorkgroupHeader() {
+  const workgroup = getSelectedMemberWorkgroup();
+  const member = getSelectedMember();
+
+  $('workgroupTitleInput').value = workgroup?.title || '';
+  $('workgroupDescriptionInput').value = workgroup?.description || '';
+
+  const heading = document.querySelector('#adminWorkspace .admin-card:last-child .panel-heading h3');
+  if (heading) {
+    heading.textContent = member ? `Equipo de ${member.name}` : 'Equipo del integrante seleccionado';
+  }
 }
 
 function fillMemberEditor() {
@@ -220,7 +255,8 @@ function fillMemberEditor() {
 
 function fillWorkgroupEditor() {
   const editor = $('workgroupEditor');
-  const member = teamAdminState.content.workgroup.members[teamAdminState.selectedWorkgroupIndex];
+  const workgroup = getSelectedMemberWorkgroup();
+  const member = workgroup?.members?.[teamAdminState.selectedWorkgroupIndex];
   if (!editor || !member) {
     editor.classList.add('hidden');
     return;
@@ -240,8 +276,15 @@ function syncAboutEditor() {
   teamAdminState.content.about.eyebrow = $('aboutEyebrow').value;
   teamAdminState.content.about.title = $('aboutTitle').value;
   teamAdminState.content.about.description = $('aboutDescription').value;
-  teamAdminState.content.workgroup.title = $('workgroupTitleInput').value;
-  teamAdminState.content.workgroup.description = $('workgroupDescriptionInput').value;
+  updateDirtyState();
+}
+
+function syncSelectedWorkgroupHeader() {
+  const workgroup = getSelectedMemberWorkgroup();
+  if (!workgroup) return;
+
+  workgroup.title = $('workgroupTitleInput').value;
+  workgroup.description = $('workgroupDescriptionInput').value;
   updateDirtyState();
 }
 
@@ -275,7 +318,8 @@ function syncMemberEditor() {
 }
 
 function syncWorkgroupEditor() {
-  const member = teamAdminState.content.workgroup.members[teamAdminState.selectedWorkgroupIndex];
+  const workgroup = getSelectedMemberWorkgroup();
+  const member = workgroup?.members?.[teamAdminState.selectedWorkgroupIndex];
   if (!member) return;
 
   member.name = $('workgroupName').value;
@@ -336,7 +380,8 @@ async function handleWorkgroupImageUpload(event) {
   try {
     setSaveMessage('Subiendo imagen...');
     const imagePath = await uploadImage(file);
-    const member = teamAdminState.content.workgroup.members[teamAdminState.selectedWorkgroupIndex];
+    const workgroup = getSelectedMemberWorkgroup();
+    const member = workgroup?.members?.[teamAdminState.selectedWorkgroupIndex];
     if (member) {
       member.image = imagePath;
       fillWorkgroupEditor();
@@ -355,6 +400,7 @@ async function handleWorkgroupImageUpload(event) {
 async function saveContent() {
   syncAboutEditor();
   syncMemberEditor();
+  syncSelectedWorkgroupHeader();
   syncWorkgroupEditor();
 
   try {
@@ -384,6 +430,7 @@ async function saveContent() {
 function renderAllEditors() {
   fillAboutEditor();
   renderMemberList();
+  fillSelectedWorkgroupHeader();
   renderWorkgroupList();
   fillMemberEditor();
   fillWorkgroupEditor();
@@ -398,7 +445,7 @@ async function loadContent() {
   teamAdminState.content = await response.json();
   teamAdminState.lastSavedContent = cloneContent(teamAdminState.content);
   teamAdminState.selectedMemberIndex = teamAdminState.content.members.length ? 0 : -1;
-  teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length ? 0 : -1;
+  teamAdminState.selectedWorkgroupIndex = getSelectedMemberWorkgroup()?.members?.length ? 0 : -1;
   renderAllEditors();
   updateDirtyState();
 }
@@ -547,8 +594,11 @@ async function bootstrapAdmin() {
 
 function bindInputs() {
   [
-    'aboutEyebrow', 'aboutTitle', 'aboutDescription', 'workgroupTitleInput', 'workgroupDescriptionInput'
+    'aboutEyebrow', 'aboutTitle', 'aboutDescription'
   ].forEach(id => $(id).addEventListener('input', syncAboutEditor));
+
+  ['workgroupTitleInput', 'workgroupDescriptionInput']
+    .forEach(id => $(id).addEventListener('input', syncSelectedWorkgroupHeader));
 
   [
     'memberName', 'memberSlug', 'memberRole', 'memberTier', 'memberBadge', 'memberCountry', 'memberCity',
@@ -566,6 +616,7 @@ function bindInputs() {
   $('addMemberButton').addEventListener('click', () => {
     teamAdminState.content.members.push(defaultMember());
     teamAdminState.selectedMemberIndex = teamAdminState.content.members.length - 1;
+    teamAdminState.selectedWorkgroupIndex = -1;
     renderAllEditors();
     updateDirtyState();
   });
@@ -577,24 +628,28 @@ function bindInputs() {
     if (!confirmed) return;
     teamAdminState.content.members.splice(teamAdminState.selectedMemberIndex, 1);
     teamAdminState.selectedMemberIndex = teamAdminState.content.members.length ? 0 : -1;
+    teamAdminState.selectedWorkgroupIndex = getSelectedMemberWorkgroup()?.members?.length ? 0 : -1;
     renderAllEditors();
     updateDirtyState();
   });
 
   $('addWorkgroupButton').addEventListener('click', () => {
-    teamAdminState.content.workgroup.members.push(defaultWorkgroupMember());
-    teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length - 1;
+    const workgroup = getSelectedMemberWorkgroup();
+    if (!workgroup) return;
+    workgroup.members.push(defaultWorkgroupMember());
+    teamAdminState.selectedWorkgroupIndex = workgroup.members.length - 1;
     renderAllEditors();
     updateDirtyState();
   });
 
   $('removeWorkgroupButton').addEventListener('click', () => {
     if (teamAdminState.selectedWorkgroupIndex < 0) return;
-    const currentMember = teamAdminState.content.workgroup.members[teamAdminState.selectedWorkgroupIndex];
+    const workgroup = getSelectedMemberWorkgroup();
+    const currentMember = workgroup?.members?.[teamAdminState.selectedWorkgroupIndex];
     const confirmed = window.confirm(`Vas a eliminar a ${currentMember?.name || 'este miembro del grupo'}. Esta accion se guardara cuando pulses Guardar cambios. Deseas continuar?`);
     if (!confirmed) return;
-    teamAdminState.content.workgroup.members.splice(teamAdminState.selectedWorkgroupIndex, 1);
-    teamAdminState.selectedWorkgroupIndex = teamAdminState.content.workgroup.members.length ? 0 : -1;
+    workgroup.members.splice(teamAdminState.selectedWorkgroupIndex, 1);
+    teamAdminState.selectedWorkgroupIndex = workgroup.members.length ? 0 : -1;
     renderAllEditors();
     updateDirtyState();
   });

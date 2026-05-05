@@ -25,29 +25,55 @@
 
   <main class="admin-page">
     <section class="admin-intro-card">
-      <span class="panel-label">Acceso restringido</span>
-      <h2>Editar integrantes y grupo de trabajo</h2>
-      <div id="authStatus" class="status-pill">Verificando configuracion...</div>
-      <div id="googleLoginMount" class="google-login-mount"></div>
-      <form id="passwordLoginForm" class="password-login-form hidden">
-        <label class="form-field">
-          <span>Correo</span>
-          <input id="adminEmailInput" type="email" autocomplete="username">
-        </label>
-        <label class="form-field">
-          <span>Clave</span>
-          <input id="adminPasswordInput" type="password" autocomplete="current-password">
-        </label>
-        <button id="passwordLoginButton" type="submit" class="primary-action">Entrar con clave</button>
-      </form>
-      <button id="logoutButton" type="button" class="secondary-action" style="display:none;">Cerrar sesion</button>
-      <p id="authMessage" class="helper-copy"></p>
+      <div class="admin-hero">
+        <div class="admin-hero-copy">
+          <span class="panel-label">Acceso restringido</span>
+          <h2>Editar integrantes y grupo de trabajo</h2>
+          <p class="helper-copy">Administra el contenido visible del sitio, carga imagenes y guarda cambios reales en el servidor.</p>
+          <div id="authStatus" class="status-pill">Verificando configuracion...</div>
+          <p id="authMessage" class="helper-copy"></p>
+        </div>
+
+        <div class="admin-access-panel">
+          <div class="admin-access-block">
+            <span class="panel-label">Ingreso</span>
+            <div id="googleLoginMount" class="google-login-mount"></div>
+            <form id="passwordLoginForm" class="password-login-form hidden">
+              <label class="form-field">
+                <span>Correo</span>
+                <input id="adminEmailInput" type="email" autocomplete="username" placeholder="admin@omeganetics.com">
+              </label>
+              <label class="form-field">
+                <span>Clave</span>
+                <input id="adminPasswordInput" type="password" autocomplete="current-password" placeholder="Ingresa tu clave de acceso">
+              </label>
+              <button id="passwordLoginButton" type="submit" class="primary-action">Entrar con clave</button>
+            </form>
+            <button id="logoutButton" type="button" class="secondary-action" style="display:none;">Cerrar sesion</button>
+          </div>
+
+          <div class="admin-access-block admin-tips-block">
+            <span class="panel-label">Flujo</span>
+            <ul class="admin-checklist">
+              <li>Selecciona un integrante en la lista para editarlo.</li>
+              <li>Los cambios quedan locales hasta pulsar Guardar cambios.</li>
+              <li>Restablecer trae la ultima version guardada.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section id="adminWorkspace" class="admin-workspace hidden">
       <div class="admin-toolbar">
-        <button id="saveContentButton" type="button" class="primary-action">Guardar cambios</button>
-        <button id="resetContentButton" type="button" class="secondary-action">Restablecer</button>
+        <div class="admin-toolbar-copy">
+          <span class="panel-label">Edicion activa</span>
+          <strong>Panel de cambios</strong>
+        </div>
+        <div class="admin-toolbar-actions">
+          <button id="saveContentButton" type="button" class="primary-action">Guardar cambios</button>
+          <button id="resetContentButton" type="button" class="secondary-action">Restablecer</button>
+        </div>
         <span id="saveMessage" class="helper-copy"></span>
       </div>
 
@@ -59,17 +85,18 @@
               <h3>Encabezado de quienes somos</h3>
             </div>
           </div>
+          <p class="helper-copy admin-section-copy">Edita el texto principal que aparece al abrir la seccion de equipo en la pagina inicial.</p>
           <label class="form-field">
             <span>Eyebrow</span>
-            <input id="aboutEyebrow" type="text">
+            <input id="aboutEyebrow" type="text" placeholder="Quienes somos">
           </label>
           <label class="form-field">
             <span>Titulo</span>
-            <input id="aboutTitle" type="text">
+            <input id="aboutTitle" type="text" placeholder="Conoce al equipo Omeganetics">
           </label>
           <label class="form-field">
             <span>Descripcion</span>
-            <textarea id="aboutDescription" rows="5"></textarea>
+            <textarea id="aboutDescription" rows="6" placeholder="Describe al equipo, su enfoque y el objetivo de la seccion."></textarea>
           </label>
         </article>
 
@@ -81,45 +108,80 @@
             </div>
             <button id="addMemberButton" type="button" class="secondary-action">Nuevo integrante</button>
           </div>
-          <div id="memberList" class="admin-list"></div>
-          <div id="memberEditor" class="editor-shell hidden">
-            <div class="editor-toolbar">
-              <strong id="memberEditorTitle">Integrante</strong>
-              <button id="removeMemberButton" type="button" class="danger-action">Eliminar</button>
+          <p class="helper-copy admin-section-copy">Selecciona un perfil a la izquierda y edita sus datos en un formulario mas comodo a la derecha.</p>
+          <div class="admin-split-layout">
+            <div class="admin-list-panel">
+              <div class="admin-subheading">
+                <strong>Lista de integrantes</strong>
+                <span>Haz clic para abrir un perfil</span>
+              </div>
+              <div id="memberList" class="admin-list"></div>
             </div>
 
-            <div class="image-upload-row">
-              <img id="memberPreview" class="preview-image" alt="Vista previa del integrante">
-              <label class="upload-control">
-                <span>Subir foto</span>
-                <input id="memberImageUpload" type="file" accept="image/*">
-              </label>
-            </div>
+            <div id="memberEditor" class="editor-shell hidden">
+              <div class="editor-toolbar">
+                <div>
+                  <span class="panel-label">Editor</span>
+                  <strong id="memberEditorTitle">Integrante</strong>
+                </div>
+                <button id="removeMemberButton" type="button" class="danger-action">Eliminar</button>
+              </div>
 
-            <div class="form-columns">
-              <label class="form-field"><span>Nombre</span><input id="memberName" type="text"></label>
-              <label class="form-field"><span>Nombre real</span><input id="memberFullNameInput" type="text"></label>
-              <label class="form-field"><span>Slug</span><input id="memberSlug" type="text"></label>
-              <label class="form-field"><span>Rol</span><input id="memberRole" type="text"></label>
-              <label class="form-field"><span>Tier</span><input id="memberTier" type="text"></label>
-              <label class="form-field"><span>Badge</span><input id="memberBadge" type="text"></label>
-              <label class="form-field"><span>Pais</span><input id="memberCountry" type="text"></label>
-              <label class="form-field"><span>Ciudad</span><input id="memberCity" type="text"></label>
-              <label class="form-field checkbox-field"><span>Destacado</span><input id="memberFeatured" type="checkbox"></label>
-            </div>
+              <div class="image-upload-row editor-highlight-box">
+                <img id="memberPreview" class="preview-image" alt="Vista previa del integrante">
+                <div class="editor-highlight-copy">
+                  <strong>Foto del integrante</strong>
+                  <p class="helper-copy">Sube una imagen cuadrada o vertical para que la vista previa y la tarjeta se vean mejor.</p>
+                  <label class="upload-control">
+                    <span>Subir foto</span>
+                    <input id="memberImageUpload" type="file" accept="image/*">
+                  </label>
+                </div>
+              </div>
 
-            <label class="form-field"><span>Resumen corto</span><textarea id="memberSummary" rows="3"></textarea></label>
-            <label class="form-field"><span>Bio corta</span><textarea id="memberShortBio" rows="3"></textarea></label>
-            <label class="form-field"><span>Historia de vida</span><textarea id="memberLifeStory" rows="6"></textarea></label>
-            <label class="form-field"><span>Especialidades (separadas por coma)</span><input id="memberSpecialtiesInput" type="text"></label>
+              <div class="editor-group">
+                <div class="admin-subheading">
+                  <strong>Identidad</strong>
+                  <span>Datos base del perfil publico</span>
+                </div>
+                <div class="form-columns form-columns-wide">
+                  <label class="form-field"><span>Nombre</span><input id="memberName" type="text" placeholder="Nombre visible"></label>
+                  <label class="form-field"><span>Nombre real</span><input id="memberFullNameInput" type="text" placeholder="Nombre completo"></label>
+                  <label class="form-field"><span>Slug</span><input id="memberSlug" type="text" placeholder="nombre-del-perfil"></label>
+                  <label class="form-field"><span>Rol</span><input id="memberRole" type="text" placeholder="Fundador, Diseñador, Editor..."></label>
+                  <label class="form-field"><span>Tier</span><input id="memberTier" type="text" placeholder="Ascendidos, Staff, Crew..."></label>
+                  <label class="form-field"><span>Badge</span><input id="memberBadge" type="text" placeholder="Texto corto del distintivo"></label>
+                  <label class="form-field"><span>Pais</span><input id="memberCountry" type="text" placeholder="Pais"></label>
+                  <label class="form-field"><span>Ciudad</span><input id="memberCity" type="text" placeholder="Ciudad"></label>
+                  <label class="form-field checkbox-field"><span>Destacado</span><input id="memberFeatured" type="checkbox"></label>
+                </div>
+              </div>
 
-            <div class="form-columns">
-              <label class="form-field"><span>Email</span><input id="memberEmail" type="text"></label>
-              <label class="form-field"><span>Telefono</span><input id="memberPhone" type="text"></label>
-              <label class="form-field"><span>Instagram</span><input id="memberInstagram" type="text"></label>
-              <label class="form-field"><span>TikTok</span><input id="memberTiktok" type="text"></label>
-              <label class="form-field"><span>Discord</span><input id="memberDiscord" type="text"></label>
-              <label class="form-field"><span>Website</span><input id="memberWebsite" type="text"></label>
+              <div class="editor-group">
+                <div class="admin-subheading">
+                  <strong>Contenido</strong>
+                  <span>Textos que alimentan la ficha individual</span>
+                </div>
+                <label class="form-field"><span>Resumen corto</span><textarea id="memberSummary" rows="3" placeholder="Resumen breve para listado o cabecera"></textarea></label>
+                <label class="form-field"><span>Bio corta</span><textarea id="memberShortBio" rows="3" placeholder="Descripcion corta del integrante"></textarea></label>
+                <label class="form-field"><span>Historia de vida</span><textarea id="memberLifeStory" rows="7" placeholder="Historia completa o narrativa del perfil"></textarea></label>
+                <label class="form-field"><span>Especialidades (separadas por coma)</span><input id="memberSpecialtiesInput" type="text" placeholder="Diseño, Streaming, Desarrollo..."></label>
+              </div>
+
+              <div class="editor-group">
+                <div class="admin-subheading">
+                  <strong>Contacto</strong>
+                  <span>Canales publicos del integrante</span>
+                </div>
+                <div class="form-columns form-columns-wide">
+                  <label class="form-field"><span>Email</span><input id="memberEmail" type="text" placeholder="correo@dominio.com"></label>
+                  <label class="form-field"><span>Telefono</span><input id="memberPhone" type="text" placeholder="Numero de contacto"></label>
+                  <label class="form-field"><span>Instagram</span><input id="memberInstagram" type="text" placeholder="@usuario o URL"></label>
+                  <label class="form-field"><span>TikTok</span><input id="memberTiktok" type="text" placeholder="@usuario o URL"></label>
+                  <label class="form-field"><span>Discord</span><input id="memberDiscord" type="text" placeholder="Usuario o invitacion"></label>
+                  <label class="form-field"><span>Website</span><input id="memberWebsite" type="text" placeholder="https://..."></label>
+                </div>
+              </div>
             </div>
           </div>
         </article>
@@ -127,36 +189,72 @@
         <article class="admin-card">
           <div class="panel-heading compact">
             <div>
-              <span class="panel-label">Grupo de trabajo</span>
-              <h3>Equipo operativo</h3>
+              <span class="panel-label">Equipo por perfil</span>
+              <h3>Equipo del integrante seleccionado</h3>
             </div>
             <button id="addWorkgroupButton" type="button" class="secondary-action">Nuevo integrante</button>
           </div>
-          <label class="form-field"><span>Titulo</span><input id="workgroupTitleInput" type="text"></label>
-          <label class="form-field"><span>Descripcion</span><textarea id="workgroupDescriptionInput" rows="4"></textarea></label>
-          <div id="workgroupList" class="admin-list"></div>
-          <div id="workgroupEditor" class="editor-shell hidden">
-            <div class="editor-toolbar">
-              <strong id="workgroupEditorTitle">Miembro del grupo</strong>
-              <button id="removeWorkgroupButton" type="button" class="danger-action">Eliminar</button>
+          <p class="helper-copy admin-section-copy">Cada perfil puede tener su propio equipo. Selecciona un integrante en la columna central y aqui editaras el equipo que aparece a la derecha de su ficha.</p>
+          <div class="editor-group editor-group-tight">
+            <div class="admin-subheading">
+              <strong>Cabecera del equipo</strong>
+              <span>Texto del equipo del integrante seleccionado</span>
+            </div>
+            <label class="form-field"><span>Titulo</span><input id="workgroupTitleInput" type="text" placeholder="Equipo de Kimba"></label>
+            <label class="form-field"><span>Descripcion</span><textarea id="workgroupDescriptionInput" rows="4" placeholder="Resume la funcion del equipo de este integrante."></textarea></label>
+          </div>
+
+          <div class="admin-split-layout">
+            <div class="admin-list-panel">
+              <div class="admin-subheading">
+                <strong>Miembros del equipo</strong>
+                <span>Selecciona un miembro del equipo para editarlo</span>
+              </div>
+              <div id="workgroupList" class="admin-list"></div>
             </div>
 
-            <div class="image-upload-row">
-              <img id="workgroupPreview" class="preview-image" alt="Vista previa del grupo de trabajo">
-              <label class="upload-control">
-                <span>Subir foto</span>
-                <input id="workgroupImageUpload" type="file" accept="image/*">
-              </label>
-            </div>
+            <div id="workgroupEditor" class="editor-shell hidden">
+              <div class="editor-toolbar">
+                <div>
+                  <span class="panel-label">Editor</span>
+                  <strong id="workgroupEditorTitle">Miembro del grupo</strong>
+                </div>
+                <button id="removeWorkgroupButton" type="button" class="danger-action">Eliminar</button>
+              </div>
 
-            <div class="form-columns">
-              <label class="form-field"><span>Nombre</span><input id="workgroupName" type="text"></label>
-              <label class="form-field"><span>Rol</span><input id="workgroupRole" type="text"></label>
-              <label class="form-field"><span>Pais</span><input id="workgroupCountry" type="text"></label>
-              <label class="form-field"><span>Ciudad</span><input id="workgroupCity" type="text"></label>
-            </div>
+              <div class="image-upload-row editor-highlight-box">
+                <img id="workgroupPreview" class="preview-image" alt="Vista previa del grupo de trabajo">
+                <div class="editor-highlight-copy">
+                  <strong>Imagen del miembro</strong>
+                  <p class="helper-copy">Puedes subir una foto para representar a cada persona del equipo operativo.</p>
+                  <label class="upload-control">
+                    <span>Subir foto</span>
+                    <input id="workgroupImageUpload" type="file" accept="image/*">
+                  </label>
+                </div>
+              </div>
 
-            <label class="form-field"><span>Descripcion breve</span><textarea id="workgroupDescriptionField" rows="5"></textarea></label>
+              <div class="editor-group">
+                <div class="admin-subheading">
+                  <strong>Datos del miembro</strong>
+                  <span>Informacion basica y ubicacion</span>
+                </div>
+                <div class="form-columns form-columns-wide">
+                  <label class="form-field"><span>Nombre</span><input id="workgroupName" type="text" placeholder="Nombre visible"></label>
+                  <label class="form-field"><span>Rol</span><input id="workgroupRole" type="text" placeholder="Rol dentro del grupo"></label>
+                  <label class="form-field"><span>Pais</span><input id="workgroupCountry" type="text" placeholder="Pais"></label>
+                  <label class="form-field"><span>Ciudad</span><input id="workgroupCity" type="text" placeholder="Ciudad"></label>
+                </div>
+              </div>
+
+              <div class="editor-group">
+                <div class="admin-subheading">
+                  <strong>Descripcion</strong>
+                  <span>Texto visible en la seccion del grupo</span>
+                </div>
+                <label class="form-field"><span>Descripcion breve</span><textarea id="workgroupDescriptionField" rows="6" placeholder="Describe brevemente la funcion de este miembro."></textarea></label>
+              </div>
+            </div>
           </div>
         </article>
       </section>

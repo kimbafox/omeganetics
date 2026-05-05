@@ -1549,6 +1549,44 @@ nav a:hover,
   gap: 24px;
 }
 
+.admin-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.admin-hero-copy,
+.admin-access-panel,
+.admin-access-block,
+.admin-toolbar-copy,
+.admin-toolbar-actions,
+.admin-subheading,
+.editor-highlight-copy,
+.editor-group {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-access-block {
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.admin-tips-block {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+}
+
+.admin-checklist {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
 .status-pill {
   display: inline-flex;
   align-self: flex-start;
@@ -1580,11 +1618,30 @@ nav a:hover,
   display: grid;
   gap: 14px;
   width: min(420px, 100%);
-  margin-top: 18px;
+  margin-top: 6px;
 }
 
 .admin-toolbar {
-  justify-content: flex-start;
+  position: sticky;
+  top: 92px;
+  z-index: 5;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  background: rgba(12, 12, 12, 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow);
+}
+
+.admin-toolbar-copy strong {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+
+.admin-toolbar-actions {
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .admin-grid {
@@ -1642,7 +1699,33 @@ nav a:hover,
 .admin-list {
   display: grid;
   gap: 10px;
-  margin: 18px 0;
+  margin: 0;
+}
+
+.admin-split-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-list-panel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.admin-subheading strong {
+  font-size: 16px;
+}
+
+.admin-subheading span,
+.admin-section-copy {
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .admin-list-item {
@@ -1660,15 +1743,21 @@ nav a:hover,
 }
 
 .admin-list-item.active {
-  border-color: #111;
-  background: var(--bg-soft);
+  border-color: rgba(245, 221, 141, 0.32);
+  background: linear-gradient(180deg, rgba(245, 221, 141, 0.08), rgba(255, 255, 255, 0.02));
 }
 
 .editor-shell {
   display: grid;
-  gap: 16px;
-  border-top: 1px solid var(--border);
-  padding-top: 18px;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+}
+
+.editor-toolbar strong {
+  font-size: 22px;
+  letter-spacing: -0.03em;
 }
 
 .image-upload-row {
@@ -1676,6 +1765,12 @@ nav a:hover,
   grid-template-columns: 120px minmax(0, 1fr);
   gap: 16px;
   align-items: center;
+}
+
+.editor-highlight-box {
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .preview-image {
@@ -1690,6 +1785,19 @@ nav a:hover,
 
 .form-columns {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.form-columns-wide {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.editor-group {
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.editor-group-tight {
+  margin-bottom: 18px;
 }
 
 .form-field {
@@ -1710,6 +1818,20 @@ nav a:hover,
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
   color: #fff;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: #747474;
+}
+
+.form-field input:focus,
+.form-field textarea:focus {
+  outline: none;
+  border-color: rgba(245, 221, 141, 0.34);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(245, 221, 141, 0.08);
 }
 
 .checkbox-field {
@@ -1748,6 +1870,12 @@ nav a:hover,
   .featured-member-card,
   .member-hero,
   .resume-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-hero,
+  .admin-split-layout,
+  .form-columns-wide {
     grid-template-columns: 1fr;
   }
 
@@ -1805,6 +1933,15 @@ nav a:hover,
   .member-meta-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-toolbar {
+    top: 82px;
+  }
+
+  .admin-toolbar-actions {
+    grid-auto-flow: row;
+    width: 100%;
   }
 
   .team-section-header,

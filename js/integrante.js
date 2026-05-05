@@ -21,19 +21,6 @@ function renderContactItem(label, value) {
   return `<div class="meta-item"><span>${escapeMemberHtml(label)}</span>${content}</div>`;
 }
 
-function normalizeTier(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase();
-}
-
-function isSeniorTier(value) {
-  const tier = normalizeTier(value);
-  return tier === 'emperador' || tier === 'ascendidos' || tier === 'ascendido';
-}
-
 function buildSpotlightContacts(member) {
   return [
     renderContactItem('Email', member.contacts?.email),
@@ -43,45 +30,6 @@ function buildSpotlightContacts(member) {
     renderContactItem('Discord', member.contacts?.discord),
     renderContactItem('Website', member.contacts?.website)
   ].filter(Boolean);
-}
-
-function getVisibleWorkgroup(member, teamContent) {
-  const allMembers = Array.isArray(teamContent?.members) ? teamContent.members : [];
-  const visibleMembers = allMembers.filter(entry => {
-    if (!entry || entry.slug === member.slug) return false;
-    if (isSeniorTier(member.tier)) {
-      return !isSeniorTier(entry.tier);
-    }
-    return normalizeTier(entry.tier) === normalizeTier(member.tier);
-  });
-
-  if (isSeniorTier(member.tier)) {
-    return {
-      title: 'Nuevos del equipo',
-      description: 'Aqui solo aparecen integrantes nuevos. Emperador y Ascendidos no comparten este bloque.',
-      members: visibleMembers.map(entry => ({
-        id: entry.id,
-        name: entry.name,
-        role: entry.role || entry.tier || 'Nuevo integrante',
-        image: entry.image,
-        description: entry.summary || entry.shortBio || '',
-        location: entry.location || {}
-      }))
-    };
-  }
-
-  return {
-    title: teamContent?.workgroup?.title || 'Equipo de trabajo',
-    description: teamContent?.workgroup?.description || '',
-    members: visibleMembers.map(entry => ({
-      id: entry.id,
-      name: entry.name,
-      role: entry.role || entry.tier || 'Integrante',
-      image: entry.image,
-      description: entry.summary || entry.shortBio || '',
-      location: entry.location || {}
-    }))
-  };
 }
 
 function renderMemberPage(member) {
@@ -186,10 +134,7 @@ async function loadMemberPage() {
   const slug = getMemberSlug();
 
   try {
-    const [memberResponse, teamResponse] = await Promise.all([
-      fetch(`/api/team/members/${encodeURIComponent(slug)}`),
-      fetch('/api/team/content')
-    ]);
+    const memberResponse = await fetch(`/api/team/members/${encodeURIComponent(slug)}`);
 
     if (!memberResponse.ok) {
       throw new Error('No se encontro el integrante solicitado.');
@@ -197,11 +142,7 @@ async function loadMemberPage() {
 
     const member = await memberResponse.json();
     renderMemberPage(member);
-
-    if (teamResponse.ok) {
-      const teamContent = await teamResponse.json();
-      renderWorkgroup(getVisibleWorkgroup(member, teamContent));
-    }
+    renderWorkgroup(member.workgroup || { title: '', description: '', members: [] });
   } catch (error) {
     const spotlight = document.getElementById('memberSpotlight');
     const story = document.getElementById('memberStory');
