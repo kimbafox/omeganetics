@@ -24,27 +24,12 @@
   </header>
 
   <main class="member-page">
-    <section id="memberHero" class="resume-hero skeleton-card"></section>
-
-    <section class="resume-layout">
-      <aside class="resume-sidebar">
-        <div class="resume-panel">
-          <span class="panel-label">Identidad</span>
-          <div id="memberFullName" class="meta-list"></div>
-        </div>
-
-        <div class="resume-panel">
-          <span class="panel-label">Datos clave</span>
-          <div id="memberMeta" class="meta-list"></div>
-        </div>
-
-        <div class="resume-panel">
-          <span class="panel-label">Contacto</span>
-          <div id="memberContacts" class="contact-list"></div>
-        </div>
+    <section class="resume-layout resume-layout-profile">
+      <aside class="resume-sidebar resume-sidebar-profile">
+        <section id="memberSpotlight" class="resume-panel resume-spotlight skeleton-card"></section>
       </aside>
 
-      <section class="resume-main-column">
+      <section class="resume-main-column resume-main-column-profile">
         <article class="resume-panel resume-panel-featured">
           <span class="panel-label">Resumen profesional</span>
           <h2>Perfil ejecutivo</h2>
@@ -62,18 +47,18 @@
           <h2>Habilidades destacadas</h2>
           <div id="memberSpecialties" class="tag-list"></div>
         </article>
-      </section>
-    </section>
 
-    <section class="member-workgroup-card resume-panel">
-      <div class="panel-heading compact">
-        <div>
-          <span class="panel-label">Equipo de trabajo</span>
-          <h3 id="memberWorkgroupTitle">Grupo de trabajo</h3>
-        </div>
-      </div>
-      <p id="memberWorkgroupDescription" class="workgroup-copy"></p>
-      <div id="memberWorkgroupGrid" class="workgroup-grid"></div>
+        <section class="member-workgroup-card resume-panel">
+          <div class="panel-heading compact">
+            <div>
+              <span class="panel-label">Equipo de trabajo</span>
+              <h3 id="memberWorkgroupTitle">Grupo de trabajo</h3>
+            </div>
+          </div>
+          <p id="memberWorkgroupDescription" class="workgroup-copy"></p>
+          <div id="memberWorkgroupGrid" class="workgroup-grid"></div>
+        </section>
+      </section>
     </section>
   </main>
 
