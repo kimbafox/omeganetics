@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wikiprins - Archivo de Lore</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="bg-faded"></div>
+    <div class="scanline"></div>
+
+    <nav>
+        <a onclick="showSection('search')">[BUSCADOR]</a>
+        <a onclick="showSection('upload')">[SISTEMA_DE_APORTES (Admin)]</a>
+    </nav>
+
+    <main>
+        <div id="searchSection" class="search-container">
+            <div class="system-brand">Wikiprins</div>
+            <div class="typing-text">> INICIALIZANDO_ARCHIVO_WIKIPRINS...</div>
+            <p class="search-intro">Guia rapida: revisa lo ultimo abajo o busca un registro por nombre.</p>
+            <input type="text" id="searchInput" class="search-box" placeholder="> Ingrese palabra clave del Lore..." autocomplete="off">
+            <div id="searchError" class="error-text" style="display: none;"></div>
+
+            <section class="recent-shell" aria-labelledby="recentLoreTitle">
+                <div class="recent-header">
+                    <div>
+                        <p class="section-kicker">REGISTROS RECIENTES</p>
+                        <h2 id="recentLoreTitle">Ultimas entradas selladas en Wikiprins</h2>
+                    </div>
+                    <p class="recent-copy">1 destacado y 3 accesos rapidos.</p>
+                </div>
+                <div id="recentLoreGrid" class="recent-grid"></div>
+            </section>
+        </div>
+
+        <div id="resultSection" class="parchment-container">
+            <div class="lore-header-block">
+                <div>
+                    <p id="loreCategory" class="lore-tag"></p>
+                    <h2 id="loreTitle"></h2>
+                    <p id="loreShortDesc" class="lore-lead"></p>
+                </div>
+                <div id="loreMetaChips" class="meta-chip-list"></div>
+            </div>
+            <div id="loreDetails" class="lore-details"></div>
+            <div id="loreDesc" class="lore-description"></div>
+            <div class="lore-images" id="loreImagesContainer"></div>
+        </div>
+
+        <div id="loginSection" class="search-container" style="display: none;">
+            <div class="typing-text" style="color: red;">> PROTOCOLO_DE_ACCESO_RESTRINGIDO</div>
+            <p style="color: var(--hacker-green); margin-bottom: 20px;">Acceso solo para administracion.</p>
+
+            <form id="loginForm" style="display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;">
+                <input type="email" id="loginEmail" class="search-box" placeholder="> Correo..." required>
+                <input type="password" id="loginPassword" class="search-box" placeholder="> Contraseña..." required>
+                <input type="password" id="loginKeyword" class="search-box" placeholder="> Palabra Clave Maestra..." required>
+
+                <button type="submit" class="search-box" style="cursor: pointer; font-weight: bold; margin-top: 10px;">
+                    [ INICIAR_SECUECIA_DE_ENLACE ]
+                </button>
+            </form>
+            <div id="loginError" class="error-text" style="display: none;"></div>
+        </div>
+
+        <div id="uploadSection" class="parchment-container">
+            <h2>Añadir Nuevo Conocimiento al Pergamino</h2>
+            <p class="upload-guide">Guia breve: completa lo esencial, resume en pocas lineas y agrega la imagen principal.</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Título / Palabra Clave:</label>
+                    <input type="text" id="formTitle" name="title" required placeholder="Ej: Dragon Anciano">
+                </div>
+                <div class="form-grid two-columns">
+                    <div class="form-group">
+                        <label>Categoria:</label>
+                        <select id="formCategory" name="category" required>
+                            <option value="">Seleccione una categoria</option>
+                            <option value="Personaje">Personaje</option>
+                            <option value="Lugar">Lugar</option>
+                            <option value="Evento">Evento</option>
+                            <option value="Organizacion">Organizacion</option>
+                            <option value="Objeto">Objeto</option>
+                            <option value="Criatura">Criatura</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Estado cronologico:</label>
+                        <select id="formCanonType" name="canonType">
+                            <option value="">Seleccione una opcion</option>
+                            <option value="Ficticio">Ficticio</option>
+                            <option value="Real">Real</option>
+                            <option value="Mixto">Mixto</option>
+                            <option value="Desconocido">Desconocido</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mini descripcion:</label>
+                    <textarea id="formShortDesc" name="shortDescription" rows="3" required placeholder="Resumen corto para vista previa."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Linea de tiempo / periodo:</label>
+                    <input type="text" id="formTimeline" name="timeline" placeholder="Ej: 1998 - 2004 o Era de la Ruptura">
+                </div>
+                <div class="form-group">
+                    <label>Otros nombres o alias:</label>
+                    <textarea id="formOtherNames" name="otherNames" rows="2" placeholder="Alias o nombres alternos."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Apariciones relevantes:</label>
+                    <textarea id="formAppearances" name="appearances" rows="3" placeholder="Capitulos, eventos o referencias."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Descripción del Lore:</label>
+                    <textarea id="formDesc" name="description" rows="6" required placeholder="Descripcion principal."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Notas adicionales:</label>
+                    <textarea id="formAdditionalNotes" name="additionalNotes" rows="4" placeholder="Notas extra opcionales."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Imagen Principal (Obligatoria):</label>
+                    <input type="file" id="img1" name="img1" accept="image/*" required>
+                </div>
+                <div class="form-group">
+                    <label>Imágenes Adicionales (Opcionales):</label>
+                    <input type="file" id="img2" name="img2" accept="image/*">
+                    <input type="file" id="img3" name="img3" accept="image/*">
+                </div>
+                <button type="submit" class="btn-submit">Sellar en el Pergamino</button>
+            </form>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
