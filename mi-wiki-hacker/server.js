@@ -5,6 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken'); // NUEVO: Para la seguridad
 
 const app = express();
@@ -13,11 +14,17 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const uploadsDir = path.join(__dirname, 'uploads');
 const publicDir = path.join(__dirname, 'public');
 
-// Configuración de Seguridad del Admin (Se leerán desde Railway o el archivo .env)
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "juegocrisger@gmail.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "170893666Lp.";
-const ADMIN_KEYWORD = process.env.ADMIN_KEYWORD || "evolucion";
-const JWT_SECRET = process.env.JWT_SECRET || "clave_secreta_super_hacker_123";
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'juegocrisger@gmail.com').toLowerCase();
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+
+if (!process.env.JWT_SECRET) {
+    console.warn('> JWT_SECRET_NO_CONFIGURADO: se usara una clave temporal para esta ejecucion.');
+}
+
+if (!GOOGLE_CLIENT_ID) {
+    console.warn('> GOOGLE_CLIENT_ID_NO_CONFIGURADO: el acceso admin con Google quedara deshabilitado.');
+}
 
 if (!fs.existsSync(uploadsDir)) { fs.mkdirSync(uploadsDir, { recursive: true }); }
 
@@ -84,19 +91,79 @@ app.get('/', (req, res) => {
 });
 
 app.get('/index.html', (req, res) => {
-    res.redirect('/indexwiki.html');
+    res.redirect(`${req.baseUrl || ''}/indexwiki.html`);
 });
 
-// --- NUEVO: RUTA DE LOGIN ---
-app.post('/api/login', (req, res) => {
-    const { email, password, keyword } = req.body;
+app.get('/api/auth-config', (req, res) => {
+    res.json({
+        googleClientId: GOOGLE_CLIENT_ID,
+        adminEmail: ADMIN_EMAIL
+    });
+});
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD && keyword === ADMIN_KEYWORD) {
-        // Si todo coincide, creamos un token válido por 2 horas
-        const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '2h' });
-        res.json({ token });
-    } else {
-        res.status(401).json({ error: "> ACCESO_DENEGADO: Credenciales incorrectas o nivel de seguridad insuficiente." });
+async function verifyGoogleToken(idToken) {
+    if (!GOOGLE_CLIENT_ID) {
+        const error = new Error('google_not_configured');
+        error.statusCode = 503;
+        throw error;
+    }
+
+    const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+
+    if (!response.ok) {
+        const error = new Error('invalid_google_token');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const payload = await response.json();
+    if (payload.aud !== GOOGLE_CLIENT_ID) {
+        const error = new Error('google_audience_mismatch');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    if (payload.email_verified !== 'true' || !payload.email) {
+        const error = new Error('google_email_not_verified');
+        error.statusCode = 401;
+        throw error;
+    }
+
+    return payload;
+}
+
+app.post('/api/login/google', async (req, res) => {
+    try {
+        const credential = req.body?.credential;
+        if (!credential) {
+            return res.status(400).json({ error: '> TOKEN_DE_GOOGLE_REQUERIDO' });
+        }
+
+        const googleUser = await verifyGoogleToken(credential);
+        const email = String(googleUser.email || '').toLowerCase();
+
+        if (email !== ADMIN_EMAIL) {
+            return res.status(403).json({ error: '> ESTA_CUENTA_NO_TIENE_PERMISOS_DE_ADMIN' });
+        }
+
+        const token = jwt.sign(
+            {
+                role: 'admin',
+                email,
+                name: googleUser.name || googleUser.given_name || email
+            },
+            JWT_SECRET,
+            { expiresIn: '2h' }
+        );
+
+        res.json({ token, role: 'admin', email });
+    } catch (error) {
+        const statusCode = error.statusCode || 500;
+        const fallbackMessage = statusCode === 503
+            ? '> GOOGLE_LOGIN_NO_CONFIGURADO_EN_EL_SERVIDOR'
+            : '> NO_SE_PUDO_VALIDAR_LA_CUENTA_DE_GOOGLE';
+
+        res.status(statusCode).json({ error: fallbackMessage });
     }
 });
 
@@ -110,6 +177,8 @@ const verificarToken = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
         if (err) return res.status(403).json({ error: "> SESIÓN_EXPIRADA_O_INVÁLIDA" });
+        if (decoded.role !== 'admin') return res.status(403).json({ error: "> SOLO_ADMIN_PUEDE_SUBIR_REGISTROS" });
+        req.user = decoded;
         next(); // Todo está bien, pasa a la siguiente función
     });
 };

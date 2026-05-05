@@ -2,21 +2,50 @@ const searchInput = document.getElementById('searchInput');
 const resultSection = document.getElementById('resultSection');
 const uploadSection = document.getElementById('uploadSection');
 const searchSection = document.getElementById('searchSection');
-const loginSection = document.getElementById('loginSection'); // NUEVO
+const loginSection = document.getElementById('loginSection');
 const uploadForm = document.getElementById('uploadForm');
-const loginForm = document.getElementById('loginForm'); // NUEVO
 const searchError = document.getElementById('searchError');
-const loginError = document.getElementById('loginError'); // NUEVO
+const loginError = document.getElementById('loginError');
 const recentLoreGrid = document.getElementById('recentLoreGrid');
 const loreCategory = document.getElementById('loreCategory');
 const loreShortDesc = document.getElementById('loreShortDesc');
 const loreMetaChips = document.getElementById('loreMetaChips');
 const loreDetails = document.getElementById('loreDetails');
+const googleLoginMount = document.getElementById('googleLoginMount');
+const googleLoginHint = document.getElementById('googleLoginHint');
 
 const BASE_PATH = window.location.pathname.startsWith('/wiki') ? '/wiki' : '';
+let authConfig = {
+    googleClientId: '',
+    adminEmail: 'juegocrisger@gmail.com'
+};
+let googleInitialized = false;
 
 function buildApiUrl(endpoint) {
     return `${BASE_PATH}/api${endpoint}`;
+}
+
+function decodeTokenPayload(token) {
+    try {
+        const payload = token.split('.')[1];
+        if (!payload) return null;
+        return JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    } catch (error) {
+        return null;
+    }
+}
+
+function getStoredAdminToken() {
+    const token = localStorage.getItem('wikiAdminToken');
+    if (!token) return null;
+
+    const payload = decodeTokenPayload(token);
+    if (!payload || payload.role !== 'admin' || !payload.exp || Date.now() >= payload.exp * 1000) {
+        localStorage.removeItem('wikiAdminToken');
+        return null;
+    }
+
+    return token;
 }
 
 function normalizeImageSrc(imgSrc) {
@@ -257,6 +286,80 @@ async function loadRecentLore() {
     }
 }
 
+function updateGoogleLoginHint(message, isError = false) {
+    googleLoginHint.textContent = message;
+    googleLoginHint.classList.toggle('is-error', isError);
+}
+
+async function handleGoogleCredentialResponse(googleResponse) {
+    loginError.style.display = 'none';
+    updateGoogleLoginHint('Validando cuenta...');
+
+    try {
+        const response = await fetch(buildApiUrl('/login/google'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential: googleResponse.credential })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || '> ACCESO_DENEGADO');
+        }
+
+        localStorage.setItem('wikiAdminToken', data.token);
+        updateGoogleLoginHint(`Sesion admin activa: ${data.email}`);
+        showSection('upload');
+    } catch (error) {
+        localStorage.removeItem('wikiAdminToken');
+        loginError.innerText = error.message || '> NO_SE_PUDO_VALIDAR_LA_CUENTA';
+        loginError.style.display = 'block';
+        updateGoogleLoginHint(`Admin permitido: ${authConfig.adminEmail}`, true);
+    }
+}
+
+async function initGoogleLogin() {
+    try {
+        const response = await fetch(buildApiUrl('/auth-config'));
+        const data = await response.json();
+        authConfig = {
+            googleClientId: data.googleClientId || '',
+            adminEmail: data.adminEmail || authConfig.adminEmail
+        };
+    } catch (error) {
+        updateGoogleLoginHint('No se pudo cargar la configuracion de acceso.', true);
+        return;
+    }
+
+    if (!authConfig.googleClientId) {
+        updateGoogleLoginHint('Falta GOOGLE_CLIENT_ID en el servidor.', true);
+        return;
+    }
+
+    if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+        updateGoogleLoginHint('Google Sign-In no esta disponible en este navegador.', true);
+        return;
+    }
+
+    if (!googleInitialized) {
+        window.google.accounts.id.initialize({
+            client_id: authConfig.googleClientId,
+            callback: handleGoogleCredentialResponse
+        });
+        googleInitialized = true;
+    }
+
+    googleLoginMount.innerHTML = '';
+    window.google.accounts.id.renderButton(googleLoginMount, {
+        theme: 'filled_black',
+        size: 'large',
+        shape: 'rectangular',
+        text: 'continue_with',
+        width: 320
+    });
+    updateGoogleLoginHint(`Admin permitido: ${authConfig.adminEmail}`);
+}
+
 function showSection(section) {
     // Ocultar todo primero
     resultSection.style.display = 'none';
@@ -270,12 +373,12 @@ function showSection(section) {
         searchSection.style.display = 'flex';
         searchInput.focus();
     } else if (section === 'upload') {
-        // Verificar si existe el token de seguridad en la memoria del navegador
-        const token = localStorage.getItem('wikiAdminToken');
+        const token = getStoredAdminToken();
         if (token) {
-            uploadSection.style.display = 'block'; // Ya está logueado
+            uploadSection.style.display = 'block';
         } else {
-            loginSection.style.display = 'flex'; // Requiere login
+            loginSection.style.display = 'flex';
+            initGoogleLogin();
         }
     }
 }
@@ -299,40 +402,6 @@ searchInput.addEventListener('input', function(e) {
     }, 500); 
 });
 
-// NUEVO: Manejar el inicio de sesión
-loginForm.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    loginError.style.display = 'none';
-
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const keyword = document.getElementById('loginKeyword').value;
-
-    try {
-        const response = await fetch(buildApiUrl('/login'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, keyword })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // Guardar el token secreto en el navegador
-            localStorage.setItem('wikiAdminToken', data.token);
-            // Limpiar formulario y mostrar la sección de subida
-            loginForm.reset();
-            showSection('upload');
-        } else {
-            loginError.innerText = data.error;
-            loginError.style.display = 'block';
-        }
-    } catch (error) {
-        loginError.innerText = "> ERROR_DE_CONEXIÓN_CON_SERVIDOR_CENTRAL";
-        loginError.style.display = 'block';
-    }
-});
-
 // Subir formulario (Actualizado con seguridad)
 uploadForm.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -342,9 +411,15 @@ uploadForm.addEventListener('submit', async function(e) {
     submitBtn.innerText = "Sellando..."; submitBtn.disabled = true;
 
     // Recuperar el token para enviarlo como pase VIP
-    const token = localStorage.getItem('wikiAdminToken');
+    const token = getStoredAdminToken();
 
     try {
+        if (!token) {
+            alert('Inicia sesion con Google como administrador.');
+            showSection('upload');
+            return;
+        }
+
         const response = await fetch(buildApiUrl('/lore'), {
             method: 'POST',
             headers: {
@@ -384,4 +459,5 @@ window.logoutAdmin = function() {
     showSection('search');
 }
 
+initGoogleLogin();
 loadRecentLore();

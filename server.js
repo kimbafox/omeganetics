@@ -117,14 +117,21 @@ app.get("/tiendita", (req, res) => {
   if (!tienditaEnabled) {
     return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
   }
-  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "indextienda.html"));
 });
 
 app.get("/tiendita/", (req, res) => {
   if (!tienditaEnabled) {
     return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
   }
-  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "index.html"));
+  res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "indextienda.html"));
+});
+
+app.get("/tiendita/index.html", (req, res) => {
+  if (!tienditaEnabled) {
+    return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
+  }
+  res.redirect("/tiendita/indextienda.html");
 });
 
 app.get("/wiki", (req, res) => {

@@ -103,6 +103,25 @@ nav a:hover {
     line-height: 1.8;
 }
 
+.google-login-copy {
+    margin: 0 0 18px;
+    color: rgba(222, 255, 222, 0.82);
+}
+
+.google-login-mount {
+    min-height: 46px;
+}
+
+.google-login-hint {
+    margin: 14px 0 0;
+    color: rgba(176, 255, 176, 0.74);
+    line-height: 1.65;
+}
+
+.google-login-hint.is-error {
+    color: #ff8d8d;
+}
+
 .search-box {
     background: transparent;
     border: 1px solid var(--hacker-green);
