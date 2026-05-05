@@ -1,0 +1,135 @@
+{
+  "about": {
+    "eyebrow": "Quienes somos",
+    "title": "Una estructura competitiva con vision digital propia.",
+    "description": "Omeganetics reune estrategia, desarrollo y comunidad bajo una misma identidad. Cada integrante aporta disciplina, criterio tecnico y presencia competitiva para construir proyectos que mezclan entretenimiento, sistemas y cultura de equipo."
+  },
+  "members": [
+    {
+      "id": "emperador-kimba",
+      "slug": "emperador-kimba",
+      "name": "Emperador Kimba",
+      "fullName": "Christopher Barea Salazar",
+      "role": "Presidente",
+      "tier": "Emperador",
+      "badge": "Fundador",
+      "image": "assets/kimba.png",
+      "shortBio": "Dirige la vision general de Omeganetics y coordina expansion, torneos y decisiones clave del ecosistema.",
+      "summary": "Fundador del imperio digital y referente de estrategia comunitaria.",
+      "lifeStory": "Kimba consolido Omeganetics como una estructura donde la competencia y la innovacion conviven. Su trabajo se enfoca en definir el rumbo del proyecto, organizar iniciativas de comunidad y mantener una identidad clara para cada producto y actividad.",
+      "specialties": [
+        "Direccion de comunidad",
+        "Vision estrategica",
+        "Expansion de proyectos"
+      ],
+      "location": {
+        "country": "Comunidad global",
+        "city": "Base central"
+      },
+      "contacts": {
+        "instagram": "https://www.instagram.com/kimba_zorro/?hl=es",
+        "tiktok": "https://www.tiktok.com/@kimba_omega",
+        "discord": "https://discord.gg/bCWjyns8U5",
+        "email": ""
+      },
+      "featured": true
+    },
+    {
+      "id": "sebillas",
+      "slug": "sebillas",
+      "name": "Sebillas",
+      "fullName": "Juan Manuel A",
+      "role": "Ascendido",
+      "tier": "Ascendidos",
+      "badge": "Ingenieria en sistemas",
+      "image": "assets/ACENDIDO 1.png",
+      "shortBio": "Aporta criterio tecnico, apoyo en marketing y afinidad por experiencias de estrategia y aventura.",
+      "summary": "Perfil tecnico orientado a sistemas, programacion y crecimiento de marca.",
+      "lifeStory": "Sebillas participa en la evolucion del proyecto desde una mirada tecnica y operativa. Su perfil mezcla formacion en ingenieria, interes por la programacion y capacidad para fortalecer la presencia de Omeganetics dentro y fuera de la comunidad.",
+      "specialties": [
+        "Programacion",
+        "Marketing digital",
+        "Juegos de estrategia"
+      ],
+      "location": {
+        "country": "Por definir",
+        "city": "Por definir"
+      },
+      "contacts": {
+        "discord": "https://discord.gg/bCWjyns8U5",
+        "instagram": "",
+        "tiktok": "",
+        "email": ""
+      },
+      "featured": false
+    },
+    {
+      "id": "anxpo",
+      "slug": "anxpo",
+      "name": "Anxpo",
+      "fullName": "Por definir",
+      "role": "Ascendido",
+      "tier": "Ascendidos",
+      "badge": "Programacion informatica",
+      "image": "assets/anxpo.png",
+      "shortBio": "Conecta la parte tecnica del sistema con interes por estrategia competitiva y TCG.",
+      "summary": "Colaborador enfocado en sistemas, estrategia y desarrollo de la identidad interna.",
+      "lifeStory": "Anxpo contribuye al desarrollo del sistema Omeganetics desde la programacion y la organizacion de ideas. Su afinidad por los juegos de estrategia y el entorno TCG suma una perspectiva analitica al crecimiento del proyecto.",
+      "specialties": [
+        "Desarrollo de sistemas",
+        "TCG",
+        "Analisis estrategico"
+      ],
+      "location": {
+        "country": "Por definir",
+        "city": "Por definir"
+      },
+      "contacts": {
+        "discord": "https://discord.gg/bCWjyns8U5",
+        "instagram": "",
+        "tiktok": "",
+        "email": ""
+      },
+      "featured": false
+    }
+  ],
+  "workgroup": {
+    "title": "Grupo de trabajo",
+    "description": "Equipo operativo que sostiene tareas, ideas y presencia de Omeganetics en distintos frentes.",
+    "members": [
+      {
+        "id": "grupo-1",
+        "name": "Kimba",
+        "role": "Direccion",
+        "image": "assets/kimba.png",
+        "description": "Coordina vision, estructura y decisiones de alto impacto dentro del equipo.",
+        "location": {
+          "country": "Comunidad global",
+          "city": "Base central"
+        }
+      },
+      {
+        "id": "grupo-2",
+        "name": "Sebillas",
+        "role": "Soporte tecnico",
+        "image": "assets/ACENDIDO 1.png",
+        "description": "Acompana tareas tecnicas, mejoras de procesos y presencia de marca.",
+        "location": {
+          "country": "Por definir",
+          "city": "Por definir"
+        }
+      },
+      {
+        "id": "grupo-3",
+        "name": "Anxpo",
+        "role": "Desarrollo",
+        "image": "assets/anxpo.png",
+        "description": "Apoya el desarrollo de sistemas y la organizacion operativa del ecosistema.",
+        "location": {
+          "country": "Por definir",
+          "city": "Por definir"
+        }
+      }
+    ]
+  }
+}
