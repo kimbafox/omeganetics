@@ -29,6 +29,17 @@
       <h2>Editar integrantes y grupo de trabajo</h2>
       <div id="authStatus" class="status-pill">Verificando configuracion...</div>
       <div id="googleLoginMount" class="google-login-mount"></div>
+      <form id="passwordLoginForm" class="password-login-form hidden">
+        <label class="form-field">
+          <span>Correo</span>
+          <input id="adminEmailInput" type="email" autocomplete="username">
+        </label>
+        <label class="form-field">
+          <span>Clave</span>
+          <input id="adminPasswordInput" type="password" autocomplete="current-password">
+        </label>
+        <button id="passwordLoginButton" type="submit" class="primary-action">Entrar con clave</button>
+      </form>
       <button id="logoutButton" type="button" class="secondary-action" style="display:none;">Cerrar sesion</button>
       <p id="authMessage" class="helper-copy"></p>
     </section>

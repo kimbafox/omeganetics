@@ -4,12 +4,15 @@ const fs = require("fs");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "juegocrisger@gmail.com").toLowerCase();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || "";
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
 const teamDataDir = path.join(__dirname, "data");
 const teamDataFile = path.join(teamDataDir, "equipo.json");
@@ -29,6 +32,10 @@ if (!process.env.JWT_SECRET) {
 
 if (!GOOGLE_CLIENT_ID) {
   console.warn("GOOGLE_CLIENT_ID no configurado: el panel admin de equipo quedara deshabilitado.");
+}
+
+if (!ADMIN_PASSWORD && !ADMIN_PASSWORD_HASH) {
+  console.warn("ADMIN_PASSWORD/ADMIN_PASSWORD_HASH no configurado: el acceso por clave del panel admin quedara deshabilitado.");
 }
 
 app.use(express.json({ limit: "2mb" }));
@@ -181,6 +188,30 @@ async function verifyGoogleToken(idToken) {
   return payload;
 }
 
+async function validateAdminPassword(password) {
+  if (!password || (!ADMIN_PASSWORD && !ADMIN_PASSWORD_HASH)) {
+    return false;
+  }
+
+  if (ADMIN_PASSWORD_HASH) {
+    return bcrypt.compare(password, ADMIN_PASSWORD_HASH);
+  }
+
+  return password === ADMIN_PASSWORD;
+}
+
+function createAdminToken(email, name = email) {
+  return jwt.sign(
+    {
+      role: "admin",
+      email,
+      name
+    },
+    JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+}
+
 function requireTeamAdmin(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
@@ -291,7 +322,8 @@ if (resolvedDatabaseUrl) {
 app.get("/api/team/auth-config", (req, res) => {
   res.json({
     googleClientId: GOOGLE_CLIENT_ID,
-    adminEmail: ADMIN_EMAIL
+    adminEmail: ADMIN_EMAIL,
+    passwordEnabled: Boolean(ADMIN_PASSWORD || ADMIN_PASSWORD_HASH)
   });
 });
 
@@ -309,15 +341,7 @@ app.post("/api/team/login/google", async (req, res) => {
       return res.status(403).json({ error: "Esta cuenta no tiene permisos de administrador." });
     }
 
-    const token = jwt.sign(
-      {
-        role: "admin",
-        email,
-        name: googleUser.name || googleUser.given_name || email
-      },
-      JWT_SECRET,
-      { expiresIn: "2h" }
-    );
+    const token = createAdminToken(email, googleUser.name || googleUser.given_name || email);
 
     return res.json({ token, role: "admin", email });
   } catch (error) {
@@ -327,6 +351,35 @@ app.post("/api/team/login/google", async (req, res) => {
       : "No se pudo validar la cuenta de Google.";
 
     return res.status(statusCode).json({ error: message });
+  }
+});
+
+app.post("/api/team/login/password", async (req, res) => {
+  try {
+    if (!ADMIN_PASSWORD && !ADMIN_PASSWORD_HASH) {
+      return res.status(503).json({ error: "El acceso por clave no esta configurado en el servidor." });
+    }
+
+    const email = String(req.body?.email || "").toLowerCase().trim();
+    const password = String(req.body?.password || "");
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Correo y clave son obligatorios." });
+    }
+
+    if (email !== ADMIN_EMAIL) {
+      return res.status(403).json({ error: "Esta cuenta no tiene permisos de administrador." });
+    }
+
+    const isValid = await validateAdminPassword(password);
+    if (!isValid) {
+      return res.status(401).json({ error: "Clave invalida." });
+    }
+
+    const token = createAdminToken(email);
+    return res.json({ token, role: "admin", email });
+  } catch (error) {
+    return res.status(500).json({ error: "No se pudo iniciar sesion con clave." });
   }
 });
 
