@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omeganetics</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <meta property="og:title" content="Omeganetics">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="/assets/previa.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Omeganetics">
+  <meta name="twitter:image" content="/assets/previa.png">
+
+  <link rel="stylesheet" href="css/styles.css">
+
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo-container">
+      <img src="assets/logo.png" class="logo">
+      <h1>Omeganetics</h1>
+    </div>
+
+    <nav>
+      <ul>
+        <li><button type="button" id="teamToggle" class="nav-toggle-link" aria-expanded="false" aria-controls="teamDropdown">Quiénes somos</button></li>
+        <li><a href="/wiki/">wikiprins</a></li>
+        <li><a href="/tiendita/indextienda.html">Realm</a></li>
+        <li><a href="/admin-equipo.html">Panel</a></li>
+        <li><a href="https://discord.gg/bCWjyns8U5" target="_blank">Discord</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section id="teamDropdown" class="team-dropdown" aria-hidden="true">
+    <div class="team-dropdown-inner">
+      <div class="team-dropdown-header">
+        <div>
+          <span class="team-eyebrow">Quienes somos</span>
+          <h2 id="teamTitle">Cargando estructura de Omeganetics...</h2>
+        </div>
+        <button type="button" id="teamClose" class="team-close-button" aria-label="Cerrar quienes somos">Cerrar</button>
+      </div>
+      <p id="teamDescription" class="team-dropdown-copy">Preparando perfiles, roles y accesos.</p>
+      <div id="teamCardsGrid" class="team-dropdown-grid"></div>
+    </div>
+  </section>
+
+  <!-- HERO -->
+  <section class="hero">
+
+    <div class="soldado-container">
+      <div class="soldado-visual">
+        <img src="assets/soldado.png" class="soldado">
+      </div>
+
+      <div class="servicios-floating anim">
+        <div class="servicio-display">
+          <span class="servicio-label">Servicios</span>
+          <h3 class="servicio-display-title">Diseño web</h3>
+          <p class="servicio-display-body">
+            Creamos sitios y plataformas con identidad visual clara, estructura funcional y enfoque profesional.
+          </p>
+        </div>
+
+        <div class="servicio-numeros" aria-label="Selector de servicios">
+          <button
+            type="button"
+            class="servicio-numero active"
+            data-title="Diseño web"
+            data-body="Creamos sitios y plataformas con identidad visual clara, estructura funcional y enfoque profesional."
+          >01</button>
+
+          <button
+            type="button"
+            class="servicio-numero"
+            data-title="Sistemas a medida"
+            data-body="Implementamos soluciones adaptadas a cada necesidad para optimizar procesos y operaciones digitales."
+          >02</button>
+
+          <button
+            type="button"
+            class="servicio-numero"
+            data-title="Gaming y comunidad"
+            data-body="Desarrollamos proyectos propios y organizamos eventos competitivos para fortalecer la comunidad gamer."
+          >03</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="contenido-texto anim">
+      <span class="hero-kicker">Estudio digital y comunidad competitiva</span>
+      <h2>Soluciones tecnológicas y entretenimiento digital</h2>
+
+      <p class="hero-copy">
+        En Omeganetics desarrollamos experiencias digitales con un enfoque profesional,
+        combinando diseño web, desarrollo de sistemas y proyectos interactivos para comunidades y marcas.
+      </p>
+
+      <a href="https://discord.gg/bCWjyns8U5" target="_blank" class="btn">
+        Conoce nuestra comunidad
+      </a>
+    </div>
+
+  </section>
+
+  <!-- EVENTOS -->
+  <section class="eventos-section">
+    <div class="eventos-contenido anim">
+      <h2>EVENTOS DE COMUNIDAD</h2>
+      <div class="eventos-imagen anim">
+      <img src="assets/eventos 1.png" alt="Eventos de comunidad Omeganetics">
+      </div>
+      <p>
+        Los eventos de comunidad en Omeganetics están orientados a la participación activa de los miembros mediante torneos y actividades organizadas. Se desarrollan bajo horarios definidos, con formatos competitivos estructurados y supervisión administrativa.
+      </p>
+      <p>
+        Los participantes compiten por recompensas en Omegacoin, fomentando la interacción, el crecimiento de la comunidad y la consolidación de equipos.
+      </p>
+      <p>
+        Ejemplos de estos eventos incluyen torneos como Valorant Uprising y Duality en Yu-Gi-Oh Master Duel.
+      </p>
+    </div>
+    
+  </section>
+
+  <!-- DESARROLLO -->
+  <section class="desarrollo-section">
+    
+    <div class="desarrollo-contenido anim">
+      <h2>DESARROLLO DE JUEGOS Y COMPLEMENTOS</h2>
+      <div class="desarrollo-imagen anim">
+      <img src="assets/DESARROLLO DE JUEGOS Y COMPLEMENTOS.png" alt="Desarrollo de juegos Omeganetics">
+      </div>
+      <p>
+        Esta categoría abarca la creación y desarrollo de proyectos propios dentro del ecosistema Omeganetics. Incluye servidores personalizados, sistemas internos, mods, datapacks y experiencias de juego únicas.
+      </p>
+      <p>
+        Se diseñan mecánicas innovadoras como progresión de jugadores, sistemas económicos basados en Omegacoin y eventos dinámicos dentro de los juegos.
+      </p>
+      <p>
+        Proyectos como Omegacraft, Steel Ball Craft, Culling Game y sistemas como Erudito o Cofu representan esta línea de desarrollo.
+      </p>
+    </div>
+  </section>
+
+  <!-- SCRIPT -->
+  <script>
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("show");
+        }
+      });
+    });
+
+    document.querySelectorAll(".anim").forEach(el => {
+      observer.observe(el);
+    });
+
+    const teamToggle = document.getElementById('teamToggle');
+    const teamDropdown = document.getElementById('teamDropdown');
+    const teamClose = document.getElementById('teamClose');
+
+    const setTeamDropdown = (isOpen) => {
+      if (!teamToggle || !teamDropdown) return;
+      teamDropdown.classList.toggle('open', isOpen);
+      teamDropdown.setAttribute('aria-hidden', String(!isOpen));
+      teamToggle.setAttribute('aria-expanded', String(isOpen));
+    };
+
+    if (teamToggle && teamDropdown) {
+      teamToggle.addEventListener('click', () => {
+        const isOpen = teamDropdown.classList.contains('open');
+        setTeamDropdown(!isOpen);
+      });
+    }
+
+    if (teamClose) {
+      teamClose.addEventListener('click', () => setTeamDropdown(false));
+    }
+
+    window.addEventListener('click', (event) => {
+      if (!teamDropdown || !teamToggle) return;
+      const clickedInside = teamDropdown.contains(event.target) || teamToggle.contains(event.target);
+      if (!clickedInside) {
+        setTeamDropdown(false);
+      }
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        setTeamDropdown(false);
+      }
+    });
+
+    const serviceButtons = document.querySelectorAll('.servicio-numero');
+    const serviceTitle = document.querySelector('.servicio-display-title');
+    const serviceBody = document.querySelector('.servicio-display-body');
+
+    serviceButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        serviceButtons.forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+
+        if (serviceTitle) {
+          serviceTitle.textContent = button.dataset.title || '';
+        }
+
+        if (serviceBody) {
+          serviceBody.textContent = button.dataset.body || '';
+        }
+      });
+    });
+  </script>
+  <script src="js/team-home.js"></script>
+
+</body>
+</html>
+

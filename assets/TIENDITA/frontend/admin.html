@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Panel Admin</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page storefront-page">
+
+<header class="header">
+  <h1>Panel de catálogo</h1>
+  <nav>
+    <a href="indextienda.html" class="btn">Inicio</a>
+    <a href="subir.html" class="btn">Subir proyecto</a>
+    <button class="btn" onclick="cerrarSesion()">Cerrar sesión</button>
+  </nav>
+</header>
+
+<main class="admin-shell">
+  <section class="admin-toolbar">
+    <input id="buscar" placeholder="Buscar por nombre o categoría..." 
+           oninput="buscarProyecto()">
+  </section>
+
+  <div id="lista" class="grid"></div>
+</main>
+
+<script>
+
+const API_BASE = "/api";
+const UPLOADS_BASE = "/uploads";
+
+const token = localStorage.getItem("token");
+
+if (!token || localStorage.getItem("rol") !== "admin") {
+  alert("Debes iniciar sesión como admin");
+  window.location.href = "login.html";
+}
+
+function cerrarSesion() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("rol");
+  window.location.href = "login.html";
+}
+
+let proyectos = [];
+
+async function cargarAdmin() {
+  const res = await fetch(`${API_BASE}/proyectos/listar`);
+  proyectos = await res.json();
+  mostrar(proyectos);
+}
+
+function mostrar(data) {
+  const cont = document.getElementById("lista");
+  cont.innerHTML = "";
+
+  data.forEach(p => {
+    const resumen = (p.descripcion || "Sin descripción").slice(0, 160);
+    const galeria = Array.isArray(p.imagenes) ? p.imagenes.length : 0;
+
+    cont.innerHTML += `
+      <div class="card-proyecto">
+        <div class="card-imagen-wrap">
+          <img class="card-portada" src="${UPLOADS_BASE}/${encodeURIComponent(p.portada)}">
+        </div>
+        <p class="card-categoria">${p.categoria}</p>
+        <h3 class="card-titulo">${p.nombre}</h3>
+        <p class="card-descripcion">${resumen}${(p.descripcion || "").length > 160 ? "..." : ""}</p>
+        <small class="card-fecha">Galería: ${galeria} imagen${galeria === 1 ? "" : "es"}</small>
+        <button class="btn btn-danger" onclick="eliminar(${p.id})">Eliminar</button>
+      </div>
+    `;
+  });
+}
+
+// BUSCAR
+function buscarProyecto() {
+  const texto = document.getElementById("buscar").value.toLowerCase();
+
+  const filtrados = proyectos.filter(p =>
+    p.nombre.toLowerCase().includes(texto) ||
+    String(p.categoria || "").toLowerCase().includes(texto)
+  );
+
+  mostrar(filtrados);
+}
+
+// ELIMINAR
+async function eliminar(id) {
+  if (!confirm("¿Eliminar proyecto?")) return;
+
+  const res = await fetch(`${API_BASE}/proyectos/eliminar/${id}`, {
+    method: "DELETE",
+    headers: { "Authorization": token }
+  });
+
+  if (res.status === 401 || res.status === 403) {
+    alert("Sesión inválida o expirada");
+    cerrarSesion();
+    return;
+  }
+
+  cargarAdmin();
+}
+
+cargarAdmin();
+
+</script>
+</body>
+</html>
