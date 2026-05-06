@@ -7,6 +7,7 @@ const cors = require('cors');
 const fs = require('fs');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken'); // NUEVO: Para la seguridad
+const cloudinary = require('./cloudinary');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +18,11 @@ const publicDir = path.join(__dirname, 'public');
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'juegocrisger@gmail.com').toLowerCase();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const cloudinaryEnabled = Boolean(
+    process.env.CLOUD_NAME &&
+    process.env.CLOUD_API_KEY &&
+    process.env.CLOUD_API_SECRET
+);
 
 if (!process.env.JWT_SECRET) {
     console.warn('> JWT_SECRET_NO_CONFIGURADO: se usara una clave temporal para esta ejecucion.');
@@ -24,6 +30,10 @@ if (!process.env.JWT_SECRET) {
 
 if (!GOOGLE_CLIENT_ID) {
     console.warn('> GOOGLE_CLIENT_ID_NO_CONFIGURADO: el acceso admin con Google quedara deshabilitado.');
+}
+
+if (!cloudinaryEnabled) {
+    console.warn('> CLOUDINARY_NO_CONFIGURADO: la subida de imagenes del lore quedara deshabilitada.');
 }
 
 if (!fs.existsSync(uploadsDir)) { fs.mkdirSync(uploadsDir, { recursive: true }); }
@@ -73,13 +83,7 @@ if (dbEnabled) {
     `).catch(err => console.error("Error actualizando tabla lore:", err));
 }
 
-const storage = multer.diskStorage({
-    destination: uploadsDir,
-    filename: function(req, file, cb) {
-        cb(null, 'lore-' + Date.now() + path.extname(file.originalname));
-    }
-});
-const upload = multer({ storage: storage });
+const upload = multer({ storage: multer.memoryStorage() });
 
 app.use(cors());
 app.use(express.json());
@@ -183,6 +187,46 @@ const verificarToken = (req, res, next) => {
     });
 };
 
+function uploadToCloudinary(file, fieldName) {
+    return new Promise((resolve, reject) => {
+        const extension = path.extname(file.originalname || '') || '.jpg';
+        const publicId = `${fieldName}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+
+        const uploadStream = cloudinary.uploader.upload_stream(
+            {
+                folder: 'mi-wiki-hacker/lore',
+                resource_type: 'image',
+                public_id: publicId,
+                format: extension.replace('.', '').toLowerCase()
+            },
+            (error, result) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+
+                resolve(result.secure_url);
+            }
+        );
+
+        uploadStream.end(file.buffer);
+    });
+}
+
+function readLorePayload(body) {
+    return {
+        title: body.title,
+        description: body.description,
+        shortDescription: body.shortDescription,
+        category: body.category,
+        timeline: body.timeline,
+        canonType: body.canonType,
+        otherNames: body.otherNames,
+        appearances: body.appearances,
+        additionalNotes: body.additionalNotes
+    };
+}
+
 // --- RUTAS DE LORE ---
 app.get('/api/lore/recent', async (req, res) => {
     if (!dbEnabled) {
@@ -195,6 +239,25 @@ app.get('/api/lore/recent', async (req, res) => {
             FROM lore
             ORDER BY created_at DESC, id DESC
             LIMIT 4
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/lore/sealed-carousel', async (req, res) => {
+    if (!dbEnabled) {
+        return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: define DATABASE_URL." });
+    }
+
+    try {
+        const result = await pool.query(`
+            SELECT id, title, short_description, category, img1, created_at
+            FROM lore
+            WHERE img1 IS NOT NULL
+            ORDER BY RANDOM()
+            LIMIT 12
         `);
         res.json(result.rows);
     } catch (err) {
@@ -234,6 +297,10 @@ app.post('/api/lore', verificarToken, cpUpload, async (req, res) => {
         return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: no se puede guardar lore." });
     }
 
+    if (!cloudinaryEnabled) {
+        return res.status(503).json({ error: "> CLOUDINARY_NO_CONFIGURADO: no se pueden guardar imagenes." });
+    }
+
     try {
         const {
             title,
@@ -245,16 +312,22 @@ app.post('/api/lore', verificarToken, cpUpload, async (req, res) => {
             otherNames,
             appearances,
             additionalNotes
-        } = req.body;
-        const img1 = req.files['img1'] ? `/uploads/${req.files['img1'][0].filename}` : null;
-        const img2 = req.files['img2'] ? `/uploads/${req.files['img2'][0].filename}` : null;
-        const img3 = req.files['img3'] ? `/uploads/${req.files['img3'][0].filename}` : null;
+        } = readLorePayload(req.body);
+        const img1File = req.files?.img1?.[0] || null;
+        const img2File = req.files?.img2?.[0] || null;
+        const img3File = req.files?.img3?.[0] || null;
 
-        if (!img1) return res.status(400).json({ error: "La imagen 1 es obligatoria" });
+        if (!img1File) return res.status(400).json({ error: "La imagen 1 es obligatoria" });
 
         if (!title || !description || !category || !shortDescription) {
             return res.status(400).json({ error: "Titulo, categoria, mini descripcion y descripcion completa son obligatorios." });
         }
+
+        const [img1, img2, img3] = await Promise.all([
+            uploadToCloudinary(img1File, 'img1'),
+            img2File ? uploadToCloudinary(img2File, 'img2') : Promise.resolve(null),
+            img3File ? uploadToCloudinary(img3File, 'img3') : Promise.resolve(null)
+        ]);
 
         const newLore = await pool.query(
             `
@@ -293,6 +366,105 @@ app.post('/api/lore', verificarToken, cpUpload, async (req, res) => {
         res.status(201).json(newLore.rows[0]);
     } catch (err) {
         if (err.code === '23505') res.status(400).json({ error: "Ese título de lore ya existe." });
+        else res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/lore/:id', verificarToken, cpUpload, async (req, res) => {
+    if (!dbEnabled) {
+        return res.status(503).json({ error: "> BASE_DE_DATOS_NO_CONFIGURADA: no se puede editar lore." });
+    }
+
+    try {
+        const loreId = Number(req.params.id);
+        if (!Number.isInteger(loreId) || loreId <= 0) {
+            return res.status(400).json({ error: 'ID de lore invalido.' });
+        }
+
+        const existingLore = await pool.query(
+            `
+                SELECT id, img1, img2, img3
+                FROM lore
+                WHERE id = $1
+                LIMIT 1
+            `,
+            [loreId]
+        );
+
+        if (!existingLore.rows.length) {
+            return res.status(404).json({ error: 'Lore no encontrado.' });
+        }
+
+        const {
+            title,
+            description,
+            shortDescription,
+            category,
+            timeline,
+            canonType,
+            otherNames,
+            appearances,
+            additionalNotes
+        } = readLorePayload(req.body);
+
+        if (!title || !description || !category || !shortDescription) {
+            return res.status(400).json({ error: 'Titulo, categoria, mini descripcion y descripcion completa son obligatorios.' });
+        }
+
+        const img1File = req.files?.img1?.[0] || null;
+        const img2File = req.files?.img2?.[0] || null;
+        const img3File = req.files?.img3?.[0] || null;
+        const currentLore = existingLore.rows[0];
+
+        if (!cloudinaryEnabled && (img1File || img2File || img3File)) {
+            return res.status(503).json({ error: '> CLOUDINARY_NO_CONFIGURADO: no se pueden reemplazar imagenes.' });
+        }
+
+        const [img1, img2, img3] = await Promise.all([
+            img1File ? uploadToCloudinary(img1File, 'img1') : Promise.resolve(currentLore.img1),
+            img2File ? uploadToCloudinary(img2File, 'img2') : Promise.resolve(currentLore.img2),
+            img3File ? uploadToCloudinary(img3File, 'img3') : Promise.resolve(currentLore.img3)
+        ]);
+
+        const updatedLore = await pool.query(
+            `
+                UPDATE lore
+                SET
+                    title = $1,
+                    description = $2,
+                    short_description = $3,
+                    category = $4,
+                    timeline = $5,
+                    canon_type = $6,
+                    other_names = $7,
+                    appearances = $8,
+                    additional_notes = $9,
+                    img1 = $10,
+                    img2 = $11,
+                    img3 = $12
+                WHERE id = $13
+                RETURNING *
+            `,
+            [
+                title,
+                description,
+                shortDescription,
+                category,
+                timeline || null,
+                canonType || null,
+                otherNames || null,
+                appearances || null,
+                additionalNotes || null,
+                img1,
+                img2,
+                img3,
+                loreId
+            ]
+        );
+
+        res.json(updatedLore.rows[0]);
+    } catch (err) {
+        if (err.code === '23505') res.status(400).json({ error: 'Ese título de lore ya existe.' });
         else res.status(500).json({ error: err.message });
     }
 });

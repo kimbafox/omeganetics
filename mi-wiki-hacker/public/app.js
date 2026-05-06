@@ -7,12 +7,36 @@ const uploadForm = document.getElementById('uploadForm');
 const searchError = document.getElementById('searchError');
 const loginError = document.getElementById('loginError');
 const recentLoreGrid = document.getElementById('recentLoreGrid');
+const sealedCarouselTrack = document.getElementById('sealedCarouselTrack');
+const adminLoreActions = document.getElementById('adminLoreActions');
+const editLoreButton = document.getElementById('editLoreButton');
 const loreCategory = document.getElementById('loreCategory');
 const loreShortDesc = document.getElementById('loreShortDesc');
 const loreMetaChips = document.getElementById('loreMetaChips');
 const loreDetails = document.getElementById('loreDetails');
 const googleLoginMount = document.getElementById('googleLoginMount');
 const googleLoginHint = document.getElementById('googleLoginHint');
+const uploadSectionTitle = document.getElementById('uploadSectionTitle');
+const uploadGuide = document.getElementById('uploadGuide');
+const editLoreId = document.getElementById('editLoreId');
+const formTitle = document.getElementById('formTitle');
+const formCategory = document.getElementById('formCategory');
+const formCanonType = document.getElementById('formCanonType');
+const formShortDesc = document.getElementById('formShortDesc');
+const formTimeline = document.getElementById('formTimeline');
+const formOtherNames = document.getElementById('formOtherNames');
+const formAppearances = document.getElementById('formAppearances');
+const formDesc = document.getElementById('formDesc');
+const formAdditionalNotes = document.getElementById('formAdditionalNotes');
+const img1Input = document.getElementById('img1');
+const img2Input = document.getElementById('img2');
+const img3Input = document.getElementById('img3');
+const img1Label = document.getElementById('img1Label');
+const editImageHint = document.getElementById('editImageHint');
+const cancelEditButton = document.getElementById('cancelEditButton');
+const submitButton = document.querySelector('.btn-submit');
+const imagePreviewSection = document.getElementById('imagePreviewSection');
+const imagePreviewGrid = document.getElementById('imagePreviewGrid');
 
 const BASE_PATH = window.location.pathname.startsWith('/wiki') ? '/wiki' : '';
 let authConfig = {
@@ -20,6 +44,65 @@ let authConfig = {
     adminEmail: 'juegocrisger@gmail.com'
 };
 let googleInitialized = false;
+let sealedCarouselAnimationId = null;
+let activeLoreRecord = null;
+
+function renderImagePreviews(currentLore = null) {
+    const previewItems = [];
+    const inputConfig = [
+        { input: img1Input, key: 'img1', label: 'Imagen principal' },
+        { input: img2Input, key: 'img2', label: 'Imagen adicional 1' },
+        { input: img3Input, key: 'img3', label: 'Imagen adicional 2' }
+    ];
+
+    inputConfig.forEach(({ input, key, label }) => {
+        const selectedFile = input.files && input.files[0] ? input.files[0] : null;
+        if (selectedFile) {
+            previewItems.push({
+                src: URL.createObjectURL(selectedFile),
+                title: label,
+                subtitle: `Nueva seleccion: ${selectedFile.name}`,
+                revoke: true
+            });
+            return;
+        }
+
+        if (currentLore && currentLore[key]) {
+            previewItems.push({
+                src: normalizeImageSrc(currentLore[key]),
+                title: label,
+                subtitle: 'Imagen actual del sellado',
+                revoke: false
+            });
+        }
+    });
+
+    if (!previewItems.length) {
+        imagePreviewGrid.innerHTML = '';
+        imagePreviewSection.style.display = 'none';
+        return;
+    }
+
+    imagePreviewGrid.innerHTML = previewItems.map(item => `
+        <article class="image-preview-card">
+            <img src="${escapeHtml(item.src)}" alt="${escapeHtml(item.title)}">
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.subtitle)}</span>
+        </article>
+    `).join('');
+    imagePreviewSection.style.display = 'block';
+
+    previewItems.forEach(item => {
+        if (!item.revoke) {
+            return;
+        }
+
+        const previewImage = imagePreviewGrid.querySelector(`img[src="${CSS.escape(item.src)}"]`);
+        if (previewImage) {
+            previewImage.addEventListener('load', () => URL.revokeObjectURL(item.src), { once: true });
+        }
+    });
+}
 
 function buildApiUrl(endpoint) {
     return `${BASE_PATH}/api${endpoint}`;
@@ -200,6 +283,7 @@ function renderLoreDetails(data) {
 }
 
 function renderLoreResult(data) {
+    activeLoreRecord = data;
     document.getElementById('loreTitle').innerText = (data.title || '').toUpperCase();
     loreCategory.textContent = data.category ? `Archivo ${data.category}` : 'Archivo de lore';
     loreShortDesc.textContent = data.short_description || 'Sin mini descripcion archivada.';
@@ -219,6 +303,57 @@ function renderLoreResult(data) {
     });
 
     resultSection.style.display = 'block';
+    adminLoreActions.style.display = getStoredAdminToken() ? 'flex' : 'none';
+}
+
+function resetUploadFormMode() {
+    uploadForm.reset();
+    editLoreId.value = '';
+    uploadSectionTitle.textContent = 'Añadir Nuevo Conocimiento al Pergamino';
+    uploadGuide.textContent = 'Guia breve: completa lo esencial, resume en pocas lineas y agrega la imagen principal.';
+    img1Input.required = true;
+    img1Label.textContent = 'Imagen Principal (Obligatoria):';
+    editImageHint.style.display = 'none';
+    cancelEditButton.style.display = 'none';
+    submitButton.textContent = 'Sellar en el Pergamino';
+    renderImagePreviews(null);
+}
+
+function fillUploadFormForEdit(data) {
+    editLoreId.value = data.id || '';
+    formTitle.value = data.title || '';
+    formCategory.value = data.category || '';
+    formCanonType.value = data.canon_type || '';
+    formShortDesc.value = data.short_description || '';
+    formTimeline.value = data.timeline || '';
+    formOtherNames.value = data.other_names || '';
+    formAppearances.value = data.appearances || '';
+    formDesc.value = data.description || '';
+    formAdditionalNotes.value = data.additional_notes || '';
+    img1Input.required = false;
+    img1Label.textContent = 'Imagen Principal (Opcional al editar):';
+    uploadSectionTitle.textContent = `Editar Sellado: ${data.title || ''}`;
+    uploadGuide.textContent = 'Modo edicion: actualiza el registro y reemplaza imagenes solo si subes archivos nuevos.';
+    editImageHint.style.display = 'block';
+    cancelEditButton.style.display = 'inline-flex';
+    submitButton.textContent = 'Guardar cambios del sellado';
+    renderImagePreviews(data);
+}
+
+function beginLoreEdit() {
+    if (!activeLoreRecord || !getStoredAdminToken()) {
+        return;
+    }
+
+    resetUploadFormMode();
+    fillUploadFormForEdit(activeLoreRecord);
+    showSection('upload');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openLoreFromTitle(title) {
+    searchInput.value = title;
+    searchInput.dispatchEvent(new Event('input'));
 }
 
 async function loadLore(keyword) {
@@ -283,6 +418,88 @@ async function loadRecentLore() {
         });
     } catch (error) {
         recentLoreGrid.innerHTML = '<div class="recent-empty">No fue posible conectar con el archivo reciente.</div>';
+    }
+}
+
+function stopSealedCarouselAnimation() {
+    if (sealedCarouselAnimationId) {
+        cancelAnimationFrame(sealedCarouselAnimationId);
+        sealedCarouselAnimationId = null;
+    }
+}
+
+function startSealedCarouselAnimation() {
+    stopSealedCarouselAnimation();
+
+    if (!sealedCarouselTrack || sealedCarouselTrack.children.length < 2) {
+        return;
+    }
+
+    let offset = 0;
+    let lastTime = null;
+
+    const tick = (timestamp) => {
+        if (lastTime === null) {
+            lastTime = timestamp;
+        }
+
+        const delta = timestamp - lastTime;
+        lastTime = timestamp;
+        offset += delta * 0.006;
+        const loopWidth = sealedCarouselTrack.scrollWidth / 2;
+        if (loopWidth > 0 && offset >= loopWidth) {
+            offset -= loopWidth;
+        }
+
+        sealedCarouselTrack.style.transform = `translateX(${-offset}px)`;
+        sealedCarouselAnimationId = requestAnimationFrame(tick);
+    };
+
+    sealedCarouselAnimationId = requestAnimationFrame(tick);
+}
+
+async function loadSealedCarousel() {
+    if (!sealedCarouselTrack) {
+        return;
+    }
+
+    try {
+        const response = await fetch(buildApiUrl('/lore/sealed-carousel'));
+        if (!response.ok) {
+            sealedCarouselTrack.innerHTML = '<div class="sealed-carousel-empty">No fue posible abrir el carrusel de sellados.</div>';
+            stopSealedCarouselAnimation();
+            return;
+        }
+
+        const items = await response.json();
+        if (!items.length) {
+            sealedCarouselTrack.innerHTML = '<div class="sealed-carousel-empty">Aun no hay imagenes selladas para mostrar.</div>';
+            stopSealedCarouselAnimation();
+            return;
+        }
+
+        const cards = items.map(item => `
+            <article class="sealed-carousel-card" data-title="${escapeHtml(item.title)}">
+                <img src="${escapeHtml(normalizeImageSrc(item.img1))}" alt="${escapeHtml(item.title)}">
+                <div class="sealed-carousel-overlay">
+                    <strong>${escapeHtml(item.title)}</strong>
+                    <span>${escapeHtml(item.category || 'Archivo')}</span>
+                </div>
+            </article>
+        `).join('');
+
+        sealedCarouselTrack.innerHTML = `${cards}${cards}`;
+        sealedCarouselTrack.querySelectorAll('[data-title]').forEach(card => {
+            card.addEventListener('click', () => {
+                const title = card.getAttribute('data-title');
+                openLoreFromTitle(title);
+            });
+        });
+
+        startSealedCarouselAnimation();
+    } catch (error) {
+        sealedCarouselTrack.innerHTML = '<div class="sealed-carousel-empty">No fue posible conectar con el archivo rotativo.</div>';
+        stopSealedCarouselAnimation();
     }
 }
 
@@ -377,6 +594,7 @@ function showSection(section) {
         if (token) {
             uploadSection.style.display = 'block';
         } else {
+            resetUploadFormMode();
             loginSection.style.display = 'flex';
             initGoogleLogin();
         }
@@ -407,7 +625,9 @@ uploadForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const formData = new FormData(uploadForm);
-    const submitBtn = document.querySelector('.btn-submit');
+    const loreId = editLoreId.value.trim();
+    const isEditing = Boolean(loreId);
+    const submitBtn = submitButton;
     submitBtn.innerText = "Sellando..."; submitBtn.disabled = true;
 
     // Recuperar el token para enviarlo como pase VIP
@@ -420,8 +640,8 @@ uploadForm.addEventListener('submit', async function(e) {
             return;
         }
 
-        const response = await fetch(buildApiUrl('/lore'), {
-            method: 'POST',
+        const response = await fetch(buildApiUrl(isEditing ? `/lore/${encodeURIComponent(loreId)}` : '/lore'), {
+            method: isEditing ? 'PUT' : 'POST',
             headers: {
                 'Authorization': `Bearer ${token}` // NUEVO: Enviar credencial
             },
@@ -431,12 +651,14 @@ uploadForm.addEventListener('submit', async function(e) {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`¡El conocimiento sobre "${result.title}" ha sido sellado en el pergamino!`);
-            uploadForm.reset();
+            alert(isEditing
+                ? `Los cambios de "${result.title}" fueron actualizados en el pergamino.`
+                : `¡El conocimiento sobre "${result.title}" ha sido sellado en el pergamino!`);
+            resetUploadFormMode();
             await loadRecentLore();
+            await loadSealedCarousel();
             showSection('search');
-            searchInput.value = result.title;
-            searchInput.dispatchEvent(new Event('input'));
+            openLoreFromTitle(result.title);
         } else {
             alert("Error: " + result.error);
             // Si el error es por token expirado, forzar login de nuevo
@@ -448,16 +670,34 @@ uploadForm.addEventListener('submit', async function(e) {
     } catch (error) {
         alert("Ocurrió un error en el servidor.");
     } finally {
-        submitBtn.innerText = "Sellar en el Pergamino"; submitBtn.disabled = false;
+        submitBtn.innerText = editLoreId.value.trim() ? 'Guardar cambios del sellado' : 'Sellar en el Pergamino';
+        submitBtn.disabled = false;
     }
+});
+
+editLoreButton.addEventListener('click', beginLoreEdit);
+
+cancelEditButton.addEventListener('click', () => {
+    resetUploadFormMode();
+    showSection('search');
+});
+
+[img1Input, img2Input, img3Input].forEach(input => {
+    input.addEventListener('change', () => {
+        renderImagePreviews(editLoreId.value.trim() ? activeLoreRecord : null);
+    });
 });
 
 // Botón secreto para cerrar sesión (Opcional, lo puedes poner en la consola del navegador)
 window.logoutAdmin = function() {
     localStorage.removeItem('wikiAdminToken');
+    adminLoreActions.style.display = 'none';
+    resetUploadFormMode();
     alert("Sesión cerrada. Acceso revocado.");
     showSection('search');
 }
 
+resetUploadFormMode();
 initGoogleLogin();
 loadRecentLore();
+loadSealedCarousel();

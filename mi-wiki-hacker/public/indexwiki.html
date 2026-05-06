@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wikiprins - Archivo de Lore</title>
     <link rel="icon" type="image/png" href="/assets/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -35,6 +38,19 @@
                 </div>
                 <div id="recentLoreGrid" class="recent-grid"></div>
             </section>
+
+            <section class="sealed-carousel-shell" aria-labelledby="sealedCarouselTitle">
+                <div class="sealed-carousel-header">
+                    <div>
+                        <p class="section-kicker">ARCHIVO EN ROTACION</p>
+                        <h2 id="sealedCarouselTitle">Sellados aleatorios desfilando al fondo</h2>
+                    </div>
+                    <p class="sealed-carousel-copy">Una tira corta que avanza sola mostrando imagenes recuperadas del archivo.</p>
+                </div>
+                <div class="sealed-carousel-window">
+                    <div id="sealedCarouselTrack" class="sealed-carousel-track"></div>
+                </div>
+            </section>
         </div>
 
         <div id="resultSection" class="parchment-container">
@@ -45,6 +61,9 @@
                     <p id="loreShortDesc" class="lore-lead"></p>
                 </div>
                 <div id="loreMetaChips" class="meta-chip-list"></div>
+            </div>
+            <div id="adminLoreActions" class="admin-lore-actions" style="display: none;">
+                <button type="button" id="editLoreButton" class="btn-admin-action">Editar sellado</button>
             </div>
             <div id="loreDetails" class="lore-details"></div>
             <div id="loreDesc" class="lore-description"></div>
@@ -60,9 +79,10 @@
         </div>
 
         <div id="uploadSection" class="parchment-container">
-            <h2>Añadir Nuevo Conocimiento al Pergamino</h2>
-            <p class="upload-guide">Guia breve: completa lo esencial, resume en pocas lineas y agrega la imagen principal.</p>
+            <h2 id="uploadSectionTitle">Añadir Nuevo Conocimiento al Pergamino</h2>
+            <p id="uploadGuide" class="upload-guide">Guia breve: completa lo esencial, resume en pocas lineas y agrega la imagen principal.</p>
             <form id="uploadForm" enctype="multipart/form-data">
+                <input type="hidden" id="editLoreId" name="editLoreId">
                 <div class="form-group">
                     <label>Título / Palabra Clave:</label>
                     <input type="text" id="formTitle" name="title" required placeholder="Ej: Dragon Anciano">
@@ -117,7 +137,7 @@
                     <textarea id="formAdditionalNotes" name="additionalNotes" rows="4" placeholder="Notas extra opcionales."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>Imagen Principal (Obligatoria):</label>
+                    <label id="img1Label">Imagen Principal (Obligatoria):</label>
                     <input type="file" id="img1" name="img1" accept="image/*" required>
                 </div>
                 <div class="form-group">
@@ -125,7 +145,15 @@
                     <input type="file" id="img2" name="img2" accept="image/*">
                     <input type="file" id="img3" name="img3" accept="image/*">
                 </div>
-                <button type="submit" class="btn-submit">Sellar en el Pergamino</button>
+                <div id="imagePreviewSection" class="image-preview-section" style="display: none;">
+                    <p class="image-preview-title">Previsualización del sellado</p>
+                    <div id="imagePreviewGrid" class="image-preview-grid"></div>
+                </div>
+                <p id="editImageHint" class="edit-image-hint" style="display: none;">Si no subes una imagen nueva, se conserva la actual.</p>
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Sellar en el Pergamino</button>
+                    <button type="button" id="cancelEditButton" class="btn-secondary" style="display: none;">Cancelar edición</button>
+                </div>
             </form>
         </div>
     </main>
