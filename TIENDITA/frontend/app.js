@@ -147,6 +147,11 @@ function buildUploadUrl(fileName) {
 
 let proyectosCache = [];
 
+function obtenerImagenesProyecto(proyecto) {
+  return [proyecto?.portada, ...(Array.isArray(proyecto?.imagenes) ? proyecto.imagenes : [])]
+    .filter(Boolean);
+}
+
 function resumenTexto(texto, max = 90) {
   if (!texto) return "Sin descripción";
   return texto.length > max ? `${texto.slice(0, max).trim()}...` : texto;
@@ -164,23 +169,87 @@ function formatearCategoria(categoria) {
 }
 
 function tarjetaProyectoHTML(p) {
-  const portadaUrl = buildUploadUrl(p.portada);
-  const imagenes = Array.isArray(p.imagenes) ? p.imagenes : [];
+  const imagenes = obtenerImagenesProyecto(p);
   const resumen = resumenTexto(p.descripcion, 180);
+  const imagenesSlides = imagenes
+    .map((imagen, index) => `
+      <figure class="card-slide ${index === 0 ? "active" : ""}" data-slide-index="${index}">
+        <img class="card-portada" src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${p.nombre}">
+      </figure>
+    `)
+    .join("");
+  const indicadores = imagenes
+    .map((_, index) => `
+      <button class="card-indicador ${index === 0 ? "active" : ""}" type="button" aria-label="Ir a la imagen ${index + 1}" data-card-go="${index}"></button>
+    `)
+    .join("");
+  const textoBoton = p.archivo ? "Instalar" : "Ver detalle";
+  const textoGaleria = imagenes.length > 1
+    ? `${imagenes.length} vistas disponibles`
+    : "Vista única";
 
   return `
     <article class="card-proyecto">
-      <div class="card-imagen-wrap">
-        <img class="card-portada" src="${portadaUrl}" alt="Portada de ${p.nombre}">
+      <div class="card-imagen-wrap" data-card-carousel>
+        <div class="card-slides">
+          ${imagenesSlides}
+        </div>
+        ${imagenes.length > 1 ? `
+          <button class="card-carousel-btn prev" type="button" aria-label="Imagen anterior" data-card-prev>
+            <span aria-hidden="true">&#8249;</span>
+          </button>
+          <button class="card-carousel-btn next" type="button" aria-label="Imagen siguiente" data-card-next>
+            <span aria-hidden="true">&#8250;</span>
+          </button>
+        ` : ""}
+        <div class="card-indicadores" aria-label="Galería del producto">
+          ${indicadores}
+        </div>
       </div>
-      <h3 class="card-titulo">${p.nombre}</h3>
-      <p class="card-categoria">${formatearCategoria(p.categoria)}</p>
-      <p class="card-descripcion">${resumen}</p>
-      <p class="card-resumen-extra">${imagenes.length} imagen${imagenes.length === 1 ? "" : "es"} en galería</p>
-      <small class="card-fecha">${new Date(p.fecha).toLocaleDateString()}</small>
-      <button class="btn btn-ver-detalle" data-id="${p.id}">Ver proyecto</button>
+      <div class="card-contenido">
+        <div class="card-cabecera">
+          <p class="card-categoria">${formatearCategoria(p.categoria)}</p>
+          <small class="card-fecha">${new Date(p.fecha).toLocaleDateString()}</small>
+        </div>
+        <h3 class="card-titulo">${p.nombre}</h3>
+        <p class="card-descripcion">${resumen}</p>
+        <div class="card-footer">
+          <p class="card-resumen-extra">${textoGaleria}</p>
+          <button class="btn btn-ver-detalle" data-id="${p.id}">${textoBoton}</button>
+        </div>
+      </div>
     </article>
   `;
+}
+
+function actualizarCarruselTarjeta(card, nextIndex) {
+  if (!card) return;
+
+  const slides = Array.from(card.querySelectorAll(".card-slide"));
+  const indicadores = Array.from(card.querySelectorAll(".card-indicador"));
+
+  if (!slides.length) return;
+
+  const total = slides.length;
+  const indexNormalizado = ((nextIndex % total) + total) % total;
+
+  card.dataset.currentSlide = String(indexNormalizado);
+
+  slides.forEach((slide, index) => {
+    slide.classList.toggle("active", index === indexNormalizado);
+  });
+
+  indicadores.forEach((indicador, index) => {
+    indicador.classList.toggle("active", index === indexNormalizado);
+  });
+}
+
+function moverCarruselTarjeta(control, delta) {
+  const card = control.closest(".card-proyecto");
+  if (!card) return;
+
+  const current = Number(card.dataset.currentSlide || 0);
+  actualizarCarruselTarjeta(card, current + delta);
 }
 
 function obtenerProyectoPorId(id) {
@@ -469,6 +538,25 @@ document.addEventListener("DOMContentLoaded", () => {
   crearModalProyectoSiNoExiste();
 
   document.addEventListener("click", (e) => {
+    const prevBtn = e.target.closest("[data-card-prev]");
+    if (prevBtn) {
+      moverCarruselTarjeta(prevBtn, -1);
+      return;
+    }
+
+    const nextBtn = e.target.closest("[data-card-next]");
+    if (nextBtn) {
+      moverCarruselTarjeta(nextBtn, 1);
+      return;
+    }
+
+    const indicador = e.target.closest("[data-card-go]");
+    if (indicador) {
+      const card = indicador.closest(".card-proyecto");
+      actualizarCarruselTarjeta(card, Number(indicador.dataset.cardGo || 0));
+      return;
+    }
+
     const trigger = e.target.closest(".btn-ver-detalle");
     if (trigger) {
       abrirDetalleProyecto(trigger.dataset.id);

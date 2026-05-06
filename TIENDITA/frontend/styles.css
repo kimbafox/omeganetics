@@ -590,18 +590,20 @@ button:hover {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   gap: 18px;
 }
 
 .card-proyecto {
   background: linear-gradient(180deg, rgba(16, 22, 37, 0.96) 0%, rgba(8, 12, 20, 0.96) 100%);
   border: 1px solid var(--line);
-  padding: 14px;
+  padding: 16px;
   border-radius: 18px;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
   min-height: 100%;
   box-shadow: var(--shadow);
   position: relative;
@@ -630,12 +632,12 @@ button:hover {
 
 .card-imagen-wrap {
   width: 100%;
-  aspect-ratio: 16 / 10;
+  min-height: 100%;
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid rgba(247, 212, 124, 0.2);
-  margin-bottom: 12px;
   background: #05070d;
+  position: relative;
 }
 
 .storefront-page .card-imagen-wrap {
@@ -651,8 +653,108 @@ button:hover {
   display: block;
 }
 
+.card-slides {
+  position: relative;
+  height: 100%;
+  min-height: 250px;
+}
+
+.card-slide {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.card-slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card-carousel-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(35, 23, 18, 0.78);
+  color: #f6ecd8;
+  border: 1px solid rgba(246, 236, 216, 0.22);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.16);
+  z-index: 2;
+}
+
+.card-carousel-btn.prev {
+  left: 12px;
+}
+
+.card-carousel-btn.next {
+  right: 12px;
+}
+
+.card-carousel-btn span {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.card-carousel-btn:hover,
+.card-indicador:hover {
+  transform: none;
+  filter: none;
+}
+
+.card-indicadores {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.card-indicador {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 248, 235, 0.48);
+  background: rgba(255, 248, 235, 0.24);
+  box-shadow: none;
+}
+
+.card-indicador.active {
+  background: #f6ecd8;
+  transform: scale(1.1);
+}
+
+.card-contenido {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+}
+
+.card-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .card-titulo {
-  margin: 4px 0 10px;
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
 }
 
 .card-categoria {
@@ -666,7 +768,7 @@ button:hover {
   border: 1px solid rgba(126, 231, 195, 0.2);
   color: #d8fff2;
   font-size: 0.84rem;
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .storefront-page .card-categoria {
@@ -681,11 +783,12 @@ button:hover {
 }
 
 .card-descripcion {
-  margin: 0 0 10px 0;
-  font-size: 0.94rem;
-  line-height: 1.45;
+  margin: 0;
+  font-size: 0.97rem;
+  line-height: 1.6;
   color: var(--muted);
-  min-height: 3.2em;
+  min-height: 4.8em;
+  max-width: 62ch;
 }
 
 .storefront-page .card-descripcion,
@@ -696,16 +799,29 @@ button:hover {
 
 .card-fecha {
   display: block;
-  margin-bottom: 12px;
+  margin: 0;
   color: var(--muted);
 }
 
 .card-resumen-extra {
-  margin: 0 0 12px;
+  margin: 0;
   color: var(--accent);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.btn-ver-detalle {
+  min-width: 148px;
 }
 
 .card-proyecto:hover {
@@ -1062,6 +1178,14 @@ label {
     grid-template-columns: 1fr;
   }
 
+  .card-proyecto {
+    grid-template-columns: 1fr;
+  }
+
+  .card-imagen-wrap {
+    min-height: 260px;
+  }
+
   .modal-grid {
     grid-template-columns: 1fr;
   }
@@ -1078,6 +1202,25 @@ label {
 @media (max-width: 760px) {
   .carousel {
     height: 250px;
+  }
+
+  .card-proyecto {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .card-slides {
+    min-height: 220px;
+  }
+
+  .card-footer,
+  .card-cabecera {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .btn-ver-detalle {
+    width: 100%;
   }
 
   .modal-imagen-wrap {
