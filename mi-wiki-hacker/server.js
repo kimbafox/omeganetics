@@ -19,6 +19,7 @@ const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'juegocrisger@gmail.com').toLowe
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const cloudinaryEnabled = Boolean(
+    cloudinary &&
     process.env.CLOUD_NAME &&
     process.env.CLOUD_API_KEY &&
     process.env.CLOUD_API_SECRET
@@ -189,6 +190,11 @@ const verificarToken = (req, res, next) => {
 
 function uploadToCloudinary(file, fieldName) {
     return new Promise((resolve, reject) => {
+        if (!cloudinary) {
+            reject(new Error('cloudinary_sdk_missing'));
+            return;
+        }
+
         const extension = path.extname(file.originalname || '') || '.jpg';
         const publicId = `${fieldName}-${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
 
