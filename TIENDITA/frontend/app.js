@@ -3,6 +3,7 @@
 // ===============================
 const API_BASE = "/api";
 const UPLOADS_BASE = "/uploads";
+const STOREFRONT_THEME_KEY = "tienditaTheme";
 
 function login() {
   return loginReal();
@@ -183,7 +184,7 @@ function tarjetaProyectoHTML(p) {
       <button class="card-indicador ${index === 0 ? "active" : ""}" type="button" aria-label="Ir a la imagen ${index + 1}" data-card-go="${index}"></button>
     `)
     .join("");
-  const textoBoton = p.archivo ? "Instalar" : "Ver detalle";
+  const textoBoton = p.archivo ? "Ver e instalar" : "Ver producto";
   const textoGaleria = imagenes.length > 1
     ? `${imagenes.length} vistas disponibles`
     : "Vista única";
@@ -280,9 +281,12 @@ function abrirDetalleProyecto(id) {
   if (!proyecto || !modal || !body) return;
 
   const archivoBoton = proyecto.archivo
-    ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Descargar archivo</a>`
-    : `<span class="sin-archivo">Sin archivo adjunto</span>`;
-  const galeria = [proyecto.portada, ...(Array.isArray(proyecto.imagenes) ? proyecto.imagenes : [])]
+    ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Instalar ahora</a>`
+    : `<span class="sin-archivo">Este producto no incluye archivo descargable.</span>`;
+  const descripcion = proyecto.descripcion || "Sin descripcion";
+  const resumen = resumenTexto(descripcion, 220);
+  const imagenes = obtenerImagenesProyecto(proyecto);
+  const galeria = imagenes
     .filter(Boolean)
     .map((imagen, index) => `
       <button class="galeria-thumb ${index === 0 ? "active" : ""}" type="button" data-galeria-src="${buildUploadUrl(imagen)}">
@@ -294,17 +298,26 @@ function abrirDetalleProyecto(id) {
   body.innerHTML = `
     <div class="modal-grid">
       <div class="modal-imagen-wrap">
-        <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
+        <div class="modal-hero-media">
+          <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
+        </div>
         <div class="galeria-thumbs">${galeria}</div>
       </div>
 
       <div class="modal-info">
-        <h2>${proyecto.nombre}</h2>
-        <p><strong>Categoria:</strong> ${formatearCategoria(proyecto.categoria)}</p>
-        <p><strong>Fecha:</strong> ${new Date(proyecto.fecha).toLocaleDateString()}</p>
-        <p><strong>Resumen:</strong> ${resumenTexto(proyecto.descripcion, 240)}</p>
-        <p><strong>Descripcion:</strong></p>
-        <p class="modal-descripcion">${proyecto.descripcion || "Sin descripcion"}</p>
+        <div class="modal-header-copy">
+          <p class="modal-kicker">${formatearCategoria(proyecto.categoria)}</p>
+          <h2>${proyecto.nombre}</h2>
+          <p class="modal-fecha">Publicado el ${new Date(proyecto.fecha).toLocaleDateString()}</p>
+        </div>
+        <div class="modal-resumen-box">
+          <span class="modal-label">Resumen</span>
+          <p class="modal-resumen">${resumen}</p>
+        </div>
+        <div class="modal-detalle-box">
+          <span class="modal-label">Descripción completa</span>
+          <p class="modal-descripcion">${descripcion}</p>
+        </div>
         <div class="acciones-proyecto">${archivoBoton}</div>
       </div>
     </div>
@@ -529,6 +542,28 @@ function iniciarCarrusel() {
   }, 4000);
 }
 
+function aplicarTemaTienda(theme = "default") {
+  const body = document.body;
+  if (!body || !body.classList.contains("storefront-page")) return;
+
+  const useCrimson = theme === "crimson";
+  body.classList.toggle("theme-crimson", useCrimson);
+
+  const toggle = document.getElementById("logoThemeToggle");
+  if (toggle) {
+    toggle.setAttribute("aria-pressed", String(useCrimson));
+  }
+}
+
+function alternarTemaTienda() {
+  const body = document.body;
+  if (!body || !body.classList.contains("storefront-page")) return;
+
+  const nextTheme = body.classList.contains("theme-crimson") ? "default" : "crimson";
+  aplicarTemaTienda(nextTheme);
+  localStorage.setItem(STOREFRONT_THEME_KEY, nextTheme);
+}
+
 // ===============================
 // 🚀 INICIO
 // ===============================
@@ -536,6 +571,12 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarEstadoLoginPage();
   protegerVistaSubir();
   crearModalProyectoSiNoExiste();
+  aplicarTemaTienda(localStorage.getItem(STOREFRONT_THEME_KEY) || "default");
+
+  const logoThemeToggle = document.getElementById("logoThemeToggle");
+  if (logoThemeToggle) {
+    logoThemeToggle.addEventListener("click", alternarTemaTienda);
+  }
 
   document.addEventListener("click", (e) => {
     const prevBtn = e.target.closest("[data-card-prev]");

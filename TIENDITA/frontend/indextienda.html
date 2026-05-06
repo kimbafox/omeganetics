@@ -13,15 +13,16 @@
 <div class="page-ink page-ink-right" aria-hidden="true"></div>
 
 <header class="header">
-  <div class="logo-container">
+  <button class="logo-container logo-toggle" id="logoThemeToggle" type="button" aria-label="Cambiar tema visual de la tienda" title="Cambiar tema visual de la tienda">
     <img src="assets/logo.png" class="logo" alt="Logo de Omeganetics Realm">
     <div>
       <h1>Omeganetics Realm</h1>
       <p class="logo-subtitle">Tienda épica para creadores del reino</p>
     </div>
-  </div>
+  </button>
 
   <nav>
+    <a href="../../index.html" class="btn btn-secondary">Volver al index</a>
     <a href="login.html" id="btnEntrar" class="btn btn-secondary">Entrar</a>
     <a href="admin.html" id="btnAdmin" class="btn" style="display:none;">Panel Admin</a>
     <button id="btnLogout" class="btn btn-secondary" style="display:none;" onclick="cerrarSesion()">Cerrar sesión</button>
