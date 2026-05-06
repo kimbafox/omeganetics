@@ -5,6 +5,7 @@
 <title>Acceso</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -18,13 +19,13 @@
 <div class="login-container">
 
   <div class="login-card">
-    <h2>🔐 Acceso al Reino</h2>
+    <h2>Acceso al Reino</h2>
     <p id="sesionActiva" style="display:none;"></p>
 
-    <input type="email" id="correo" placeholder="Correo del aventurero">
-    <input type="password" id="password" placeholder="Clave secreta">
-
-    <button id="btnIngresar" onclick="login()">Ingresar</button>
+    <p class="login-copy">El acceso ahora se valida con confirmación de correo de Google.</p>
+    <p class="login-allowed-email">Cuenta permitida: juegocrisger@gmail.com</p>
+    <div id="googleLoginMount" class="google-login-mount"></div>
+    <p id="googleLoginStatus" class="google-login-status"></p>
     <button id="btnLogoutLogin" style="display:none;" onclick="cerrarSesion()">Cerrar sesión</button>
   </div>
 

@@ -4,9 +4,21 @@
 const API_BASE = "/api";
 const UPLOADS_BASE = "/uploads";
 const STOREFRONT_THEME_KEY = "tienditaTheme";
+let googleLoginConfig = null;
 
 function login() {
   return loginReal();
+}
+
+function guardarSesion(data) {
+  localStorage.setItem("token", data.token);
+  localStorage.setItem("rol", data.rol);
+
+  if (data.rol === "admin") {
+    window.location.href = "admin.html";
+  } else {
+    window.location.href = "indextienda.html";
+  }
 }
 
 async function loginReal() {
@@ -23,20 +35,90 @@ async function loginReal() {
     const data = await res.json();
 
     if (data.token) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("rol", data.rol);
-
-      if (data.rol === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "indextienda.html";
-      }
+      guardarSesion(data);
     } else {
       alert(data.error || "Error login");
     }
   } catch (err) {
     alert("Error de conexión con el servidor");
   }
+}
+
+function setGoogleLoginStatus(message, isError = false) {
+  const status = document.getElementById("googleLoginStatus");
+  if (!status) return;
+
+  status.textContent = message || "";
+  status.classList.toggle("error", Boolean(message) && isError);
+  status.classList.toggle("success", Boolean(message) && !isError);
+}
+
+async function loginConGoogle(credential) {
+  try {
+    setGoogleLoginStatus("Validando acceso con Google...");
+
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ credential })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.token) {
+      setGoogleLoginStatus(data.error || "No se pudo iniciar sesión con Google", true);
+      return;
+    }
+
+    setGoogleLoginStatus("Acceso confirmado. Redirigiendo...");
+    guardarSesion(data);
+  } catch (err) {
+    setGoogleLoginStatus("Error de conexión con el servidor", true);
+  }
+}
+
+async function iniciarLoginGoogle() {
+  const mount = document.getElementById("googleLoginMount");
+  if (!mount) return;
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/google-config`);
+    googleLoginConfig = await res.json();
+  } catch {
+    setGoogleLoginStatus("No se pudo cargar la configuración de Google", true);
+    return;
+  }
+
+  if (!googleLoginConfig?.enabled || !googleLoginConfig?.clientId) {
+    setGoogleLoginStatus("Falta configurar GOOGLE_CLIENT_ID en Railway", true);
+    return;
+  }
+
+  const allowedEmail = document.querySelector(".login-allowed-email");
+  if (allowedEmail && googleLoginConfig.allowedEmail) {
+    allowedEmail.textContent = `Cuenta permitida: ${googleLoginConfig.allowedEmail}`;
+  }
+
+  if (!window.google?.accounts?.id) {
+    setGoogleLoginStatus("La librería de Google no cargó correctamente", true);
+    return;
+  }
+
+  window.google.accounts.id.initialize({
+    client_id: googleLoginConfig.clientId,
+    callback: ({ credential }) => loginConGoogle(credential)
+  });
+
+  mount.innerHTML = "";
+  window.google.accounts.id.renderButton(mount, {
+    theme: "outline",
+    size: "large",
+    shape: "rectangular",
+    text: "continue_with",
+    width: 320
+  });
+
+  setGoogleLoginStatus("Usa la cuenta de Google autorizada para continuar.");
 }
 
 function cerrarSesion() {
@@ -571,6 +653,7 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarEstadoLoginPage();
   protegerVistaSubir();
   crearModalProyectoSiNoExiste();
+  iniciarLoginGoogle();
   aplicarTemaTienda(localStorage.getItem(STOREFRONT_THEME_KEY) || "default");
 
   const logoThemeToggle = document.getElementById("logoThemeToggle");

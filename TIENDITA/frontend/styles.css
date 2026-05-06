@@ -197,10 +197,40 @@ p {
   border-bottom-color: rgba(255, 75, 85, 0.2);
 }
 
+.storefront-page.theme-crimson .logo-hint {
+  color: #ff9ca2;
+}
+
 .logo-container {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.brand-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.logo-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  color: var(--accent);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.logo-hint-arrow {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.logo-hint-text {
+  white-space: nowrap;
 }
 
 .logo-toggle {
@@ -1058,6 +1088,39 @@ button:hover {
 
 .login-card h2 {
   margin-top: 0;
+}
+
+.login-copy {
+  margin: 0 0 12px;
+  color: var(--muted);
+}
+
+.login-allowed-email {
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.google-login-mount {
+  display: flex;
+  justify-content: center;
+  min-height: 46px;
+}
+
+.google-login-status {
+  margin: 14px 0 0;
+  min-height: 1.6em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.google-login-status.error {
+  color: #b82f29;
+}
+
+.google-login-status.success {
+  color: #365f4d;
 }
 
 input,
