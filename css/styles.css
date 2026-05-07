@@ -47,29 +47,112 @@ body {
 
 nav ul {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 25px;
   list-style: none;
 }
 
 nav a {
-  color: var(--text-soft);
   text-decoration: none;
-  transition: 0.3s;
 }
 
 .nav-toggle-link {
   border: 0;
-  background: transparent;
-  color: var(--text-soft);
+  background: none;
   font: inherit;
   cursor: pointer;
-  transition: 0.3s;
 }
 
-nav a:hover,
-.nav-toggle-link:hover,
-.nav-toggle-link[aria-expanded="true"] {
+.nav-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
   color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease, background 0.24s ease, color 0.24s ease;
+}
+
+.nav-badge:hover,
+.nav-badge:focus-visible,
+.nav-toggle-link[aria-expanded="true"] {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.nav-badge-team {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.nav-badge-team:hover,
+.nav-badge-team:focus-visible,
+.nav-toggle-link.nav-badge-team[aria-expanded="true"] {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+.nav-badge-wiki {
+  border-color: rgba(83, 255, 174, 0.34);
+  background: linear-gradient(135deg, rgba(6, 52, 32, 0.94), rgba(13, 112, 63, 0.88));
+  box-shadow: inset 0 1px 0 rgba(164, 255, 212, 0.2), 0 0 0 1px rgba(83, 255, 174, 0.08);
+  overflow: hidden;
+}
+
+.nav-badge-wiki::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 18%, rgba(194, 255, 225, 0.28) 46%, transparent 74%);
+  transform: translateX(-130%);
+  transition: transform 0.7s ease;
+}
+
+.nav-badge-wiki:hover::before,
+.nav-badge-wiki:focus-visible::before {
+  transform: translateX(130%);
+}
+
+.nav-badge-wiki:hover,
+.nav-badge-wiki:focus-visible {
+  border-color: rgba(133, 255, 196, 0.68);
+  box-shadow: 0 16px 30px rgba(6, 80, 43, 0.34);
+}
+
+.nav-badge-realm {
+  border-color: rgba(255, 180, 110, 0.34);
+  background: linear-gradient(135deg, rgba(69, 34, 12, 0.94), rgba(156, 77, 26, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 228, 192, 0.18), 0 14px 24px rgba(0, 0, 0, 0.18);
+}
+
+.nav-badge-realm:hover,
+.nav-badge-realm:focus-visible {
+  border-color: rgba(255, 202, 141, 0.72);
+  background: linear-gradient(135deg, rgba(93, 44, 14, 0.96), rgba(193, 99, 34, 0.94));
+  box-shadow: 0 16px 32px rgba(111, 54, 14, 0.3);
+}
+
+.nav-badge-discord {
+  border-color: rgba(115, 138, 255, 0.42);
+  background: linear-gradient(135deg, rgba(63, 81, 181, 0.98), rgba(88, 101, 242, 0.98));
+  box-shadow: inset 0 1px 0 rgba(210, 221, 255, 0.16), 0 14px 24px rgba(36, 52, 138, 0.3);
+}
+
+.nav-badge-discord:hover,
+.nav-badge-discord:focus-visible {
+  border-color: rgba(167, 182, 255, 0.72);
+  background: linear-gradient(135deg, rgba(74, 92, 198, 1), rgba(98, 112, 255, 1));
+  box-shadow: 0 18px 34px rgba(43, 65, 173, 0.36);
 }
 
 .team-dropdown {
@@ -243,95 +326,6 @@ nav a:hover,
   background: linear-gradient(90deg, rgba(5, 5, 5, 0) 0%, rgba(5, 5, 5, 0.28) 38%, rgba(5, 5, 5, 0.74) 72%, rgba(5, 5, 5, 1) 100%);
   pointer-events: none;
   z-index: 1;
-}
-
-.servicios-floating {
-  position: absolute;
-  top: 28px;
-  left: 28px;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: min(520px, calc(100% - 56px));
-}
-
-.servicio-label {
-  display: inline-block;
-  color: var(--text-faint);
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.servicios-accordion {
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
-  gap: 12px;
-}
-
-.servicio-item {
-  position: relative;
-  background: transparent;
-  transition: transform 0.25s ease;
-}
-
-.servicio-item:hover,
-.servicio-item.active {
-  transform: translateY(-2px);
-}
-
-.servicio-icono {
-  width: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
-}
-
-.servicio-icono-grafico {
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0) 100%);
-  transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
-}
-
-.servicio-icono-grafico svg {
-  width: 22px;
-  height: 22px;
-  color: #f4f4f4;
-}
-
-.servicio-item:hover .servicio-icono-grafico,
-.servicio-item.active .servicio-icono-grafico {
-  transform: scale(1.04);
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08) 58%, rgba(255, 255, 255, 0) 100%);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-}
-
-.servicio-panel {
-  margin-top: 10px;
-  padding: 12px 14px;
-  max-width: 220px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(7, 7, 7, 0.94);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(10px);
-}
-
-.servicio-panel p {
-  color: var(--text-soft);
-  font-size: 14px;
-  line-height: 1.6;
 }
 
 .soldado {
@@ -661,18 +655,8 @@ nav a:hover,
     padding: 24px 20px 20px;
   }
 
-  .servicios-floating {
-    top: 24px;
-    left: 20px;
-    width: min(460px, calc(100% - 40px));
-  }
-
   .soldado-visual {
     min-height: 280px;
-  }
-
-  .servicios-accordion {
-    grid-template-columns: 1fr;
   }
 
   .soldado {
@@ -813,6 +797,13 @@ nav a:hover,
     font-size: 14px;
   }
 
+  .nav-badge {
+    width: 100%;
+    justify-content: center;
+    padding: 11px 14px;
+    font-size: 12px;
+  }
+
   .team-dropdown {
     top: 108px;
     width: calc(100vw - 20px);
@@ -868,45 +859,6 @@ nav a:hover,
 
   .soldado-visual {
     min-height: 220px;
-  }
-
-  .servicios-floating {
-    top: 14px;
-    left: 14px;
-    width: calc(100% - 28px);
-    gap: 10px;
-  }
-
-  .servicio-label {
-    font-size: 10px;
-  }
-
-  .servicio-icono {
-    padding: 0;
-  }
-
-  .servicio-icono-grafico {
-    width: 42px;
-    height: 42px;
-  }
-
-  .servicio-icono-grafico svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .servicio-indice {
-    font-size: 13px;
-  }
-
-  .servicio-panel {
-    padding: 12px 14px;
-    max-width: none;
-  }
-
-  .servicio-panel p {
-    font-size: 13px;
-    line-height: 1.45;
   }
 
   .contenido-texto {
