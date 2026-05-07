@@ -18,11 +18,13 @@ const publicDir = path.join(__dirname, 'public');
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'juegocrisger@gmail.com').toLowerCase();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+const cloudinaryCredentialsConfigured = Boolean(
+    process.env.CLOUDINARY_URL ||
+    (process.env.CLOUD_NAME && process.env.CLOUD_API_KEY && process.env.CLOUD_API_SECRET)
+);
 const cloudinaryEnabled = Boolean(
     cloudinary &&
-    process.env.CLOUD_NAME &&
-    process.env.CLOUD_API_KEY &&
-    process.env.CLOUD_API_SECRET
+    cloudinaryCredentialsConfigured
 );
 
 if (!process.env.JWT_SECRET) {
@@ -35,6 +37,7 @@ if (!GOOGLE_CLIENT_ID) {
 
 if (!cloudinaryEnabled) {
     console.warn('> CLOUDINARY_NO_CONFIGURADO: la subida de imagenes del lore quedara deshabilitada.');
+    console.warn(`> CLOUDINARY_DIAGNOSTICO: sdk=${Boolean(cloudinary)} url=${Boolean(process.env.CLOUDINARY_URL)} cloud_name=${Boolean(process.env.CLOUD_NAME)} api_key=${Boolean(process.env.CLOUD_API_KEY)} api_secret=${Boolean(process.env.CLOUD_API_SECRET)}`);
 }
 
 if (!fs.existsSync(uploadsDir)) { fs.mkdirSync(uploadsDir, { recursive: true }); }
