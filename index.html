@@ -55,8 +55,27 @@
   <section class="hero">
 
     <div class="soldado-container">
-      <div class="soldado-visual">
-        <img src="assets/soldado.png" class="soldado" fetchpriority="high" decoding="async">
+      <div id="heroCarousel" class="soldado-visual hero-carousel" data-carousel data-carousel-auto="4600" aria-label="Carrusel principal de Omeganetics">
+        <div class="hero-carousel-slide carousel-slide is-active">
+          <img src="assets/soldado.png" class="soldado" alt="Soldado principal de Omeganetics" fetchpriority="high" decoding="async">
+        </div>
+        <div class="hero-carousel-slide carousel-slide">
+          <img src="assets/soldado2.png" class="soldado" alt="Segunda ilustración de soldado de Omeganetics" loading="lazy" decoding="async">
+        </div>
+        <div class="hero-carousel-ui">
+          <div class="hero-carousel-copy">
+            <span class="hero-carousel-label">Carrusel visual</span>
+            <p>Cambia entre nuestras dos visuales principales.</p>
+          </div>
+          <div class="carousel-controls">
+            <button type="button" class="carousel-arrow" data-carousel-prev aria-label="Imagen anterior">&#8249;</button>
+            <div class="carousel-dots" aria-label="Selector de imagen">
+              <button type="button" class="carousel-dot is-active" data-carousel-dot="0" aria-label="Ver imagen 1"></button>
+              <button type="button" class="carousel-dot" data-carousel-dot="1" aria-label="Ver imagen 2"></button>
+            </div>
+            <button type="button" class="carousel-arrow" data-carousel-next aria-label="Imagen siguiente">&#8250;</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -93,7 +112,29 @@
       </p>
     </div>
     <div class="eventos-imagen anim">
-      <img src="assets/eventos 1.png" alt="Eventos de comunidad Omeganetics" loading="lazy" decoding="async">
+      <section id="wikiShowcase" class="showcase-carousel showcase-carousel-wiki" aria-label="Carrusel aleatorio de Wiki Hack">
+        <div class="showcase-topbar">
+          <span class="showcase-tag">Wiki Hack</span>
+          <a href="/wiki/" class="showcase-link">Abrir wiki</a>
+        </div>
+        <div class="showcase-viewport">
+          <article class="showcase-slide carousel-slide is-active showcase-slide-placeholder">
+            <div class="showcase-media">
+              <img src="assets/previawikiprins.jpg" alt="Vista previa de Wiki Hack" loading="lazy" decoding="async">
+            </div>
+            <div class="showcase-body">
+              <p class="showcase-kicker">Cargando</p>
+              <h3>Preparando entradas aleatorias</h3>
+              <p class="showcase-description">Cuando la wiki responda, aquí se mostrarán sellados con imagen, categoría y acceso directo.</p>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-controls showcase-controls">
+          <button type="button" class="carousel-arrow" data-carousel-prev aria-label="Entrada anterior">&#8249;</button>
+          <div class="carousel-dots" aria-label="Selector de entradas"></div>
+          <button type="button" class="carousel-arrow" data-carousel-next aria-label="Entrada siguiente">&#8250;</button>
+        </div>
+      </section>
     </div>
   </section>
 
@@ -113,7 +154,29 @@
       </p>
     </div>
     <div class="desarrollo-imagen anim">
-      <img src="assets/DESARROLLO DE JUEGOS Y COMPLEMENTOS.png" alt="Desarrollo de juegos Omeganetics" loading="lazy" decoding="async">
+      <section id="storeShowcase" class="showcase-carousel showcase-carousel-store" aria-label="Carrusel de productos de Tiendita">
+        <div class="showcase-topbar">
+          <span class="showcase-tag">Tiendita</span>
+          <a href="/tiendita/indextienda.html" class="showcase-link">Abrir tienda</a>
+        </div>
+        <div class="showcase-viewport">
+          <article class="showcase-slide carousel-slide is-active showcase-slide-placeholder">
+            <div class="showcase-media showcase-media-generic">
+              <img src="assets/previa.png" alt="Vista previa de Tiendita" loading="lazy" decoding="async">
+            </div>
+            <div class="showcase-body">
+              <p class="showcase-kicker">Cargando</p>
+              <h3>Preparando productos</h3>
+              <p class="showcase-description">Aquí aparecerán productos recientes con imagen, categoría y acceso directo a Tiendita.</p>
+            </div>
+          </article>
+        </div>
+        <div class="carousel-controls showcase-controls">
+          <button type="button" class="carousel-arrow" data-carousel-prev aria-label="Producto anterior">&#8249;</button>
+          <div class="carousel-dots" aria-label="Selector de productos"></div>
+          <button type="button" class="carousel-arrow" data-carousel-next aria-label="Producto siguiente">&#8250;</button>
+        </div>
+      </section>
       </div>
   </section>
 
@@ -182,6 +245,231 @@
         setTeamDropdown(false);
       }
     });
+
+    const carouselTimers = new WeakMap();
+
+    const shuffleItems = (items) => {
+      const clone = [...items];
+      for (let index = clone.length - 1; index > 0; index -= 1) {
+        const nextIndex = Math.floor(Math.random() * (index + 1));
+        [clone[index], clone[nextIndex]] = [clone[nextIndex], clone[index]];
+      }
+      return clone;
+    };
+
+    const escapeHtml = (value) => String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const summarizeText = (value, maxLength = 130) => {
+      const text = String(value || '').trim();
+      if (!text) return 'Sin descripción disponible.';
+      return text.length > maxLength ? `${text.slice(0, maxLength).trim()}...` : text;
+    };
+
+    const buildTienditaImage = (fileName) => {
+      if (!fileName) return 'assets/previa.png';
+      return `/uploads/${encodeURIComponent(fileName)}`;
+    };
+
+    const formatTienditaCategory = (category) => {
+      const labels = {
+        omegacraft: 'Omegacraft',
+        herramientas: 'Herramientas',
+        juegos: 'Juegos',
+        libros: 'Libros'
+      };
+      return labels[category] || category || 'Proyecto';
+    };
+
+    const normalizeWikiImage = (image) => {
+      if (!image) return 'assets/previawikiprins.jpg';
+      if (String(image).startsWith('/uploads/')) {
+        return `/wiki${image}`;
+      }
+      return image;
+    };
+
+    const stopCarousel = (root) => {
+      const timer = carouselTimers.get(root);
+      if (timer) {
+        window.clearInterval(timer);
+        carouselTimers.delete(root);
+      }
+    };
+
+    const showCarouselSlide = (root, nextIndex) => {
+      const slides = Array.from(root.querySelectorAll('.carousel-slide'));
+      const dots = Array.from(root.querySelectorAll('[data-carousel-dot]'));
+      if (!slides.length) return;
+
+      const safeIndex = ((nextIndex % slides.length) + slides.length) % slides.length;
+      root.dataset.carouselIndex = String(safeIndex);
+
+      slides.forEach((slide, index) => {
+        slide.classList.toggle('is-active', index === safeIndex);
+      });
+
+      dots.forEach((dot, index) => {
+        dot.classList.toggle('is-active', index === safeIndex);
+      });
+    };
+
+    const startCarousel = (root) => {
+      stopCarousel(root);
+      const interval = Number(root.dataset.carouselAuto || 0);
+      const slides = root.querySelectorAll('.carousel-slide');
+      if (!interval || slides.length < 2) return;
+
+      const timer = window.setInterval(() => {
+        const currentIndex = Number(root.dataset.carouselIndex || 0);
+        showCarouselSlide(root, currentIndex + 1);
+      }, interval);
+
+      carouselTimers.set(root, timer);
+    };
+
+    const setupCarousel = (root) => {
+      if (!root) return;
+
+      showCarouselSlide(root, Number(root.dataset.carouselIndex || 0));
+
+      root.querySelector('[data-carousel-prev]')?.addEventListener('click', () => {
+        showCarouselSlide(root, Number(root.dataset.carouselIndex || 0) - 1);
+        startCarousel(root);
+      });
+
+      root.querySelector('[data-carousel-next]')?.addEventListener('click', () => {
+        showCarouselSlide(root, Number(root.dataset.carouselIndex || 0) + 1);
+        startCarousel(root);
+      });
+
+      root.querySelectorAll('[data-carousel-dot]').forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+          showCarouselSlide(root, index);
+          startCarousel(root);
+        });
+      });
+
+      root.addEventListener('mouseenter', () => stopCarousel(root));
+      root.addEventListener('mouseleave', () => startCarousel(root));
+      root.addEventListener('focusin', () => stopCarousel(root));
+      root.addEventListener('focusout', () => startCarousel(root));
+
+      startCarousel(root);
+    };
+
+    const renderShowcase = (root, items, emptyState) => {
+      const viewport = root?.querySelector('.showcase-viewport');
+      const dotsWrap = root?.querySelector('.carousel-dots');
+      if (!root || !viewport || !dotsWrap) return;
+
+      if (!items.length) {
+        viewport.innerHTML = `
+          <article class="showcase-slide carousel-slide is-active showcase-slide-placeholder">
+            <div class="showcase-body showcase-body-empty">
+              <p class="showcase-kicker">Sin datos</p>
+              <h3>${escapeHtml(emptyState.title)}</h3>
+              <p class="showcase-description">${escapeHtml(emptyState.description)}</p>
+            </div>
+          </article>
+        `;
+        dotsWrap.innerHTML = '';
+        root.dataset.carouselIndex = '0';
+        return;
+      }
+
+      viewport.innerHTML = items.map((item, index) => `
+        <article class="showcase-slide carousel-slide ${index === 0 ? 'is-active' : ''}">
+          <div class="showcase-media ${item.mediaClass || ''}">
+            <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.title)}" loading="lazy" decoding="async">
+          </div>
+          <div class="showcase-body">
+            <p class="showcase-kicker">${escapeHtml(item.kicker)}</p>
+            <h3>${escapeHtml(item.title)}</h3>
+            <p class="showcase-description">${escapeHtml(item.description)}</p>
+            <div class="showcase-meta-row">
+              <span class="showcase-meta">${escapeHtml(item.meta)}</span>
+              <a href="${escapeHtml(item.href)}" class="showcase-cta">${escapeHtml(item.cta)}</a>
+            </div>
+          </div>
+        </article>
+      `).join('');
+
+      dotsWrap.innerHTML = items.map((item, index) => `
+        <button type="button" class="carousel-dot ${index === 0 ? 'is-active' : ''}" data-carousel-dot="${index}" aria-label="Ver ${escapeHtml(item.title)}"></button>
+      `).join('');
+
+      root.dataset.carouselIndex = '0';
+      setupCarousel(root);
+    };
+
+    const loadWikiShowcase = async () => {
+      const root = document.getElementById('wikiShowcase');
+      if (!root) return;
+
+      try {
+        const response = await fetch('/wiki/api/lore/sealed-carousel');
+        if (!response.ok) throw new Error('wiki_unavailable');
+        const payload = await response.json();
+        const items = shuffleItems(Array.isArray(payload) ? payload : []).slice(0, 5).map((entry) => ({
+          image: normalizeWikiImage(entry.img1),
+          title: entry.title || 'Registro sin título',
+          kicker: 'Wiki Hack aleatorio',
+          description: summarizeText(entry.short_description || entry.category || 'Sellado sin resumen todavía.', 120),
+          meta: entry.category || 'Lore',
+          href: '/wiki/',
+          cta: 'Entrar a la wiki'
+        }));
+
+        renderShowcase(root, items, {
+          title: 'Wiki Hack no disponible',
+          description: 'La wiki no respondió en este momento.'
+        });
+      } catch (error) {
+        renderShowcase(root, [], {
+          title: 'Wiki Hack no disponible',
+          description: 'La wiki no respondió en este momento.'
+        });
+      }
+    };
+
+    const loadStoreShowcase = async () => {
+      const root = document.getElementById('storeShowcase');
+      if (!root) return;
+
+      try {
+        const response = await fetch('/api/proyectos/listar');
+        if (!response.ok) throw new Error('store_unavailable');
+        const payload = await response.json();
+        const items = shuffleItems(Array.isArray(payload) ? payload : []).slice(0, 5).map((project) => ({
+          image: buildTienditaImage(project.portada),
+          title: project.nombre || 'Producto sin nombre',
+          kicker: 'Producto destacado',
+          description: summarizeText(project.descripcion || 'Proyecto disponible en Tiendita.', 120),
+          meta: formatTienditaCategory(project.categoria),
+          href: '/tiendita/indextienda.html',
+          cta: 'Ver en Tiendita'
+        }));
+
+        renderShowcase(root, items, {
+          title: 'Tiendita no disponible',
+          description: 'No se pudieron cargar productos ahora mismo.'
+        });
+      } catch (error) {
+        renderShowcase(root, [], {
+          title: 'Tiendita no disponible',
+          description: 'No se pudieron cargar productos ahora mismo.'
+        });
+      }
+    };
+
+    setupCarousel(document.getElementById('heroCarousel'));
+    loadWikiShowcase();
+    loadStoreShowcase();
 
   </script>
   <script src="js/team-home.js"></script>
