@@ -401,9 +401,19 @@ nav a:hover {
     animation: unfold 0.5s ease-out;
 }
 
+.parchment-container.result-reveal {
+    animation: loreReveal 0.46s ease-out;
+}
+
 @keyframes unfold {
     0% { transform: scaleY(0); opacity: 0; }
     100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes loreReveal {
+    0% { transform: translateY(-10px); opacity: 0.45; box-shadow: 0 0 0 rgba(0, 255, 0, 0); }
+    55% { transform: translateY(0); opacity: 1; box-shadow: 0 0 26px rgba(0, 255, 0, 0.22), inset 0 0 50px rgba(139, 69, 19, 0.3); }
+    100% { transform: translateY(0); opacity: 1; box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 50px rgba(139, 69, 19, 0.3); }
 }
 
 .parchment-container h2 {

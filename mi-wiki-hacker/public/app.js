@@ -46,6 +46,46 @@ let authConfig = {
 let googleInitialized = false;
 let sealedCarouselAnimationId = null;
 let activeLoreRecord = null;
+let loreAudioContext = null;
+
+function playLoreChime() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+        return;
+    }
+
+    if (!loreAudioContext) {
+        loreAudioContext = new AudioContextClass();
+    }
+
+    const context = loreAudioContext;
+    const now = context.currentTime;
+
+    if (context.state === 'suspended') {
+        context.resume().catch(() => {});
+    }
+
+    const masterGain = context.createGain();
+    masterGain.connect(context.destination);
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.06, now + 0.02);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55);
+
+    [1046.5, 1318.51].forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+
+        oscillator.type = index === 0 ? 'triangle' : 'sine';
+        oscillator.frequency.setValueAtTime(frequency, now);
+        gainNode.gain.setValueAtTime(index === 0 ? 0.42 : 0.2, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.48);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(masterGain);
+        oscillator.start(now + index * 0.02);
+        oscillator.stop(now + 0.52);
+    });
+}
 
 function renderImagePreviews(currentLore = null) {
     const previewItems = [];
@@ -304,6 +344,11 @@ function renderLoreResult(data) {
 
     resultSection.style.display = 'block';
     adminLoreActions.style.display = getStoredAdminToken() ? 'flex' : 'none';
+    resultSection.classList.remove('result-reveal');
+    void resultSection.offsetWidth;
+    resultSection.classList.add('result-reveal');
+    playLoreChime();
+    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function resetUploadFormMode() {
