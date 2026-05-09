@@ -245,7 +245,8 @@ function formatearCategoria(categoria) {
     omegacraft: "Omegacraft",
     herramientas: "Herramientas",
     juegos: "Juegos",
-    libros: "Libros"
+    libros: "Libros",
+    "arte y diseno": "Arte y diseno"
   };
 
   return categorias[categoria] || categoria || "Sin categoría";
@@ -384,7 +385,7 @@ function abrirDetalleProyecto(id) {
     .filter(Boolean)
     .map((imagen, index) => `
       <button class="galeria-thumb ${index === 0 ? "active" : ""}" type="button" data-galeria-src="${buildUploadUrl(imagen)}">
-        <img src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${proyecto.nombre}">
+        <img src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${proyecto.nombre}" loading="lazy" decoding="async">
       </button>
     `)
     .join("");
@@ -394,7 +395,7 @@ function abrirDetalleProyecto(id) {
       <div class="modal-imagen-wrap">
         <div class="modal-hero-media">
           <span class="modal-hero-badge">Vista destacada</span>
-          <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
+          <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}" loading="eager" decoding="async">
         </div>
         <div class="galeria-thumbs">${galeria}</div>
         <p class="modal-gallery-caption">Explora la galeria para revisar mejor cada vista del producto.</p>

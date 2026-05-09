@@ -1,13 +1,29 @@
 // controllers/projectController.js
 const pool = require("../config/db");
+const CATEGORIAS_VALIDAS = new Set([
+  "omegacraft",
+  "herramientas",
+  "juegos",
+  "libros",
+  "arte y diseno"
+]);
 
 // SUBIR
 exports.subirProyecto = async (req, res) => {
   try {
     const { nombre, categoria, descripcion } = req.body;
+    const categoriaNormalizada = String(categoria || "").trim().toLowerCase();
     const portada = req.files?.portada?.[0]?.filename;
     const imagenes = (req.files?.imagenes || []).map(file => file.filename);
     const archivo = req.files?.archivo?.[0]?.filename || null;
+
+    if (!nombre || !categoriaNormalizada) {
+      return res.status(400).json({ error: "Nombre y categoria son obligatorios" });
+    }
+
+    if (!CATEGORIAS_VALIDAS.has(categoriaNormalizada)) {
+      return res.status(400).json({ error: "Categoria no valida" });
+    }
 
     if (!portada) {
       return res.status(400).json({ error: "La portada es obligatoria" });
@@ -15,7 +31,7 @@ exports.subirProyecto = async (req, res) => {
 
     await pool.query(
       "INSERT INTO proyectos(nombre, categoria, descripcion, portada, archivo, imagenes) VALUES($1,$2,$3,$4,$5,$6)",
-      [nombre, categoria, descripcion || "", portada, archivo, JSON.stringify(imagenes)]
+      [nombre, categoriaNormalizada, descripcion || "", portada, archivo, JSON.stringify(imagenes)]
     );
 
     res.json({ ok: true });
