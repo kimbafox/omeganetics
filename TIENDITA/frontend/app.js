@@ -362,12 +362,24 @@ function abrirDetalleProyecto(id) {
 
   if (!proyecto || !modal || !body) return;
 
+  const tieneArchivo = Boolean(proyecto.archivo);
   const archivoBoton = proyecto.archivo
-    ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Instalar ahora</a>`
-    : `<span class="sin-archivo">Este producto no incluye archivo descargable.</span>`;
+    ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Descargar producto</a>`
+    : `<span class="sin-archivo">Disponible para consulta visual</span>`;
   const descripcion = proyecto.descripcion || "Sin descripcion";
   const resumen = resumenTexto(descripcion, 220);
   const imagenes = obtenerImagenesProyecto(proyecto);
+  const fechaPublicacion = new Date(proyecto.fecha).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+  const descripcionBloques = descripcion
+    .split(/\n+/)
+    .map(texto => texto.trim())
+    .filter(Boolean)
+    .map(texto => `<p>${texto}</p>`)
+    .join("") || `<p>${descripcion}</p>`;
   const galeria = imagenes
     .filter(Boolean)
     .map((imagen, index) => `
@@ -381,26 +393,50 @@ function abrirDetalleProyecto(id) {
     <div class="modal-grid">
       <div class="modal-imagen-wrap">
         <div class="modal-hero-media">
+          <span class="modal-hero-badge">Vista destacada</span>
           <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}">
         </div>
         <div class="galeria-thumbs">${galeria}</div>
+        <p class="modal-gallery-caption">Explora la galeria para revisar mejor cada vista del producto.</p>
       </div>
 
       <div class="modal-info">
         <div class="modal-header-copy">
           <p class="modal-kicker">${formatearCategoria(proyecto.categoria)}</p>
           <h2>${proyecto.nombre}</h2>
-          <p class="modal-fecha">Publicado el ${new Date(proyecto.fecha).toLocaleDateString()}</p>
+          <p class="modal-fecha">Publicado el ${fechaPublicacion}</p>
         </div>
-        <div class="modal-resumen-box">
-          <span class="modal-label">Resumen</span>
-          <p class="modal-resumen">${resumen}</p>
+        <div class="modal-highlights">
+          <article class="modal-highlight-card">
+            <span class="modal-highlight-label">Formato</span>
+            <strong>${tieneArchivo ? "Descargable" : "Exhibicion"}</strong>
+          </article>
+          <article class="modal-highlight-card">
+            <span class="modal-highlight-label">Galeria</span>
+            <strong>${imagenes.length} vista${imagenes.length === 1 ? "" : "s"}</strong>
+          </article>
+          <article class="modal-highlight-card">
+            <span class="modal-highlight-label">Categoria</span>
+            <strong>${formatearCategoria(proyecto.categoria)}</strong>
+          </article>
         </div>
-        <div class="modal-detalle-box">
-          <span class="modal-label">Descripción completa</span>
-          <p class="modal-descripcion">${descripcion}</p>
+        <div class="modal-copy-stack">
+          <div class="modal-resumen-box">
+            <span class="modal-label">Resumen ejecutivo</span>
+            <p class="modal-resumen">${resumen}</p>
+          </div>
+          <div class="modal-detalle-box">
+            <span class="modal-label">Descripcion completa</span>
+            <div class="modal-descripcion">${descripcionBloques}</div>
+          </div>
         </div>
-        <div class="acciones-proyecto">${archivoBoton}</div>
+        <div class="modal-cta-panel">
+          <div class="modal-cta-copy">
+            <span class="modal-label">Acceso</span>
+            <p class="modal-cta-text">${tieneArchivo ? "Descarga el producto directamente desde esta ficha." : "Este producto se muestra como catalogo visual dentro de la tienda."}</p>
+          </div>
+          <div class="acciones-proyecto">${archivoBoton}</div>
+        </div>
       </div>
     </div>
   `;
