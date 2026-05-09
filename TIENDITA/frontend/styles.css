@@ -1118,6 +1118,11 @@ button:hover {
   min-width: 148px;
 }
 
+.card-proyecto {
+  content-visibility: auto;
+  contain-intrinsic-size: 420px;
+}
+
 .card-proyecto:hover {
   transform: translateY(-4px);
   box-shadow: 0 20px 36px rgba(0, 0, 0, 0.42);
@@ -1553,6 +1558,7 @@ label {
 .modal-copy-stack {
   display: grid;
   gap: 12px;
+  min-width: 0;
 }
 
 .modal-label {
@@ -1571,12 +1577,15 @@ label {
   border: 1px solid rgba(61, 35, 23, 0.12);
   border-radius: 20px;
   background: rgba(255, 248, 235, 0.58);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .modal-resumen {
   margin: 0;
   line-height: 1.65;
   color: #3c2a20;
+  overflow-wrap: anywhere;
 }
 
 .modal-descripcion {
@@ -1591,6 +1600,10 @@ label {
   white-space: normal;
   color: #473429;
   font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 
 .modal-descripcion p {

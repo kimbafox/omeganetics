@@ -258,7 +258,7 @@ function tarjetaProyectoHTML(p) {
   const imagenesSlides = imagenes
     .map((imagen, index) => `
       <figure class="card-slide ${index === 0 ? "active" : ""}" data-slide-index="${index}">
-        <img class="card-portada" src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${p.nombre}">
+        <img class="card-portada" src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${p.nombre}" loading="lazy" decoding="async">
       </figure>
     `)
     .join("");
