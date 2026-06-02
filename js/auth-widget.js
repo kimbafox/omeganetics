@@ -1,3 +1,26 @@
+// Menú hamburguesa para móvil: inyecta el botón y abre/cierra la navegación.
+(function () {
+  const header = document.querySelector("header.header");
+  if (!header) return;
+  const nav = header.querySelector("nav");
+  if (!nav || header.querySelector(".nav-toggle-btn")) return;
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "nav-toggle-btn";
+  btn.setAttribute("aria-label", "Abrir menú");
+  btn.innerHTML = "<span></span><span></span><span></span>";
+  header.insertBefore(btn, nav);
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    header.classList.toggle("nav-open");
+  });
+  document.addEventListener("click", (e) => {
+    if (!header.contains(e.target)) header.classList.remove("nav-open");
+  });
+})();
+
 // Convierte el botón "Login" (#navLogin) en un menú de usuario cuando hay sesión.
 (async function () {
   const slot = document.getElementById("navLogin");

@@ -84,3 +84,65 @@ nav ul { gap: 12px !important; }
 .user-menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
 .user-menu-logout { color: #ff9b9b !important; }
 .user-menu-head { padding: 8px 12px 4px; color: var(--text-faint); font-size: 12px; }
+
+/* --- Header fijo arriba + por encima del contenido (arregla el menú cortado) --- */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.user-menu-dropdown { z-index: 1200; }
+
+/* --- Botón hamburguesa (lo inyecta el JS; oculto en escritorio) --- */
+.nav-toggle-btn {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+.nav-toggle-btn span {
+  width: 20px; height: 2px; background: var(--text); border-radius: 2px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+/* --- Versión móvil --- */
+@media (max-width: 820px) {
+  .header { flex-wrap: wrap; gap: 10px; padding: 12px 16px; align-items: center; }
+  .nav-toggle-btn { display: inline-flex; margin-left: auto; }
+
+  header.header > nav { order: 3; flex-basis: 100%; }
+  nav ul {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+    padding-top: 6px;
+  }
+  header.nav-open nav ul { display: flex; }
+
+  nav ul li { width: 100%; }
+  nav ul li > a,
+  nav ul li > button,
+  nav ul li .user-menu,
+  nav ul li .user-menu-btn { width: 100%; justify-content: flex-start; }
+  .nav-badge { min-height: 46px; }
+
+  /* En móvil el menú de usuario se despliega en línea, sin flotar */
+  .user-menu-dropdown {
+    position: static;
+    box-shadow: none;
+    border: 0;
+    padding: 4px 0 0 10px;
+    min-width: 0;
+  }
+
+  /* Hamburguesa en "X" cuando el menú está abierto */
+  header.nav-open .nav-toggle-btn span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  header.nav-open .nav-toggle-btn span:nth-child(2) { opacity: 0; }
+  header.nav-open .nav-toggle-btn span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+}
