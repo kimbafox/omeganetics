@@ -326,6 +326,7 @@ router.get("/api/me/activity", requireUser, async (req, res) => {
       lastSeen: row.last_seen,
     }));
     let summary = { ...emptySummary };
+    let level = { xp: 0, level: 1, xpInLevel: 0, xpForNext: 100 };
     try {
       const s = await pool.query(
         "SELECT COALESCE(SUM(samples),0)::int AS g, COALESCE(SUM(voice_samples),0)::int AS v, COALESCE(SUM(messages),0)::int AS m FROM user_activity_daily WHERE discord_id = $1",
@@ -333,10 +334,13 @@ router.get("/api/me/activity", requireUser, async (req, res) => {
       );
       const row = s.rows[0] || {};
       summary = { gameMinutes: (row.g || 0) * refreshMinutes, voiceMinutes: (row.v || 0) * refreshMinutes, messages: row.m || 0 };
+      // XP = puntos de actividad (voz vale más, mensajes suman): voz*5 + mensajes.
+      const xp = (row.v || 0) * 5 + (row.m || 0);
+      level = { xp, ...levelFromXp(xp) };
     } catch (e) {
       /* la tabla aún no tiene columnas/datos */
     }
-    return res.json({ refreshMinutes, summary, games });
+    return res.json({ refreshMinutes, summary, level, games });
   } catch (e) {
     return res.json({ refreshMinutes, summary: emptySummary, games: [] });
   }
@@ -353,6 +357,19 @@ function requireUser(req, res, next) {
   } catch (error) {
     return res.status(401).json({ error: "Sesión inválida o expirada." });
   }
+}
+
+// Nivel a partir del XP (cada nivel cuesta progresivamente más).
+function levelFromXp(xp) {
+  let level = 1;
+  let total = 0;
+  let need = 100;
+  while (xp >= total + need) {
+    total += need;
+    level += 1;
+    need = Math.round(need * 1.35);
+  }
+  return { level, xpInLevel: xp - total, xpForNext: need };
 }
 
 module.exports = { router, initAuthDiscord, requireUser };

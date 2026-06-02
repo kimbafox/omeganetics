@@ -41,6 +41,13 @@
     .sumcard { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
     .sumnum { font-size: 1.3rem; font-weight: 800; }
     .sumlbl { color: var(--text-faint); font-size: 12px; margin-top: 4px; }
+    .level-box { display: flex; align-items: center; gap: 14px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .level-badge { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 1.3rem; background: linear-gradient(135deg, #5865F2, #7c5cff); color: #fff; flex-shrink: 0; }
+    .level-info { flex: 1; min-width: 0; }
+    .level-title { font-weight: 700; margin-bottom: 6px; }
+    .level-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); overflow: hidden; }
+    .level-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #5865F2, #7c5cff); transition: width .5s ease; }
+    .level-xp { color: var(--text-faint); font-size: 12px; margin-top: 5px; }
 
     .soon-card { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
     .soon-card:last-child { border-bottom: 0; }
@@ -90,6 +97,7 @@
         <section class="panel" id="actividad">
           <h2>📊 Mi actividad</h2>
           <p class="sub">Tu tiempo en voz, mensajes y juegos en el servidor (se actualiza cada pocos minutos).</p>
+          <div id="levelBox" class="level-box" style="display:none"></div>
           <div id="act-summary" class="act-summary"></div>
           <h3 style="font-size:1rem;margin:8px 0 6px;color:var(--text-soft)">Tus juegos</h3>
           <div id="act-list"></div>
@@ -154,6 +162,18 @@
       try {
         const ar = await fetch("/api/me/activity");
         const data = await ar.json();
+        const lv = data.level || { level: 1, xpInLevel: 0, xpForNext: 100, xp: 0 };
+        const pct = lv.xpForNext ? Math.min(100, Math.round((lv.xpInLevel / lv.xpForNext) * 100)) : 0;
+        const lb = $("levelBox");
+        lb.style.display = "flex";
+        lb.innerHTML = `
+          <div class="level-badge">${lv.level}</div>
+          <div class="level-info">
+            <div class="level-title">Nivel ${lv.level}</div>
+            <div class="level-bar"><span style="width:${pct}%"></span></div>
+            <div class="level-xp">${lv.xpInLevel} / ${lv.xpForNext} XP para el nivel ${lv.level + 1} · ${lv.xp} XP total</div>
+          </div>`;
+
         const sum = data.summary || { voiceMinutes: 0, gameMinutes: 0, messages: 0 };
         $("act-summary").innerHTML = `
           <div class="sumcard"><div class="sumnum">${fmtMinutes(sum.voiceMinutes)}</div><div class="sumlbl">🎙️ En voz</div></div>

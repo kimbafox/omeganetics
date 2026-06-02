@@ -11,6 +11,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
+const { announceEvent } = require("../discord-activity");
 
 const router = express.Router();
 
@@ -148,10 +149,11 @@ router.get("/api/eventos/pendientes", requireAdmin, async (req, res) => {
 // Aprobar (admin).
 router.post("/api/eventos/:id/aprobar", requireAdmin, async (req, res) => {
   try {
-    await pool.query(
-      "UPDATE events SET status = 'aprobado', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2",
+    const r = await pool.query(
+      "UPDATE events SET status = 'aprobado', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *",
       [req.user.globalName || req.user.username || "admin", req.params.id],
     );
+    if (r.rows[0]) announceEvent(mapEvent(r.rows[0])).catch(() => {});
     return res.json({ ok: true });
   } catch (error) {
     return res.status(500).json({ error: "No se pudo aprobar." });

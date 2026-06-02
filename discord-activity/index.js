@@ -7,7 +7,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { Client, GatewayIntentBits, ActivityType, Partials } = require("discord.js");
+const { Client, GatewayIntentBits, ActivityType, Partials, EmbedBuilder } = require("discord.js");
 const { Pool } = require("pg");
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
@@ -401,4 +401,35 @@ function initDiscordActivity() {
   client.login(DISCORD_TOKEN).catch((e) => console.warn("[activity] login falló:", e.message));
 }
 
-module.exports = { initDiscordActivity };
+// Publica un evento aprobado en el canal de anuncios de Discord (EVENTS_CHANNEL_ID).
+async function announceEvent(event) {
+  const channelId = process.env.EVENTS_CHANNEL_ID;
+  if (!client || !channelId) return false;
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || typeof channel.send !== "function") return false;
+    const embed = new EmbedBuilder()
+      .setColor(0x5865f2)
+      .setTitle(`🎉 Nuevo evento: ${event.name}`)
+      .setDescription((event.description || "").slice(0, 600))
+      .addFields(
+        { name: "🎮 Juego", value: event.game || "—", inline: true },
+        {
+          name: "📅 Inicio",
+          value: event.startDate ? new Date(event.startDate).toLocaleDateString("es") : "—",
+          inline: true,
+        },
+      )
+      .setFooter({ text: `Por ${event.createdByName || "la comunidad"} · omeganetics.com/eventos.html` });
+    if (event.expectedDuration) {
+      embed.addFields({ name: "⏱️ Duración", value: event.expectedDuration, inline: true });
+    }
+    await channel.send({ embeds: [embed] });
+    return true;
+  } catch (err) {
+    console.warn("[activity] no pude anunciar el evento:", err.message);
+    return false;
+  }
+}
+
+module.exports = { initDiscordActivity, announceEvent };
