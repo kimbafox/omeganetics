@@ -270,6 +270,66 @@ router.post("/api/auth/logout", (req, res) => {
   res.json({ ok: true });
 });
 
+// Perfil del usuario logueado (datos de community_users).
+router.get("/api/me/profile", requireUser, async (req, res) => {
+  const base = {
+    discordId: req.user.discordId,
+    username: req.user.username,
+    globalName: req.user.globalName,
+    avatar: req.user.avatar,
+    isAdmin: Boolean(req.user.isAdmin),
+    role: req.user.communityRole || (req.user.isAdmin ? "admin" : "viewer"),
+    createdAt: null,
+    lastLoginAt: null,
+  };
+  if (!pool) return res.json(base);
+  try {
+    const r = await pool.query(
+      "SELECT username, global_name, avatar_url, role, created_at, last_login_at FROM community_users WHERE discord_id = $1",
+      [req.user.discordId],
+    );
+    const row = r.rows[0];
+    if (row) {
+      base.username = row.username || base.username;
+      base.globalName = row.global_name || base.globalName;
+      base.avatar = row.avatar_url || base.avatar;
+      base.role = row.role || base.role;
+      base.createdAt = row.created_at;
+      base.lastLoginAt = row.last_login_at;
+    }
+    return res.json(base);
+  } catch (e) {
+    return res.json(base);
+  }
+});
+
+// Actividad de juegos del usuario logueado.
+router.get("/api/me/activity", requireUser, async (req, res) => {
+  const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
+  if (!pool) return res.json({ refreshMinutes, games: [] });
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_game_activity (
+        discord_id TEXT NOT NULL, game TEXT NOT NULL, samples INTEGER NOT NULL DEFAULT 0,
+        first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(), last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (discord_id, game)
+      );
+    `);
+    const r = await pool.query(
+      "SELECT game, samples, last_seen FROM user_game_activity WHERE discord_id = $1 ORDER BY samples DESC, last_seen DESC LIMIT 20",
+      [req.user.discordId],
+    );
+    const games = r.rows.map((row) => ({
+      game: row.game,
+      minutes: row.samples * refreshMinutes,
+      lastSeen: row.last_seen,
+    }));
+    return res.json({ refreshMinutes, games });
+  } catch (e) {
+    return res.json({ refreshMinutes, games: [] });
+  }
+});
+
 // Middleware reutilizable para proteger rutas de usuario (lo usaremos en eventos/moneda).
 function requireUser(req, res, next) {
   const cookies = parseCookies(req);

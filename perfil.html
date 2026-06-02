@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi perfil — Omeganetics</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .perfil-wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+    .perfil-head {
+      display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 28px; box-shadow: var(--shadow); margin-bottom: 28px;
+    }
+    .perfil-avatar { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--accent); object-fit: cover; object-position: center top; }
+    .perfil-id { flex: 1; min-width: 220px; }
+    .perfil-name { font-size: 1.7rem; font-weight: 800; }
+    .perfil-tag { color: var(--text-faint); margin-bottom: 8px; }
+    .role-chip { display: inline-block; padding: 5px 14px; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .role-admin { background: linear-gradient(135deg,#ffd35c,#ff9f43); color: #2a1a00; }
+    .role-viewer { background: rgba(255,255,255,.08); color: var(--text-soft); border: 1px solid var(--border); }
+    .perfil-meta { margin-top: 12px; color: var(--text-soft); font-size: 14px; display: flex; gap: 22px; flex-wrap: wrap; }
+    .perfil-meta b { color: var(--text); font-weight: 600; }
+
+    .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; }
+    @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); }
+    .panel h2 { font-size: 1.15rem; margin-bottom: 4px; }
+    .panel .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 18px; }
+
+    .act-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .act-row:last-child { border-bottom: 0; }
+    .act-game { font-weight: 700; }
+    .act-time { color: #aab2ff; font-weight: 700; white-space: nowrap; }
+    .act-empty { color: var(--text-soft); padding: 14px 0; }
+
+    .soon-card { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .soon-card:last-child { border-bottom: 0; }
+    .soon-icon { font-size: 1.5rem; }
+    .soon-title { font-weight: 700; }
+    .soon-desc { color: var(--text-faint); font-size: 13px; }
+    .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="assets/logo.png" class="logo" width="35" height="35" alt="Omeganetics" />
+        <h1>Omeganetics</h1>
+      </a>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
+        <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
+        <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="perfil-wrap">
+    <div id="loading" class="panel"><p class="sub">Cargando tu perfil…</p></div>
+
+    <div id="content" style="display:none;">
+      <section class="perfil-head">
+        <img id="p-avatar" class="perfil-avatar" alt="avatar" />
+        <div class="perfil-id">
+          <div class="perfil-name" id="p-name"></div>
+          <div class="perfil-tag" id="p-tag"></div>
+          <span id="p-role" class="role-chip"></span>
+          <div class="perfil-meta">
+            <span>Miembro desde: <b id="p-since">—</b></span>
+            <span>Última conexión: <b id="p-last">—</b></span>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid2">
+        <section class="panel" id="actividad">
+          <h2>🎮 Mi actividad</h2>
+          <p class="sub">Tus juegos registrados a partir de tu presencia en Discord (se actualiza cada pocos minutos).</p>
+          <div id="act-list"></div>
+        </section>
+
+        <section class="panel">
+          <h2>✨ Próximamente</h2>
+          <p class="sub">Lo que llegará a tu perfil.</p>
+          <div class="soon-card"><span class="soon-icon">🪙</span><div><div class="soon-title">Omegacoin</div><div class="soon-desc">Tu saldo y recompensas.</div></div></div>
+          <div class="soon-card"><span class="soon-icon">🏆</span><div><div class="soon-title">Ranking</div><div class="soon-desc">Tu posición entre los más activos.</div></div></div>
+          <div class="soon-card"><span class="soon-icon">🎯</span><div><div class="soon-title">Mis eventos</div><div class="soon-desc">Eventos que creaste o en los que participaste.</div></div></div>
+        </section>
+      </div>
+
+      <a class="back-link" href="/">← Volver al inicio</a>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function fmtDate(iso) {
+      if (!iso) return "—";
+      try { return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" }); }
+      catch (e) { return "—"; }
+    }
+    function fmtMinutes(m) {
+      if (!m) return "—";
+      const h = Math.floor(m / 60), min = m % 60;
+      if (h && min) return `${h} h ${min} min`;
+      if (h) return `${h} h`;
+      return `${min} min`;
+    }
+    function timeAgo(iso) {
+      if (!iso) return "";
+      const d = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (d < 3600) return `hace ${Math.max(1, Math.floor(d / 60))} min`;
+      if (d < 86400) return `hace ${Math.floor(d / 3600)} h`;
+      return `hace ${Math.floor(d / 86400)} d`;
+    }
+
+    async function load() {
+      let me;
+      try {
+        const res = await fetch("/api/me/profile");
+        if (!res.ok) { window.location.href = "/login.html"; return; }
+        me = await res.json();
+      } catch (e) { window.location.href = "/login.html"; return; }
+
+      $("p-name").textContent = me.globalName || me.username;
+      $("p-tag").textContent = "@" + me.username;
+      if (me.avatar) $("p-avatar").src = me.avatar; else $("p-avatar").style.display = "none";
+      if (me.isAdmin) { $("p-role").textContent = "★ Administrador"; $("p-role").className = "role-chip role-admin"; }
+      else { $("p-role").textContent = "Miembro"; $("p-role").className = "role-chip role-viewer"; }
+      $("p-since").textContent = fmtDate(me.createdAt);
+      $("p-last").textContent = fmtDate(me.lastLoginAt);
+
+      $("loading").style.display = "none";
+      $("content").style.display = "block";
+
+      // Actividad
+      try {
+        const ar = await fetch("/api/me/activity");
+        const data = await ar.json();
+        const games = data.games || [];
+        if (!games.length) {
+          $("act-list").innerHTML = `<div class="act-empty">Aún no hay actividad registrada. Cuando juegues con el estado visible en Discord, tus juegos aparecerán aquí.</div>`;
+        } else {
+          $("act-list").innerHTML = games.map((g) => `
+            <div class="act-row">
+              <div>
+                <div class="act-game">${g.game.replace(/</g, "&lt;")}</div>
+                <div class="soon-desc">Visto ${timeAgo(g.lastSeen)}</div>
+              </div>
+              <div class="act-time">${fmtMinutes(g.minutes)}</div>
+            </div>`).join("");
+        }
+      } catch (e) {
+        $("act-list").innerHTML = `<div class="act-empty">No se pudo cargar tu actividad ahora mismo.</div>`;
+      }
+    }
+
+    load();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>

@@ -43,6 +43,7 @@ const pool = databaseUrl
 function computeActiveGames(guild) {
   const games = new Map(); // claveMinusculas -> { name, users: Set }
   const activeUsers = new Set();
+  const userGames = new Map(); // discordId -> Set(nombreJuego)
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
     const presence = member.presence;
@@ -54,12 +55,14 @@ function computeActiveGames(guild) {
       const key = activity.name.toLowerCase();
       if (!games.has(key)) games.set(key, { name: activity.name, users: new Set() });
       games.get(key).users.add(member.id);
+      if (!userGames.has(member.id)) userGames.set(member.id, new Set());
+      userGames.get(member.id).add(activity.name);
     }
   }
   const ranked = [...games.values()]
     .map(({ name, users }) => ({ game: name, players: users.size }))
     .sort((a, b) => b.players - a.players);
-  return { totalActive: activeUsers.size, games: ranked };
+  return { totalActive: activeUsers.size, games: ranked, userGames };
 }
 
 async function ensureSchema() {
@@ -76,6 +79,17 @@ async function ensureSchema() {
       total_active INTEGER NOT NULL DEFAULT 0,
       games_count INTEGER NOT NULL DEFAULT 0,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  // Actividad por usuario: cada muestra = 1 refresco (REFRESH_MINUTES).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_game_activity (
+      discord_id TEXT NOT NULL,
+      game TEXT NOT NULL,
+      samples INTEGER NOT NULL DEFAULT 0,
+      first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (discord_id, game)
     );
   `);
 }
@@ -109,6 +123,31 @@ async function save(snap) {
   }
 }
 
+async function saveUserActivity(userGames) {
+  if (!userGames || userGames.size === 0) return;
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    for (const [discordId, gameSet] of userGames) {
+      for (const game of gameSet) {
+        await db.query(
+          `INSERT INTO user_game_activity (discord_id, game, samples, first_seen, last_seen)
+           VALUES ($1, $2, 1, NOW(), NOW())
+           ON CONFLICT (discord_id, game) DO UPDATE
+             SET samples = user_game_activity.samples + 1, last_seen = NOW()`,
+          [discordId, game]
+        );
+      }
+    }
+    await db.query("COMMIT");
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.warn("[activity] no pude guardar actividad por usuario:", err.message);
+  } finally {
+    db.release();
+  }
+}
+
 let client = null;
 
 async function refresh() {
@@ -122,6 +161,7 @@ async function refresh() {
   }
   const snap = computeActiveGames(guild);
   await save(snap);
+  await saveUserActivity(snap.userGames);
   console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos`);
 }
 

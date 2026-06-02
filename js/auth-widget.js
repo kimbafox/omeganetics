@@ -54,9 +54,9 @@
     </button>
     <div class="user-menu-dropdown" role="menu" hidden>
       <div class="user-menu-head">@${esc(me.username || "")}</div>
-      <a role="menuitem" href="/login.html">Ver perfil</a>
-      <a role="menuitem" href="/actividad.html">Actividad del servidor</a>
-      ${me.isAdmin ? '<a role="menuitem" href="/admin-equipo.html">Panel de equipo</a>' : ""}
+      <a role="menuitem" href="/perfil.html">Ver perfil</a>
+      <a role="menuitem" href="/perfil.html#actividad">Mi actividad</a>
+      ${me.isAdmin ? '<a role="menuitem" href="/admin-equipo.html">Panel de admin</a>' : ""}
       <div class="user-menu-sep"></div>
       <button role="menuitem" type="button" class="user-menu-logout">Cerrar sesión</button>
     </div>`;
