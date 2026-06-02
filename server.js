@@ -1136,6 +1136,10 @@ app.use(eventosRouter);
 const { router: logrosRouter, initLogros } = require("./logros");
 app.use(logrosRouter);
 
+// Módulo de Creadores de contenido.
+const { router: creadoresRouter, initCreadores } = require("./creadores");
+app.use(creadoresRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1274,6 +1278,7 @@ async function start() {
     await initAuthDiscord();
     await initEventos();
     await initLogros();
+    await initCreadores();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });

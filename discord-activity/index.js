@@ -433,7 +433,11 @@ async function announceEvent(event) {
     if (event.expectedDuration) {
       embed.addFields({ name: "⏱️ Duración", value: event.expectedDuration, inline: true });
     }
-    await channel.send({ embeds: [embed] });
+    await channel.send({
+      content: "@everyone 📅 ¡Nuevo evento en la comunidad!",
+      embeds: [embed],
+      allowedMentions: { parse: ["everyone"] },
+    });
     return true;
   } catch (err) {
     console.warn("[activity] no pude anunciar el evento:", err.message);
@@ -441,4 +445,45 @@ async function announceEvent(event) {
   }
 }
 
-module.exports = { initDiscordActivity, announceEvent };
+// Anuncia un video de un creador: en el canal CONTENIDO + aviso en general (con @everyone).
+async function announceContent(creator, video) {
+  if (!client) return false;
+  const contentId = process.env.CONTENT_CHANNEL_ID;
+  const generalId = process.env.GENERAL_CHANNEL_ID;
+  const creatorName = creator.channelName || creator.nickname || creator.fullName || "un creador";
+  try {
+    if (contentId) {
+      const ch = await client.channels.fetch(contentId);
+      if (ch && typeof ch.send === "function") {
+        const embed = new EmbedBuilder()
+          .setColor(0xff2d78)
+          .setTitle(`🎬 ${video.title}`)
+          .setDescription((video.description || "").slice(0, 600))
+          .addFields({ name: "Creador", value: creatorName, inline: true })
+          .setFooter({ text: "Omeganetics · ¡Apoya a nuestros creadores!" });
+        if (/^https?:\/\//i.test(video.url || "")) embed.setURL(video.url);
+        await ch.send({
+          content: `@everyone 🎥 ¡Nuevo contenido de **${creatorName}**! Pásate a verlo y déjale tu apoyo 🔥\n${video.url || ""}`,
+          embeds: [embed],
+          allowedMentions: { parse: ["everyone"] },
+        });
+      }
+    }
+    if (generalId) {
+      const gch = await client.channels.fetch(generalId);
+      if (gch && typeof gch.send === "function") {
+        const ref = contentId ? `<#${contentId}>` : "el canal de CONTENIDO";
+        await gch.send({
+          content: `@everyone 📢 ¡Se subió nuevo contenido a ${ref}! Vayan a verlo y apoyen a **${creatorName}**. 🍿`,
+          allowedMentions: { parse: ["everyone"] },
+        });
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn("[content] no pude anunciar el contenido:", err.message);
+    return false;
+  }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent };
