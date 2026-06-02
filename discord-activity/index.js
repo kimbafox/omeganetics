@@ -278,10 +278,17 @@ async function flushMessages() {
 }
 
 function computeVoiceMembers(guild) {
+  // Canales AFK que NO cuentan para puntos (AFK_CHANNEL_ID + el AFK nativo del server).
+  const afk = new Set(
+    (process.env.AFK_CHANNEL_ID || "").split(",").map((s) => s.trim()).filter(Boolean),
+  );
+  if (guild.afkChannelId) afk.add(guild.afkChannelId);
+
   const voice = new Map();
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
     if (!member.voice || !member.voice.channelId) continue;
+    if (afk.has(member.voice.channelId)) continue; // en AFK: no acumula
     voice.set(member.id, {
       username: member.user.username || "",
       displayName: member.displayName || member.user.globalName || member.user.username || "",
