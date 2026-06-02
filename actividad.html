@@ -96,10 +96,20 @@
     </div>
 
     <div class="ranking">
-      <h2>🎮 Juegos más activos</h2>
-      <p class="sub">Ranking en tiempo real según la presencia de Discord.</p>
+      <h2>🎮 Jugándose ahora mismo</h2>
+      <p class="sub">Lo que se está jugando en este momento (presencia de Discord en vivo).</p>
       <div id="gamesList"></div>
       <div class="updated" id="updated"></div>
+    </div>
+
+    <div class="ranking" style="margin-top:24px">
+      <h2>📈 Juegos más jugados</h2>
+      <p class="sub">Lo que más juega la comunidad, acumulado en el tiempo.</p>
+      <div class="lb-toggle">
+        <button id="tg-week" class="active" type="button">Semana</button>
+        <button id="tg-month" type="button">Mes</button>
+      </div>
+      <div id="topGamesList"></div>
     </div>
 
     <div class="ranking" style="margin-top:24px">
@@ -201,6 +211,31 @@
     $('lb-all').addEventListener('click', () => { lbPeriod = 'all'; $('lb-all').classList.add('active'); $('lb-week').classList.remove('active'); loadRankings(); });
     loadRankings();
     setInterval(loadRankings, 60000);
+
+    // --- Juegos más jugados (acumulado semana/mes con %) ---
+    let tgPeriod = 'week';
+    async function loadTopGames() {
+      try {
+        const res = await fetch('/api/top-games?period=' + tgPeriod);
+        const data = await res.json();
+        const games = data.games || [];
+        if (!games.length) {
+          $('topGamesList').innerHTML = `<div class="empty"><h3>Aún no hay histórico</h3><p>Se va acumulando con lo que juega la gente. En unos días verás los porcentajes.</p></div>`;
+          return;
+        }
+        $('topGamesList').innerHTML = games.map((g, i) => {
+          const cls = i === 0 ? 'top1' : i === 1 ? 'top2' : '';
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          return `<div class="game-row ${cls}"><div class="game-rank">${medal}</div><div class="game-body"><div class="game-top"><span class="game-name">${(g.game || '').replace(/</g, '&lt;')}</span><span class="game-count">${g.percent}%</span></div><div class="bar"><span style="width:${g.percent}%"></span></div></div></div>`;
+        }).join('');
+      } catch (e) {
+        $('topGamesList').innerHTML = `<div class="empty">No se pudo cargar.</div>`;
+      }
+    }
+    $('tg-week').addEventListener('click', () => { tgPeriod = 'week'; $('tg-week').classList.add('active'); $('tg-month').classList.remove('active'); loadTopGames(); });
+    $('tg-month').addEventListener('click', () => { tgPeriod = 'month'; $('tg-month').classList.add('active'); $('tg-week').classList.remove('active'); loadTopGames(); });
+    loadTopGames();
+    setInterval(loadTopGames, 60000);
   </script>
   <script src="/js/auth-widget.js"></script>
 </body>

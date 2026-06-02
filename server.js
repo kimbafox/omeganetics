@@ -1152,6 +1152,31 @@ app.get("/api/active-games", async (req, res) => {
   }
 });
 
+// Juegos más jugados por la comunidad (acumulado de la semana/mes, con %).
+app.get("/api/top-games", async (req, res) => {
+  const period = req.query.period === "month" ? "month" : "week";
+  if (!teamPool) return res.json({ period, total: 0, games: [] });
+  try {
+    const days = period === "month" ? 30 : 7;
+    const result = await teamPool.query(
+      `SELECT game, SUM(samples)::int AS samples
+       FROM game_activity_daily
+       WHERE day > CURRENT_DATE - make_interval(days => $1)
+       GROUP BY game ORDER BY samples DESC LIMIT 12`,
+      [days],
+    );
+    const total = result.rows.reduce((acc, r) => acc + (r.samples || 0), 0);
+    const games = result.rows.map((r) => ({
+      game: r.game,
+      samples: r.samples,
+      percent: total ? Math.round((r.samples / total) * 100) : 0,
+    }));
+    return res.json({ period, total, games });
+  } catch (error) {
+    return res.json({ period, total: 0, games: [] });
+  }
+});
+
 // Ranking de jugadores más activos (a partir del tracking de actividad).
 app.get("/api/rankings", async (req, res) => {
   const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);

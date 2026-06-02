@@ -121,6 +121,15 @@ async function ensureSchema() {
       PRIMARY KEY (discord_id, day)
     );
   `);
+  // Acumulado de juegos por día (cada muestra suma los jugadores de ese juego).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS game_activity_daily (
+      game TEXT NOT NULL,
+      day DATE NOT NULL,
+      samples INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (game, day)
+    );
+  `);
 }
 
 async function save(snap) {
@@ -207,6 +216,28 @@ async function saveMembersAndDaily(members) {
   }
 }
 
+async function saveGameDaily(games) {
+  if (!games || games.length === 0) return;
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    for (const { game, players } of games) {
+      await db.query(
+        `INSERT INTO game_activity_daily (game, day, samples)
+         VALUES ($1, CURRENT_DATE, $2)
+         ON CONFLICT (game, day) DO UPDATE SET samples = game_activity_daily.samples + $2`,
+        [game, players]
+      );
+    }
+    await db.query("COMMIT");
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.warn("[activity] no pude guardar juegos del día:", err.message);
+  } finally {
+    db.release();
+  }
+}
+
 let client = null;
 
 async function refresh() {
@@ -222,6 +253,7 @@ async function refresh() {
   await save(snap);
   await saveUserActivity(snap.userGames);
   await saveMembersAndDaily(snap.members);
+  await saveGameDaily(snap.games);
   console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos`);
 }
 
