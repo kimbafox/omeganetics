@@ -86,14 +86,22 @@ plataforma**, y trabajar juntos en implementaciones y mejoras.
 
 ## 5.1 Decisiones tomadas (2026-06-02)
 
-- **Stack:** Next.js + PostgreSQL (decisión: "tú decides").
-- **Primer paso:** Bot de Discord + feature "juegos activos del servidor".
-- **Sitio web actual:** Sebastián pasará el acceso/link para revisarlo.
-- Entorno local listo: Node v24, npm 11, git.
+- **Primer paso:** Bot de Discord + feature "juegos activos del servidor" → ✅ HECHO.
+- **Hallazgo clave:** omeganetics.com NO es estático. Es una app **Express + PostgreSQL**
+  ya desplegada en **Railway** (repo `kimbafox/omeganetics`), con login admin (Google +
+  clave, JWT), subida de archivos (Cloudinary) y patrón **modular** (TIENDITA, wiki).
+- **Stack (decisión actualizada):** NO Next.js. **Extendemos la app Express actual**
+  agregando módulos nuevos (eventos, moneda, rankings, juegos-activos) al estilo TIENDITA.
+- **Sin subdominio:** las features viven en `omeganetics.com/...` directo. No hace falta
+  `app.omeganetics.com`.
+- **Repo:** todo en `kimbafox/omeganetics`. El bot vive en `bot/` como **servicio Railway
+  aparte** que comparte la misma base de datos.
+- **Acceso:** push directo confirmado (cuenta Sebillasxd2). Carpeta de trabajo local: `site/`.
+- Entorno local: Node v24, npm 11, git.
 
 ## 6. Pendientes / preguntas abiertas
 
-- ¿Dónde está y con qué tecnología está hecho el sitio web actual?
-- ¿Qué stack queremos para la plataforma?
+- Conseguir `DATABASE_URL` de Railway para desarrollo/pruebas locales con la BD real.
+- Definir cómo el bot alimenta los juegos activos a la web (proxy al bot vs guardar en BD).
 - Definir pasarela de pago para la moneda virtual (según país/LATAM).
 - Definir reglas exactas de "actividad" para rankings.
