@@ -20,18 +20,18 @@
 body.storefront-page,
 body.storefront-page.theme-crimson {
   background:
-    radial-gradient(1100px 620px at 50% -12%, rgba(192, 68, 90, 0.12), rgba(0, 0, 0, 0) 55%),
+    radial-gradient(1100px 620px at 50% -12%, rgba(192, 68, 90, 0.06), rgba(0, 0, 0, 0) 55%),
     var(--rbg) !important;
   color: var(--rtext) !important;
 }
 .storefront-page .page-glow,
-.storefront-page .page-ink { opacity: 0.22 !important; }
+.storefront-page .page-ink { opacity: 0.12 !important; }
 
 /* Header / marca */
 .storefront-page .header { border-bottom: 1px solid var(--rborder) !important; }
 .brand-kicker, .eyebrow, .section-minihead {
-  background: rgba(192, 68, 90, 0.16) !important;
-  border: 1px solid rgba(192, 68, 90, 0.40) !important;
+  background: rgba(192, 68, 90, 0.10) !important;
+  border: 1px solid rgba(192, 68, 90, 0.28) !important;
   color: #f1a8b4 !important;
   border-radius: 999px !important;
   padding: 5px 12px !important;
@@ -46,7 +46,7 @@ body.storefront-page.theme-crimson {
   border: none !important;
   border-radius: 12px !important;
   font-weight: 700 !important;
-  box-shadow: 0 12px 26px rgba(192, 68, 90, 0.30) !important;
+  box-shadow: 0 10px 22px rgba(192, 68, 90, 0.20) !important;
   transition: transform 0.18s ease, filter 0.18s ease !important;
 }
 .btn:hover { filter: brightness(1.08); transform: translateY(-2px); }
@@ -66,9 +66,9 @@ body.storefront-page.theme-crimson {
   border-radius: 999px !important;
 }
 .filtro-btn.active, .filtro-btn:hover {
-  background: rgba(192, 68, 90, 0.18) !important;
-  border-color: rgba(192, 68, 90, 0.65) !important;
-  color: #ffe1e7 !important;
+  background: rgba(192, 68, 90, 0.12) !important;
+  border-color: rgba(192, 68, 90, 0.45) !important;
+  color: #ffd7df !important;
 }
 
 /* Tarjetas de producto */
@@ -83,8 +83,8 @@ body.storefront-page.theme-crimson {
 .card-titulo { color: var(--rtext) !important; }
 .card-descripcion, .card-fecha, .card-resumen-extra { color: var(--rsoft) !important; }
 .card-categoria {
-  background: rgba(192, 68, 90, 0.16) !important;
-  border: 1px solid rgba(192, 68, 90, 0.40) !important;
+  background: rgba(192, 68, 90, 0.10) !important;
+  border: 1px solid rgba(192, 68, 90, 0.28) !important;
   color: #f1a8b4 !important;
   border-radius: 999px !important;
 }
