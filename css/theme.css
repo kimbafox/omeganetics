@@ -162,7 +162,13 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 /* Puntos de carrusel con color de acento */
 .carousel-dot.is-active { background: var(--accent) !important; }
 
-/* Encuadre de fotos de perfil: anclar arriba para que se vea la cara (no recortar la cabeza) */
-.resume-hero-image,
+/* Encuadre de fotos de perfil: anclar arriba para que se vea la cara */
 .member-card-image,
 .team-dropdown-avatar { object-position: center top !important; }
+
+/* Foto grande del perfil: mostrar la imagen COMPLETA desde arriba (sin recortar la cabeza) */
+.resume-hero-image {
+  object-fit: contain !important;
+  object-position: center top !important;
+  background: #0b0c10;
+}
