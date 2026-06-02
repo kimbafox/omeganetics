@@ -248,6 +248,7 @@ async function flushMessages() {
   if (pendingMessages.size === 0) return;
   const batch = [...pendingMessages.entries()];
   pendingMessages.clear();
+  console.log(`[activity] volcando mensajes de ${batch.length} usuario(s)`);
   const db = await pool.connect();
   try {
     await db.query("BEGIN");
@@ -402,6 +403,7 @@ function initDiscordActivity() {
       console.warn("[activity] error en arranque:", e.message);
     }
     setInterval(refresh, REFRESH_MINUTES * 60 * 1000);
+    setInterval(flushMessages, 60 * 1000); // los mensajes se guardan cada minuto
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
