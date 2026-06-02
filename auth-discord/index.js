@@ -70,11 +70,14 @@ async function initAuthDiscord() {
       global_name TEXT NOT NULL DEFAULT '',
       email TEXT NOT NULL DEFAULT '',
       avatar_url TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT 'viewer',
       is_member BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_login_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  // Por si la tabla ya existía sin la columna de rol.
+  await pool.query("ALTER TABLE community_users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'viewer'");
 }
 
 const isConfigured = () => Boolean(DISCORD_CLIENT_ID && DISCORD_CLIENT_SECRET);
@@ -193,27 +196,36 @@ router.get("/api/auth/discord/callback", async (req, res) => {
         .send("Debes ser miembro del servidor de Discord de Omeganetics para entrar. Únete y vuelve a intentar.");
     }
 
-    // Guarda/actualiza al usuario.
+    // Guarda/actualiza al usuario y resuelve su rol desde la base de datos.
+    // Primer ingreso => 'viewer'. Si está en la lista de admins => 'admin'.
+    // Si ya tenía un rol asignado a mano, no se pisa (salvo que sea admin por lista).
+    const seedAdmin = isAdminUser(user);
+    let role = seedAdmin ? "admin" : "viewer";
+
     if (pool) {
-      await pool.query(
-        `INSERT INTO community_users (discord_id, username, global_name, email, avatar_url, is_member, last_login_at)
-         VALUES ($1, $2, $3, $4, $5, TRUE, NOW())
+      const result = await pool.query(
+        `INSERT INTO community_users (discord_id, username, global_name, email, avatar_url, role, is_member, last_login_at)
+         VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW())
          ON CONFLICT (discord_id) DO UPDATE
            SET username = EXCLUDED.username,
                global_name = EXCLUDED.global_name,
                email = EXCLUDED.email,
                avatar_url = EXCLUDED.avatar_url,
                is_member = TRUE,
-               last_login_at = NOW()`,
-        [user.id, user.username || "", user.global_name || "", user.email || "", avatarUrl(user)],
+               last_login_at = NOW(),
+               role = CASE WHEN $7 THEN 'admin' ELSE community_users.role END
+         RETURNING role`,
+        [user.id, user.username || "", user.global_name || "", user.email || "", avatarUrl(user), role, seedAdmin],
       );
+      role = result.rows[0]?.role || role;
     }
 
-    // Emite la sesión (JWT en cookie httpOnly).
+    // Emite la sesión (JWT en cookie httpOnly). El rol viene de la base de datos.
     const token = jwt.sign(
       {
-        role: isAdminUser(user) ? "admin" : "user",
-        isAdmin: isAdminUser(user),
+        role: role === "admin" ? "admin" : "user",
+        communityRole: role,
+        isAdmin: role === "admin",
         discordId: user.id,
         username: user.username,
         globalName: user.global_name || user.username,
@@ -224,7 +236,7 @@ router.get("/api/auth/discord/callback", async (req, res) => {
     );
     setCookie(res, "session", token, 60 * 60 * 24 * 30); // 30 días
 
-    res.redirect("/cuenta.html");
+    res.redirect("/login.html");
   } catch (error) {
     console.error("[auth-discord] callback error:", error.message);
     res.status(500).send("Error al iniciar sesión con Discord.");
@@ -244,7 +256,7 @@ router.get("/api/auth/me", (req, res) => {
       username: decoded.username,
       globalName: decoded.globalName,
       avatar: decoded.avatar,
-      role: decoded.role,
+      role: decoded.communityRole || (decoded.isAdmin ? "admin" : "viewer"),
       isAdmin: Boolean(decoded.isAdmin),
     });
   } catch (error) {
