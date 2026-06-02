@@ -13,6 +13,9 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import express from 'express';
+import cors from 'cors';
+import pg from 'pg';
+import { Client, GatewayIntentBits, ActivityType, Partials } from 'discord.js';
 
 // Fuente única de secretos: el .env.local de la raíz del repo.
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -31,14 +34,76 @@ function esJuego(nombre) {
   return true;
 }
 
-import cors from 'cors';
-import { Client, GatewayIntentBits, ActivityType, Partials } from 'discord.js';
-
 const { DISCORD_TOKEN, GUILD_ID, PORT = 3001 } = process.env;
 
 if (!DISCORD_TOKEN || !GUILD_ID) {
   console.error('Faltan variables. Edita el archivo .env.local en la raíz del repo y rellena DISCORD_TOKEN y GUILD_ID.');
   process.exit(1);
+}
+
+// --- Base de datos (opcional pero recomendada): guarda los juegos activos en Postgres ---
+const { Pool } = pg;
+const databaseUrl = process.env.DATABASE_URL;
+const pool = databaseUrl
+  ? new Pool({
+      connectionString: databaseUrl,
+      ssl: databaseUrl.includes('railway') ? { rejectUnauthorized: false } : false,
+    })
+  : null;
+
+if (!pool) {
+  console.warn('DATABASE_URL no configurada: el bot no guardará los juegos activos en la base de datos.');
+}
+
+// Crea las tablas del bot si no existen (no toca las tablas existentes del sitio).
+async function ensureSchema() {
+  if (!pool) return;
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS discord_active_games (
+      game TEXT PRIMARY KEY,
+      players INTEGER NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS discord_server_stats (
+      id INTEGER PRIMARY KEY,
+      total_active INTEGER NOT NULL DEFAULT 0,
+      games_count INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+}
+
+// Reemplaza el snapshot actual en la BD (transacción: borra y reinserta).
+async function saveSnapshotToDB(snap) {
+  if (!pool) return;
+  const dbClient = await pool.connect();
+  try {
+    await dbClient.query('BEGIN');
+    await dbClient.query('DELETE FROM discord_active_games');
+    for (const { game, players } of snap.games) {
+      await dbClient.query(
+        'INSERT INTO discord_active_games (game, players, updated_at) VALUES ($1, $2, NOW())',
+        [game, players],
+      );
+    }
+    await dbClient.query(
+      `INSERT INTO discord_server_stats (id, total_active, games_count, updated_at)
+       VALUES (1, $1, $2, NOW())
+       ON CONFLICT (id) DO UPDATE
+         SET total_active = EXCLUDED.total_active,
+             games_count = EXCLUDED.games_count,
+             updated_at = NOW()`,
+      [snap.totalActive, snap.games.length],
+    );
+    await dbClient.query('COMMIT');
+  } catch (err) {
+    await dbClient.query('ROLLBACK');
+    console.warn('No pude guardar el snapshot en la BD:', err.message);
+  } finally {
+    dbClient.release();
+  }
 }
 
 const client = new Client({
@@ -97,12 +162,14 @@ async function refresh() {
   }
   snapshot = computeActiveGames(guild);
   console.log(`[${snapshot.updatedAt}] ${snapshot.totalActive} jugando · ${snapshot.games.length} juegos`);
+  await saveSnapshotToDB(snapshot);
 }
 
 client.once('ready', async () => {
   console.log(`Bot conectado como ${client.user.tag}`);
   const guilds = client.guilds.cache.map((g) => `${g.name} (${g.id})`);
   console.log(`Servidores donde está el bot (${guilds.length}): ${guilds.join(', ') || 'NINGUNO'}`);
+  await ensureSchema();
   await refresh();
   setInterval(refresh, 60_000); // recalcula cada minuto
 });
