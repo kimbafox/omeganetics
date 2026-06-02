@@ -6,6 +6,7 @@
   <title>Actividad del servidor — Omeganetics</title>
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
   <style>
     .act-wrap { max-width: 1000px; margin: 0 auto; padding: 48px 24px 80px; }
     .act-head { text-align: center; margin-bottom: 40px; }
@@ -60,7 +61,7 @@
       <ul>
         <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
         <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
-        <li><a href="/login.html" class="nav-badge nav-badge-discord">Login</a></li>
+        <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
       </ul>
     </nav>
   </header>
@@ -148,5 +149,6 @@
     load();
     setInterval(load, 45000);
   </script>
+  <script src="/js/auth-widget.js"></script>
 </body>
 </html>

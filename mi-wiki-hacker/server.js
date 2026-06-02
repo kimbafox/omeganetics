@@ -16,6 +16,19 @@ const uploadsDir = path.join(__dirname, 'uploads');
 const publicDir = path.join(__dirname, 'public');
 
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'juegocrisger@gmail.com').toLowerCase();
+// Lista de correos admin (Kimba + Sebastián). Se puede ampliar con ADMIN_EMAILS.
+const ADMIN_EMAILS = new Set(
+    (process.env.ADMIN_EMAILS
+        ? process.env.ADMIN_EMAILS.split(',')
+        : ['juegocrisger@gmail.com', 'jsebastianarduzespa@gmail.com']
+    )
+        .concat([ADMIN_EMAIL])
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+);
+function isAdminEmail(email) {
+    return ADMIN_EMAILS.has(String(email || '').toLowerCase());
+}
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const cloudinaryCredentialsConfigured = Boolean(
@@ -104,8 +117,7 @@ app.get('/index.html', (req, res) => {
 
 app.get('/api/auth-config', (req, res) => {
     res.json({
-        googleClientId: GOOGLE_CLIENT_ID,
-        adminEmail: ADMIN_EMAIL
+        googleClientId: GOOGLE_CLIENT_ID
     });
 });
 
@@ -150,8 +162,8 @@ app.post('/api/login/google', async (req, res) => {
         const googleUser = await verifyGoogleToken(credential);
         const email = String(googleUser.email || '').toLowerCase();
 
-        if (email !== ADMIN_EMAIL) {
-            return res.status(403).json({ error: '> ESTA_CUENTA_NO_TIENE_PERMISOS_DE_ADMIN' });
+        if (!isAdminEmail(email)) {
+            return res.status(403).json({ error: '> ACCESO_RESTRINGIDO' });
         }
 
         const token = jwt.sign(

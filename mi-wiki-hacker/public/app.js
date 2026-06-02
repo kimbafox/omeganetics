@@ -40,8 +40,7 @@ const imagePreviewGrid = document.getElementById('imagePreviewGrid');
 
 const BASE_PATH = window.location.pathname.startsWith('/wiki') ? '/wiki' : '';
 let authConfig = {
-    googleClientId: '',
-    adminEmail: 'juegocrisger@gmail.com'
+    googleClientId: ''
 };
 let googleInitialized = false;
 let sealedCarouselAnimationId = null;
@@ -576,7 +575,7 @@ async function handleGoogleCredentialResponse(googleResponse) {
         localStorage.removeItem('wikiAdminToken');
         loginError.innerText = error.message || '> NO_SE_PUDO_VALIDAR_LA_CUENTA';
         loginError.style.display = 'block';
-        updateGoogleLoginHint(`Admin permitido: ${authConfig.adminEmail}`, true);
+        updateGoogleLoginHint('> ACCESO_RESTRINGIDO', true);
     }
 }
 
@@ -585,8 +584,7 @@ async function initGoogleLogin() {
         const response = await fetch(buildApiUrl('/auth-config'));
         const data = await response.json();
         authConfig = {
-            googleClientId: data.googleClientId || '',
-            adminEmail: data.adminEmail || authConfig.adminEmail
+            googleClientId: data.googleClientId || ''
         };
     } catch (error) {
         updateGoogleLoginHint('No se pudo cargar la configuracion de acceso.', true);
@@ -619,7 +617,7 @@ async function initGoogleLogin() {
         text: 'continue_with',
         width: 320
     });
-    updateGoogleLoginHint(`Admin permitido: ${authConfig.adminEmail}`);
+    updateGoogleLoginHint('Acceso solo para administradores.');
 }
 
 function showSection(section) {

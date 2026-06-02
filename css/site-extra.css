@@ -1,0 +1,86 @@
+/* ============================================================
+   Encabezado más limpio + menú de usuario logueado.
+   Se carga DESPUÉS de styles.css para sobrescribir lo necesario.
+   ============================================================ */
+
+/* --- Barra de navegación uniforme y prolija --- */
+nav ul { gap: 12px !important; }
+
+/* Neutraliza los badges de colores fuertes (Wiki/Realm) a un estilo limpio */
+.nav-badge-wiki,
+.nav-badge-realm,
+.nav-badge-team {
+  border-color: var(--border) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  box-shadow: none !important;
+  color: var(--text-soft) !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  font-weight: 600 !important;
+}
+.nav-badge-wiki:hover, .nav-badge-realm:hover, .nav-badge-team:hover,
+.nav-badge-wiki:focus-visible, .nav-badge-realm:focus-visible, .nav-badge-team:focus-visible,
+.nav-toggle-link.nav-badge-team[aria-expanded="true"] {
+  border-color: var(--border-strong) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  color: var(--text) !important;
+}
+.nav-badge-wiki::before { display: none !important; } /* quita el brillo animado */
+
+/* Discord: acento sutil (es un llamado a la acción) */
+.nav-badge-discord {
+  border-color: rgba(115, 138, 255, 0.45) !important;
+  background: rgba(88, 101, 242, 0.18) !important;
+  box-shadow: none !important;
+  color: #cdd5ff !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  font-weight: 600 !important;
+}
+.nav-badge-discord:hover, .nav-badge-discord:focus-visible {
+  background: rgba(88, 101, 242, 0.30) !important;
+  border-color: rgba(115, 138, 255, 0.70) !important;
+}
+
+/* Login: botón principal (acento) */
+#navLogin {
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #5865F2, #7c5cff) !important;
+  color: #fff !important;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  font-weight: 700 !important;
+}
+#navLogin:hover { filter: brightness(1.08); }
+
+/* --- Menú de usuario logueado --- */
+.user-menu { position: relative; display: inline-flex; }
+.user-menu-btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06); color: var(--text); font-weight: 700;
+  cursor: pointer; font-size: 14px;
+}
+.user-menu-btn:hover { background: rgba(255, 255, 255, 0.10); }
+.user-menu-avatar { width: 26px; height: 26px; border-radius: 50%; }
+.user-menu-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu-badge {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+  background: linear-gradient(135deg, #ffd35c, #ff9f43); color: #2a1a00;
+  padding: 2px 6px; border-radius: 6px; font-weight: 800;
+}
+.user-menu-caret { color: var(--text-faint); font-size: 11px; }
+.user-menu-dropdown {
+  position: absolute; right: 0; top: calc(100% + 8px); min-width: 190px;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px;
+  box-shadow: var(--shadow); padding: 6px; display: flex; flex-direction: column; z-index: 60;
+}
+.user-menu-dropdown[hidden] { display: none; }
+.user-menu-dropdown a, .user-menu-dropdown button {
+  text-align: left; background: none; border: 0; color: var(--text); font: inherit;
+  text-decoration: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;
+}
+.user-menu-dropdown a:hover, .user-menu-dropdown button:hover { background: rgba(255, 255, 255, 0.08); }
+.user-menu-sep { height: 1px; background: var(--border); margin: 4px 6px; }
+.user-menu-logout { color: #ff9b9b !important; }
+.user-menu-head { padding: 8px 12px 4px; color: var(--text-faint); font-size: 12px; }
