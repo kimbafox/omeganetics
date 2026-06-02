@@ -35,6 +35,15 @@
   }
   if (!me) return; // sin sesión: se queda el botón "Login"
 
+  // Estado de creador (para mostrar "Subir contenido" si está aprobado).
+  let creatorStatus = "none";
+  try {
+    const cr = await fetch("/api/creadores/mi-estado");
+    if (cr.ok) creatorStatus = (await cr.json()).status || "none";
+  } catch (e) {
+    /* noop */
+  }
+
   const esc = (s) =>
     String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -56,6 +65,7 @@
       <div class="user-menu-head">@${esc(me.username || "")}</div>
       <a role="menuitem" href="/perfil.html">Ver perfil</a>
       <a role="menuitem" href="/perfil.html#actividad">Mi actividad</a>
+      <a role="menuitem" href="/creadores.html">${creatorStatus === "aprobado" ? "🎬 Subir contenido" : "🎬 Creadores"}</a>
       ${me.isAdmin ? '<a role="menuitem" href="/admin-equipo.html">Panel de admin</a>' : ""}
       <div class="user-menu-sep"></div>
       <button role="menuitem" type="button" class="user-menu-logout">Cerrar sesión</button>
