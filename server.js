@@ -1128,6 +1128,10 @@ app.use(discordAuthRouter);
 // Lector de actividad de Discord (juegos activos) integrado al sitio.
 const { initDiscordActivity } = require("./discord-activity");
 
+// Módulo de Eventos de comunidad.
+const { router: eventosRouter, initEventos } = require("./eventos");
+app.use(eventosRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1258,6 +1262,7 @@ async function start() {
     await initTeamStorage();
     await initDatabase();
     await initAuthDiscord();
+    await initEventos();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
