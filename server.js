@@ -1188,11 +1188,11 @@ app.get("/api/rankings", async (req, res) => {
   if (!teamPool) return res.json({ period, refreshMinutes, top: [] });
   try {
     const where = period === "week" ? "WHERE d.day >= (CURRENT_DATE - INTERVAL '6 days')" : "";
-    // Puntos de actividad: voz pesa más que juego, y mensajes suman poco.
-    const VOICE_W = 4, GAME_W = 2, MSG_W = 1;
+    // Puntos de actividad: SOLO voz (lo que más vale) y mensajes. El juego NO puntúa
+    // (es solo referencia: no sabemos si juegan solos o con la comunidad).
+    const VOICE_W = 5, MSG_W = 1;
     const result = await teamPool.query(`
       SELECT d.discord_id,
-             COALESCE(SUM(d.samples), 0)::int AS game_samples,
              COALESCE(SUM(d.voice_samples), 0)::int AS voice_samples,
              COALESCE(SUM(d.messages), 0)::int AS messages,
              m.username, m.display_name, m.avatar_url
@@ -1200,7 +1200,7 @@ app.get("/api/rankings", async (req, res) => {
       LEFT JOIN discord_members m ON m.discord_id = d.discord_id
       ${where}
       GROUP BY d.discord_id, m.username, m.display_name, m.avatar_url
-      ORDER BY (COALESCE(SUM(d.voice_samples),0)*${VOICE_W} + COALESCE(SUM(d.samples),0)*${GAME_W} + COALESCE(SUM(d.messages),0)*${MSG_W}) DESC
+      ORDER BY (COALESCE(SUM(d.voice_samples),0)*${VOICE_W} + COALESCE(SUM(d.messages),0)*${MSG_W}) DESC
       LIMIT 15
     `);
     const top = result.rows.map((row, index) => ({
@@ -1208,9 +1208,8 @@ app.get("/api/rankings", async (req, res) => {
       name: row.display_name || row.username || "Jugador",
       username: row.username || "",
       avatar: row.avatar_url || "",
-      points: row.voice_samples * VOICE_W + row.game_samples * GAME_W + row.messages * MSG_W,
+      points: row.voice_samples * VOICE_W + row.messages * MSG_W,
       voiceMinutes: row.voice_samples * refreshMinutes,
-      gameMinutes: row.game_samples * refreshMinutes,
       messages: row.messages,
     }));
     return res.json({ period, refreshMinutes, top });

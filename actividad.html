@@ -116,7 +116,7 @@
 
     <div class="ranking" style="margin-top:24px">
       <h2>🏆 Jugadores más activos</h2>
-      <p class="sub">Quién pasa más tiempo jugando en el servidor.</p>
+      <p class="sub">Por puntos de actividad: tiempo en voz (lo que más vale) y mensajes.</p>
       <div class="lb-toggle">
         <button id="lb-week" class="active" type="button">Esta semana</button>
         <button id="lb-all" type="button">Histórico</button>
@@ -206,7 +206,7 @@
           return `<div class="lb-row">
             <div class="lb-rank">${medal}</div>${av}
             <div class="lb-name">${(u.name || '').replace(/</g, '&lt;')}
-              <div class="lb-break">🎙️ ${fmtMin(u.voiceMinutes)} · 🎮 ${fmtMin(u.gameMinutes)} · 💬 ${u.messages}</div>
+              <div class="lb-break">🎙️ ${fmtMin(u.voiceMinutes)} en voz · 💬 ${u.messages} msj</div>
             </div>
             <div class="lb-time">${u.points} pts</div>
           </div>`;
