@@ -35,6 +35,8 @@ function esJuego(nombre) {
 }
 
 const { DISCORD_TOKEN, GUILD_ID, PORT = 3001 } = process.env;
+// Modo cron: se conecta, guarda un snapshot y se apaga (RUN_ONCE=true).
+const RUN_ONCE = process.env.RUN_ONCE === 'true' || process.argv.includes('--once');
 
 if (!DISCORD_TOKEN || !GUILD_ID) {
   console.error('Faltan variables. Edita el archivo .env.local en la raíz del repo y rellena DISCORD_TOKEN y GUILD_ID.');
@@ -171,6 +173,11 @@ client.once('ready', async () => {
   console.log(`Servidores donde está el bot (${guilds.length}): ${guilds.join(', ') || 'NINGUNO'}`);
   await ensureSchema();
   await refresh();
+  if (RUN_ONCE) {
+    console.log('Modo RUN_ONCE (cron): snapshot guardado en la BD. Cerrando.');
+    await client.destroy();
+    process.exit(0);
+  }
   setInterval(refresh, 60_000); // recalcula cada minuto
 });
 
@@ -189,6 +196,17 @@ app.get('/', (_req, res) =>
   res.send('Omeganetics bot OK. Mira /api/active-games para el ranking de juegos activos.'),
 );
 
-app.listen(PORT, () => console.log(`API de juegos activos en http://localhost:${PORT}/api/active-games`));
+// En modo cron no levantamos el servidor HTTP (no hace falta).
+if (!RUN_ONCE) {
+  app.listen(PORT, () => console.log(`API de juegos activos en http://localhost:${PORT}/api/active-games`));
+}
+
+// Seguridad: en modo cron, si algo se cuelga, salir a los 90s para no consumir de más.
+if (RUN_ONCE) {
+  setTimeout(() => {
+    console.warn('RUN_ONCE: tiempo límite alcanzado, saliendo.');
+    process.exit(1);
+  }, 90_000);
+}
 
 client.login(DISCORD_TOKEN);
