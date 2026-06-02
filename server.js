@@ -1121,6 +1121,10 @@ app.post("/api/team/upload", requireTeamAdmin, uploadTeamImage.single("image"), 
 const { app: wikiApp } = require("./mi-wiki-hacker/server");
 app.use("/wiki", wikiApp);
 
+// Login con Discord (OAuth2) — solo miembros del servidor.
+const { router: discordAuthRouter, initAuthDiscord } = require("./auth-discord");
+app.use(discordAuthRouter);
+
 if (resolvedDatabaseUrl) {
 
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");
@@ -1170,6 +1174,7 @@ async function start() {
   try {
     await initTeamStorage();
     await initDatabase();
+    await initAuthDiscord();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
