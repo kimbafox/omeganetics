@@ -36,6 +36,11 @@
     .act-game { font-weight: 700; }
     .act-time { color: #aab2ff; font-weight: 700; white-space: nowrap; }
     .act-empty { color: var(--text-soft); padding: 14px 0; }
+    .act-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    @media (max-width: 520px) { .act-summary { grid-template-columns: 1fr 1fr; } }
+    .sumcard { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 12px; padding: 14px; text-align: center; }
+    .sumnum { font-size: 1.3rem; font-weight: 800; }
+    .sumlbl { color: var(--text-faint); font-size: 12px; margin-top: 4px; }
 
     .soon-card { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
     .soon-card:last-child { border-bottom: 0; }
@@ -83,8 +88,10 @@
 
       <div class="grid2">
         <section class="panel" id="actividad">
-          <h2>🎮 Mi actividad</h2>
-          <p class="sub">Tus juegos registrados a partir de tu presencia en Discord (se actualiza cada pocos minutos).</p>
+          <h2>📊 Mi actividad</h2>
+          <p class="sub">Tu tiempo en voz, mensajes y juegos en el servidor (se actualiza cada pocos minutos).</p>
+          <div id="act-summary" class="act-summary"></div>
+          <h3 style="font-size:1rem;margin:8px 0 6px;color:var(--text-soft)">Tus juegos</h3>
           <div id="act-list"></div>
         </section>
 
@@ -147,6 +154,11 @@
       try {
         const ar = await fetch("/api/me/activity");
         const data = await ar.json();
+        const sum = data.summary || { voiceMinutes: 0, gameMinutes: 0, messages: 0 };
+        $("act-summary").innerHTML = `
+          <div class="sumcard"><div class="sumnum">${fmtMinutes(sum.voiceMinutes)}</div><div class="sumlbl">🎙️ En voz</div></div>
+          <div class="sumcard"><div class="sumnum">${sum.messages}</div><div class="sumlbl">💬 Mensajes</div></div>
+          <div class="sumcard"><div class="sumnum">${fmtMinutes(sum.gameMinutes)}</div><div class="sumlbl">🎮 Jugando</div></div>`;
         const games = data.games || [];
         if (!games.length) {
           $("act-list").innerHTML = `<div class="act-empty">Aún no hay actividad registrada. Cuando juegues con el estado visible en Discord, tus juegos aparecerán aquí.</div>`;

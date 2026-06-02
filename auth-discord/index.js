@@ -306,7 +306,8 @@ router.get("/api/me/profile", requireUser, async (req, res) => {
 // Actividad de juegos del usuario logueado.
 router.get("/api/me/activity", requireUser, async (req, res) => {
   const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
-  if (!pool) return res.json({ refreshMinutes, games: [] });
+  const emptySummary = { voiceMinutes: 0, gameMinutes: 0, messages: 0 };
+  if (!pool) return res.json({ refreshMinutes, summary: emptySummary, games: [] });
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_game_activity (
@@ -324,9 +325,20 @@ router.get("/api/me/activity", requireUser, async (req, res) => {
       minutes: row.samples * refreshMinutes,
       lastSeen: row.last_seen,
     }));
-    return res.json({ refreshMinutes, games });
+    let summary = { ...emptySummary };
+    try {
+      const s = await pool.query(
+        "SELECT COALESCE(SUM(samples),0)::int AS g, COALESCE(SUM(voice_samples),0)::int AS v, COALESCE(SUM(messages),0)::int AS m FROM user_activity_daily WHERE discord_id = $1",
+        [req.user.discordId],
+      );
+      const row = s.rows[0] || {};
+      summary = { gameMinutes: (row.g || 0) * refreshMinutes, voiceMinutes: (row.v || 0) * refreshMinutes, messages: row.m || 0 };
+    } catch (e) {
+      /* la tabla aún no tiene columnas/datos */
+    }
+    return res.json({ refreshMinutes, summary, games });
   } catch (e) {
-    return res.json({ refreshMinutes, games: [] });
+    return res.json({ refreshMinutes, summary: emptySummary, games: [] });
   }
 });
 

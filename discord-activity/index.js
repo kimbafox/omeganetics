@@ -130,6 +130,9 @@ async function ensureSchema() {
       PRIMARY KEY (game, day)
     );
   `);
+  // Columnas extra de actividad diaria: tiempo en voz y mensajes.
+  await pool.query("ALTER TABLE user_activity_daily ADD COLUMN IF NOT EXISTS voice_samples INTEGER NOT NULL DEFAULT 0");
+  await pool.query("ALTER TABLE user_activity_daily ADD COLUMN IF NOT EXISTS messages INTEGER NOT NULL DEFAULT 0");
 }
 
 async function save(snap) {
@@ -238,6 +241,88 @@ async function saveGameDaily(games) {
   }
 }
 
+// Mensajes acumulados en memoria entre refrescos.
+const pendingMessages = new Map(); // discordId -> { count, username, displayName, avatar }
+
+async function flushMessages() {
+  if (pendingMessages.size === 0) return;
+  const batch = [...pendingMessages.entries()];
+  pendingMessages.clear();
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    for (const [discordId, info] of batch) {
+      await db.query(
+        `INSERT INTO discord_members (discord_id, username, display_name, avatar_url, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (discord_id) DO UPDATE
+           SET username = EXCLUDED.username, display_name = EXCLUDED.display_name,
+               avatar_url = CASE WHEN EXCLUDED.avatar_url <> '' THEN EXCLUDED.avatar_url ELSE discord_members.avatar_url END,
+               updated_at = NOW()`,
+        [discordId, info.username, info.displayName, info.avatar]
+      );
+      await db.query(
+        `INSERT INTO user_activity_daily (discord_id, day, samples, voice_samples, messages)
+         VALUES ($1, CURRENT_DATE, 0, 0, $2)
+         ON CONFLICT (discord_id, day) DO UPDATE SET messages = user_activity_daily.messages + $2`,
+        [discordId, info.count]
+      );
+    }
+    await db.query("COMMIT");
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.warn("[activity] no pude volcar mensajes:", err.message);
+  } finally {
+    db.release();
+  }
+}
+
+function computeVoiceMembers(guild) {
+  const voice = new Map();
+  for (const member of guild.members.cache.values()) {
+    if (member.user.bot) continue;
+    if (!member.voice || !member.voice.channelId) continue;
+    voice.set(member.id, {
+      username: member.user.username || "",
+      displayName: member.displayName || member.user.globalName || member.user.username || "",
+      avatar: typeof member.user.displayAvatarURL === "function"
+        ? member.user.displayAvatarURL({ extension: "png", size: 128 })
+        : "",
+    });
+  }
+  return voice;
+}
+
+async function saveVoiceActivity(voice) {
+  if (!voice || voice.size === 0) return;
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    for (const [discordId, info] of voice) {
+      await db.query(
+        `INSERT INTO discord_members (discord_id, username, display_name, avatar_url, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (discord_id) DO UPDATE
+           SET username = EXCLUDED.username, display_name = EXCLUDED.display_name,
+               avatar_url = EXCLUDED.avatar_url, updated_at = NOW()`,
+        [discordId, info.username, info.displayName, info.avatar]
+      );
+      await db.query(
+        `INSERT INTO user_activity_daily (discord_id, day, voice_samples)
+         VALUES ($1, CURRENT_DATE, 1)
+         ON CONFLICT (discord_id, day) DO UPDATE SET voice_samples = user_activity_daily.voice_samples + 1`,
+        [discordId]
+      );
+    }
+    await db.query("COMMIT");
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.warn("[activity] no pude guardar voz:", err.message);
+  } finally {
+    db.release();
+  }
+}
+
 let client = null;
 
 async function refresh() {
@@ -254,7 +339,10 @@ async function refresh() {
   await saveUserActivity(snap.userGames);
   await saveMembersAndDaily(snap.members);
   await saveGameDaily(snap.games);
-  console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos`);
+  const voice = computeVoiceMembers(guild);
+  await saveVoiceActivity(voice);
+  await flushMessages();
+  console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos · ${voice.size} en voz`);
 }
 
 // Arranca el lector. No bloquea el servidor: si falla, el sitio sigue funcionando.
@@ -269,8 +357,33 @@ function initDiscordActivity() {
   }
 
   client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences],
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMembers,
+      GatewayIntentBits.GuildPresences,
+      GatewayIntentBits.GuildVoiceStates,
+      GatewayIntentBits.GuildMessages,
+    ],
     partials: [Partials.GuildMember, Partials.User],
+  });
+
+  // Conteo de mensajes (acumula en memoria y se vuelca cada refresco).
+  client.on("messageCreate", (msg) => {
+    try {
+      if (!msg.guild || msg.guild.id !== GUILD_ID) return;
+      if (!msg.author || msg.author.bot) return;
+      const id = msg.author.id;
+      const prev = pendingMessages.get(id) || { count: 0, username: "", displayName: "", avatar: "" };
+      prev.count += 1;
+      prev.username = msg.author.username || prev.username;
+      prev.displayName = (msg.member && msg.member.displayName) || msg.author.globalName || msg.author.username || prev.displayName;
+      if (typeof msg.author.displayAvatarURL === "function") {
+        prev.avatar = msg.author.displayAvatarURL({ extension: "png", size: 128 });
+      }
+      pendingMessages.set(id, prev);
+    } catch (e) {
+      /* noop */
+    }
   });
 
   client.once("ready", async () => {

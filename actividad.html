@@ -58,6 +58,7 @@
     .lb-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
     .lb-name { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .lb-time { color: #aab2ff; font-weight: 700; white-space: nowrap; }
+    .lb-break { font-size: 12px; color: var(--text-faint); font-weight: 500; margin-top: 3px; }
   </style>
 </head>
 <body>
@@ -202,7 +203,13 @@
         $('lbList').innerHTML = top.map((u) => {
           const medal = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : u.rank;
           const av = u.avatar ? `<img class="lb-avatar" src="${u.avatar}" alt="">` : '<div class="lb-avatar" style="background:#222"></div>';
-          return `<div class="lb-row"><div class="lb-rank">${medal}</div>${av}<div class="lb-name">${(u.name || '').replace(/</g, '&lt;')}</div><div class="lb-time">${fmtMin(u.minutes)}</div></div>`;
+          return `<div class="lb-row">
+            <div class="lb-rank">${medal}</div>${av}
+            <div class="lb-name">${(u.name || '').replace(/</g, '&lt;')}
+              <div class="lb-break">🎙️ ${fmtMin(u.voiceMinutes)} · 🎮 ${fmtMin(u.gameMinutes)} · 💬 ${u.messages}</div>
+            </div>
+            <div class="lb-time">${u.points} pts</div>
+          </div>`;
         }).join('');
       } catch (e) {
         $('lbList').innerHTML = `<div class="empty">No se pudo cargar el ranking.</div>`;
