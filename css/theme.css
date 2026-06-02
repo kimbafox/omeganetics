@@ -161,3 +161,8 @@ h1, h2, h3 { letter-spacing: -0.01em; }
 
 /* Puntos de carrusel con color de acento */
 .carousel-dot.is-active { background: var(--accent) !important; }
+
+/* Encuadre de fotos de perfil: anclar arriba para que se vea la cara (no recortar la cabeza) */
+.resume-hero-image,
+.member-card-image,
+.team-dropdown-avatar { object-position: center top !important; }
