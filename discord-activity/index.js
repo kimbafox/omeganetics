@@ -44,6 +44,7 @@ function computeActiveGames(guild) {
   const games = new Map(); // claveMinusculas -> { name, users: Set }
   const activeUsers = new Set();
   const userGames = new Map(); // discordId -> Set(nombreJuego)
+  const members = new Map(); // discordId -> { username, displayName, avatar }
   for (const member of guild.members.cache.values()) {
     if (member.user.bot) continue;
     const presence = member.presence;
@@ -57,12 +58,21 @@ function computeActiveGames(guild) {
       games.get(key).users.add(member.id);
       if (!userGames.has(member.id)) userGames.set(member.id, new Set());
       userGames.get(member.id).add(activity.name);
+      if (!members.has(member.id)) {
+        members.set(member.id, {
+          username: member.user.username || "",
+          displayName: member.displayName || member.user.globalName || member.user.username || "",
+          avatar: typeof member.user.displayAvatarURL === "function"
+            ? member.user.displayAvatarURL({ extension: "png", size: 128 })
+            : "",
+        });
+      }
     }
   }
   const ranked = [...games.values()]
     .map(({ name, users }) => ({ game: name, players: users.size }))
     .sort((a, b) => b.players - a.players);
-  return { totalActive: activeUsers.size, games: ranked, userGames };
+  return { totalActive: activeUsers.size, games: ranked, userGames, members };
 }
 
 async function ensureSchema() {
@@ -81,7 +91,7 @@ async function ensureSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
-  // Actividad por usuario: cada muestra = 1 refresco (REFRESH_MINUTES).
+  // Actividad por usuario y juego: cada muestra = 1 refresco (REFRESH_MINUTES).
   await pool.query(`
     CREATE TABLE IF NOT EXISTS user_game_activity (
       discord_id TEXT NOT NULL,
@@ -90,6 +100,25 @@ async function ensureSchema() {
       first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (discord_id, game)
+    );
+  `);
+  // Datos de miembros (para mostrar nombre/avatar en el ranking, registrados o no).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS discord_members (
+      discord_id TEXT PRIMARY KEY,
+      username TEXT NOT NULL DEFAULT '',
+      display_name TEXT NOT NULL DEFAULT '',
+      avatar_url TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  // Actividad diaria por usuario (para ranking por semana/mes).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_activity_daily (
+      discord_id TEXT NOT NULL,
+      day DATE NOT NULL,
+      samples INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (discord_id, day)
     );
   `);
 }
@@ -148,6 +177,36 @@ async function saveUserActivity(userGames) {
   }
 }
 
+async function saveMembersAndDaily(members) {
+  if (!members || members.size === 0) return;
+  const db = await pool.connect();
+  try {
+    await db.query("BEGIN");
+    for (const [discordId, info] of members) {
+      await db.query(
+        `INSERT INTO discord_members (discord_id, username, display_name, avatar_url, updated_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         ON CONFLICT (discord_id) DO UPDATE
+           SET username = EXCLUDED.username, display_name = EXCLUDED.display_name,
+               avatar_url = EXCLUDED.avatar_url, updated_at = NOW()`,
+        [discordId, info.username, info.displayName, info.avatar]
+      );
+      await db.query(
+        `INSERT INTO user_activity_daily (discord_id, day, samples)
+         VALUES ($1, CURRENT_DATE, 1)
+         ON CONFLICT (discord_id, day) DO UPDATE SET samples = user_activity_daily.samples + 1`,
+        [discordId]
+      );
+    }
+    await db.query("COMMIT");
+  } catch (err) {
+    await db.query("ROLLBACK");
+    console.warn("[activity] no pude guardar miembros/diario:", err.message);
+  } finally {
+    db.release();
+  }
+}
+
 let client = null;
 
 async function refresh() {
@@ -162,6 +221,7 @@ async function refresh() {
   const snap = computeActiveGames(guild);
   await save(snap);
   await saveUserActivity(snap.userGames);
+  await saveMembersAndDaily(snap.members);
   console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos`);
 }
 

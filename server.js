@@ -1152,6 +1152,37 @@ app.get("/api/active-games", async (req, res) => {
   }
 });
 
+// Ranking de jugadores más activos (a partir del tracking de actividad).
+app.get("/api/rankings", async (req, res) => {
+  const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
+  const period = req.query.period === "all" ? "all" : "week";
+  if (!teamPool) return res.json({ period, refreshMinutes, top: [] });
+  try {
+    const where = period === "week" ? "WHERE d.day >= (CURRENT_DATE - INTERVAL '6 days')" : "";
+    const result = await teamPool.query(`
+      SELECT d.discord_id,
+             SUM(d.samples)::int AS samples,
+             m.username, m.display_name, m.avatar_url
+      FROM user_activity_daily d
+      LEFT JOIN discord_members m ON m.discord_id = d.discord_id
+      ${where}
+      GROUP BY d.discord_id, m.username, m.display_name, m.avatar_url
+      ORDER BY samples DESC
+      LIMIT 15
+    `);
+    const top = result.rows.map((row, index) => ({
+      rank: index + 1,
+      name: row.display_name || row.username || "Jugador",
+      username: row.username || "",
+      avatar: row.avatar_url || "",
+      minutes: (row.samples || 0) * refreshMinutes,
+    }));
+    return res.json({ period, refreshMinutes, top });
+  } catch (error) {
+    return res.json({ period, refreshMinutes, top: [] });
+  }
+});
+
 if (resolvedDatabaseUrl) {
 
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");

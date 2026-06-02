@@ -48,6 +48,16 @@
     .back-link { display: inline-block; margin-top: 28px; color: var(--text-soft); text-decoration: none; font-size: 14px; }
     .back-link:hover { color: var(--text); }
     .center { text-align: center; }
+
+    .lb-toggle { display: inline-flex; gap: 6px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 999px; padding: 4px; margin-bottom: 18px; }
+    .lb-toggle button { background: none; border: 0; color: var(--text-soft); font: inherit; padding: 7px 16px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+    .lb-toggle button.active { background: var(--accent); color: #fff; }
+    .lb-row { display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .lb-row:last-child { border-bottom: 0; }
+    .lb-rank { width: 30px; text-align: center; font-weight: 800; color: var(--text-faint); }
+    .lb-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+    .lb-name { flex: 1; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lb-time { color: #aab2ff; font-weight: 700; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -90,6 +100,16 @@
       <p class="sub">Ranking en tiempo real según la presencia de Discord.</p>
       <div id="gamesList"></div>
       <div class="updated" id="updated"></div>
+    </div>
+
+    <div class="ranking" style="margin-top:24px">
+      <h2>🏆 Jugadores más activos</h2>
+      <p class="sub">Quién pasa más tiempo jugando en el servidor.</p>
+      <div class="lb-toggle">
+        <button id="lb-week" class="active" type="button">Esta semana</button>
+        <button id="lb-all" type="button">Histórico</button>
+      </div>
+      <div id="lbList"></div>
     </div>
 
     <div class="center"><a class="back-link" href="/">← Volver al inicio</a></div>
@@ -149,6 +169,38 @@
 
     load();
     setInterval(load, 45000);
+
+    // --- Ranking de jugadores más activos ---
+    let lbPeriod = 'week';
+    function fmtMin(m) {
+      if (!m) return '—';
+      const h = Math.floor(m / 60), mn = m % 60;
+      if (h && mn) return `${h} h ${mn} min`;
+      if (h) return `${h} h`;
+      return `${mn} min`;
+    }
+    async function loadRankings() {
+      try {
+        const res = await fetch('/api/rankings?period=' + lbPeriod);
+        const data = await res.json();
+        const top = data.top || [];
+        if (!top.length) {
+          $('lbList').innerHTML = `<div class="empty"><h3>Aún no hay datos de ranking</h3><p>Se arma con la actividad de la gente. Dale unos días jugando con el estado visible en Discord.</p></div>`;
+          return;
+        }
+        $('lbList').innerHTML = top.map((u) => {
+          const medal = u.rank === 1 ? '🥇' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : u.rank;
+          const av = u.avatar ? `<img class="lb-avatar" src="${u.avatar}" alt="">` : '<div class="lb-avatar" style="background:#222"></div>';
+          return `<div class="lb-row"><div class="lb-rank">${medal}</div>${av}<div class="lb-name">${(u.name || '').replace(/</g, '&lt;')}</div><div class="lb-time">${fmtMin(u.minutes)}</div></div>`;
+        }).join('');
+      } catch (e) {
+        $('lbList').innerHTML = `<div class="empty">No se pudo cargar el ranking.</div>`;
+      }
+    }
+    $('lb-week').addEventListener('click', () => { lbPeriod = 'week'; $('lb-week').classList.add('active'); $('lb-all').classList.remove('active'); loadRankings(); });
+    $('lb-all').addEventListener('click', () => { lbPeriod = 'all'; $('lb-all').classList.add('active'); $('lb-week').classList.remove('active'); loadRankings(); });
+    loadRankings();
+    setInterval(loadRankings, 60000);
   </script>
   <script src="/js/auth-widget.js"></script>
 </body>
