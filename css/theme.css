@@ -1,0 +1,80 @@
+/* ============================================================
+   TEMA OMEGANETICS — sistema de diseño unificado (estilo Discord)
+   Se carga después de styles.css + site-extra.css.
+   Parte 1: páginas principales (Inicio, Actividad, Login).
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* Acentos estilo Discord (blurple) */
+  --accent: #5865F2;
+  --accent-2: #7c5cff;
+  --accent-soft: rgba(88, 101, 242, 0.16);
+
+  /* Superficies un pelín más cálidas/profundas que el negro plano */
+  --surface: #15161d;
+  --surface-muted: #1b1c25;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --radius: 14px;
+  --radius-lg: 20px;
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+
+/* Tipografía consistente en todo el sitio */
+* { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+
+body {
+  background:
+    radial-gradient(1100px 620px at 50% -12%, #191a26 0%, rgba(25, 26, 38, 0) 60%),
+    var(--bg);
+}
+
+/* Títulos un poco más marcados */
+h1, h2, h3 { letter-spacing: -0.01em; }
+
+/* --- Botón principal estilo Discord --- */
+.btn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: var(--radius) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 12px 26px rgba(88, 101, 242, 0.32);
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+}
+.btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(88, 101, 242, 0.42);
+}
+
+/* Kickers/etiquetas de sección con tono de acento */
+.hero-kicker, .section-kicker, .team-eyebrow {
+  color: #aab2ff !important;
+  background: var(--accent-soft);
+  border: 1px solid rgba(115, 138, 255, 0.28);
+  padding: 6px 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+/* Tarjetas y superficies más coherentes (showcases, dropdown de equipo) */
+.showcase-carousel,
+.team-dropdown-inner {
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface) !important;
+}
+
+/* Enlaces de acento */
+.showcase-link, .showcase-cta { color: #aab2ff !important; }
+
+/* Footer un poco más limpio */
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.site-footer-contact a:hover { color: #aab2ff; }
