@@ -12,6 +12,20 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "juegocrisger@gmail.com").toLowerCase();
+// Lista de correos con permiso de admin (Google login). Se puede ampliar con la
+// variable ADMIN_EMAILS (correos separados por coma). Por defecto: Kimba y Sebastián.
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS
+    ? process.env.ADMIN_EMAILS.split(",")
+    : ["juegocrisger@gmail.com", "jsebastianarduzespa@gmail.com"]
+  )
+    .concat([ADMIN_EMAIL])
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+);
+function isAdminEmail(email) {
+  return ADMIN_EMAILS.has(String(email || "").toLowerCase());
+}
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || "";
@@ -277,8 +291,8 @@ function requireTeamAdmin(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== "admin" || String(decoded.email || "").toLowerCase() !== ADMIN_EMAIL) {
-      return res.status(403).json({ error: "Solo el administrador autorizado puede editar este contenido." });
+    if (decoded.role !== "admin" || !isAdminEmail(decoded.email)) {
+      return res.status(403).json({ error: "Solo un administrador autorizado puede editar este contenido." });
     }
 
     req.user = decoded;
@@ -976,6 +990,7 @@ app.get("/api/team/auth-config", (req, res) => {
   res.json({
     googleClientId: GOOGLE_CLIENT_ID,
     adminEmail: ADMIN_EMAIL,
+    adminEmails: [...ADMIN_EMAILS],
     passwordEnabled: Boolean(ADMIN_PASSWORD || ADMIN_PASSWORD_HASH),
     databaseConfigured: Boolean(teamPool),
     storageMode: teamStorageMode
@@ -992,7 +1007,7 @@ app.post("/api/team/login/google", async (req, res) => {
     const googleUser = await verifyGoogleToken(credential);
     const email = String(googleUser.email || "").toLowerCase();
 
-    if (email !== ADMIN_EMAIL) {
+    if (!isAdminEmail(email)) {
       return res.status(403).json({ error: "Esta cuenta no tiene permisos de administrador." });
     }
 
@@ -1022,7 +1037,7 @@ app.post("/api/team/login/password", async (req, res) => {
       return res.status(400).json({ error: "Correo y clave son obligatorios." });
     }
 
-    if (email !== ADMIN_EMAIL) {
+    if (!isAdminEmail(email)) {
       return res.status(403).json({ error: "Esta cuenta no tiene permisos de administrador." });
     }
 
