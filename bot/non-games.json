@@ -1,0 +1,31 @@
+{
+  "_comentario": "Apps que NO son juegos y deben ignorarse en el ranking. Agrega aquí lo que quieras filtrar (no importan mayúsculas). 'palabrasClave' filtra cualquier app cuyo nombre contenga ese texto.",
+  "ignorar": [
+    "Google Chrome",
+    "Chrome",
+    "Firefox",
+    "Microsoft Edge",
+    "Brave",
+    "Opera GX",
+    "Code",
+    "Visual Studio Code",
+    "Visual Studio",
+    "Spotify",
+    "Discord",
+    "OBS Studio",
+    "Steam",
+    "CurseForge",
+    "Essential Mod",
+    "Bongo Cat",
+    "Wallpaper Engine",
+    "Medal",
+    "Lively Wallpaper",
+    "Notepad++",
+    "Postman"
+  ],
+  "palabrasClave": [
+    "tracker app",
+    "launcher",
+    "wallpaper"
+  ]
+}

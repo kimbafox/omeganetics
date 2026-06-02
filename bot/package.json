@@ -1,0 +1,17 @@
+{
+  "name": "omeganetics-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bot de Discord para Omeganetics: calcula los juegos activos del servidor y los expone por API.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}
