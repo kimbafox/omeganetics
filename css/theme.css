@@ -78,3 +78,86 @@ h1, h2, h3 { letter-spacing: -0.01em; }
   background: var(--surface);
 }
 .site-footer-contact a:hover { color: #aab2ff; }
+
+/* ============================================================
+   Colores característicos por sección (unidad + identidad)
+   ============================================================ */
+:root {
+  --accent-wiki: #43d17a;   /* verde Wiki */
+  --accent-realm: #c0445a;  /* guindo Realm */
+}
+
+/* Badges del nav con borde característico, pero sobrios y consistentes */
+.nav-badge-wiki {
+  border-color: rgba(67, 209, 122, 0.50) !important;
+  background: rgba(67, 209, 122, 0.10) !important;
+  color: #cdeedd !important;
+}
+.nav-badge-wiki:hover, .nav-badge-wiki:focus-visible {
+  border-color: rgba(67, 209, 122, 0.85) !important;
+  background: rgba(67, 209, 122, 0.18) !important;
+  color: #eafff3 !important;
+}
+.nav-badge-realm {
+  border-color: rgba(192, 68, 90, 0.55) !important;
+  background: rgba(192, 68, 90, 0.14) !important;
+  color: #f4ccd4 !important;
+}
+.nav-badge-realm:hover, .nav-badge-realm:focus-visible {
+  border-color: rgba(192, 68, 90, 0.85) !important;
+  background: rgba(192, 68, 90, 0.22) !important;
+  color: #ffe1e7 !important;
+}
+
+/* ============================================================
+   Pulido profesional de las tarjetas del Inicio
+   ============================================================ */
+.showcase-carousel {
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.showcase-carousel:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+}
+.showcase-media img {
+  border-radius: 12px;
+  transition: transform 0.4s ease;
+}
+.showcase-carousel:hover .showcase-media img { transform: scale(1.03); }
+.showcase-body h3 { font-weight: 700; }
+.showcase-kicker { color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+.showcase-meta { color: var(--text-soft); }
+
+/* Tag y enlaces de cada showcase con su color característico */
+.showcase-carousel-wiki { border-color: rgba(67, 209, 122, 0.30) !important; }
+.showcase-carousel-wiki .showcase-tag {
+  background: rgba(67, 209, 122, 0.14); border: 1px solid rgba(67, 209, 122, 0.40);
+  color: #9cf0c2; border-radius: 999px; padding: 4px 12px;
+}
+.showcase-carousel-wiki .showcase-link, .showcase-carousel-wiki .showcase-cta { color: #9cf0c2 !important; }
+
+.showcase-carousel-store { border-color: rgba(192, 68, 90, 0.30) !important; }
+.showcase-carousel-store .showcase-tag {
+  background: rgba(192, 68, 90, 0.16); border: 1px solid rgba(192, 68, 90, 0.42);
+  color: #f1a8b4; border-radius: 999px; padding: 4px 12px;
+}
+.showcase-carousel-store .showcase-link, .showcase-carousel-store .showcase-cta { color: #f1a8b4 !important; }
+
+/* Tarjetas de integrantes (¿Quiénes somos?) */
+.team-dropdown-grid > * {
+  border-radius: var(--radius) !important;
+  border: 1px solid var(--border) !important;
+  background: var(--surface-muted) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.team-dropdown-grid > *:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong) !important;
+}
+
+/* Imágenes destacadas dentro de las secciones */
+.section-inline-media img { border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+
+/* Puntos de carrusel con color de acento */
+.carousel-dot.is-active { background: var(--accent) !important; }
