@@ -48,6 +48,17 @@
     .level-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); overflow: hidden; }
     .level-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #5865F2, #7c5cff); transition: width .5s ease; }
     .level-xp { color: var(--text-faint); font-size: 12px; margin-top: 5px; }
+    .logros-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)); gap: 12px; }
+    .badge { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 14px; padding: 16px 10px; text-align: center; }
+    .badge.locked { opacity: .4; filter: grayscale(1); }
+    .badge-icon { font-size: 1.8rem; }
+    .badge-name { font-size: 13px; font-weight: 700; margin-top: 6px; }
+    .grant-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+    .grant-row input, .grant-row select { background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; }
+    .grant-row input { flex: 1; min-width: 180px; }
+    .msg { font-size: 14px; }
+    .msg.ok { color: #7be0a3; }
+    .msg.err { color: #ff9b9b; }
 
     .soon-card { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
     .soon-card:last-child { border-bottom: 0; }
@@ -112,6 +123,13 @@
         </section>
       </div>
 
+      <section class="panel" id="logros">
+        <h2>🏅 Mis logros</h2>
+        <p class="sub">Insignias que has ganado en la comunidad.</p>
+        <div id="logrosGrid" class="logros-grid"></div>
+        <div id="grantBox" class="hidden"></div>
+      </section>
+
       <a class="back-link" href="/">← Volver al inicio</a>
     </div>
   </main>
@@ -139,8 +157,8 @@
       return `hace ${Math.floor(d / 86400)} d`;
     }
 
+    let me = null;
     async function load() {
-      let me;
       try {
         const res = await fetch("/api/me/profile");
         if (!res.ok) { window.location.href = "/login.html"; return; }
@@ -194,6 +212,58 @@
         }
       } catch (e) {
         $("act-list").innerHTML = `<div class="act-empty">No se pudo cargar tu actividad ahora mismo.</div>`;
+      }
+
+      loadLogros();
+    }
+
+    async function loadLogros() {
+      try {
+        const r = await fetch("/api/me/logros");
+        const data = await r.json();
+        const list = data.list || [];
+        $("logrosGrid").innerHTML = list.map((a) => `
+          <div class="badge ${a.earned ? "" : "locked"}" title="${(a.description || "").replace(/"/g, "&quot;")}">
+            <div class="badge-icon">${a.icon}</div>
+            <div class="badge-name">${a.name}</div>
+          </div>`).join("");
+        if (me && me.isAdmin) {
+          const manual = list.filter((a) => a.type === "manual");
+          const box = $("grantBox");
+          box.classList.remove("hidden");
+          box.innerHTML = `
+            <h3 style="font-size:1rem;margin:18px 0 8px;color:var(--text-soft)">Otorgar insignia (admin)</h3>
+            <div class="grant-row">
+              <input id="grantUser" placeholder="@usuario o ID de Discord" />
+              <select id="grantKey">${manual.map((a) => `<option value="${a.key}">${a.icon} ${a.name}</option>`).join("")}</select>
+              <button class="btn" id="grantBtn" type="button">Otorgar</button>
+              <span id="grantMsg" class="msg"></span>
+            </div>`;
+          $("grantBtn").addEventListener("click", grantBadge);
+        }
+      } catch (e) {
+        $("logrosGrid").innerHTML = '<div class="act-empty">No se pudieron cargar los logros.</div>';
+      }
+    }
+
+    async function grantBadge() {
+      const user = $("grantUser").value.trim();
+      const key = $("grantKey").value;
+      const msg = $("grantMsg");
+      if (!user) { msg.textContent = "Escribe un usuario."; msg.className = "msg err"; return; }
+      msg.textContent = "Otorgando…"; msg.className = "msg";
+      try {
+        const r = await fetch("/api/logros/otorgar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user, key }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        msg.textContent = "✅ Insignia otorgada."; msg.className = "msg ok";
+        $("grantUser").value = "";
+      } catch (e) {
+        msg.textContent = "❌ " + e.message; msg.className = "msg err";
       }
     }
 

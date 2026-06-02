@@ -1132,6 +1132,10 @@ const { initDiscordActivity } = require("./discord-activity");
 const { router: eventosRouter, initEventos } = require("./eventos");
 app.use(eventosRouter);
 
+// Módulo de Logros / Insignias.
+const { router: logrosRouter, initLogros } = require("./logros");
+app.use(logrosRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1269,6 +1273,7 @@ async function start() {
     await initDatabase();
     await initAuthDiscord();
     await initEventos();
+    await initLogros();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
