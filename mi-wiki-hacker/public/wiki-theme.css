@@ -1,0 +1,125 @@
+/* ============================================================
+   Wiki — tema unificado al estilo de Inicio (acento verde).
+   Se carga DESPUÉS de style.css para sobrescribir el look "terminal".
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --hacker-green: #43d17a;        /* verde más suave y consistente */
+  --wiki-bg: #0b0c10;
+  --wiki-surface: #15161d;
+  --wiki-surface-2: #1b1c25;
+  --wiki-border: rgba(255, 255, 255, 0.08);
+  --wiki-border-strong: rgba(255, 255, 255, 0.16);
+  --wiki-text: #e9eaf0;
+  --wiki-soft: #b4b7c2;
+}
+
+* { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
+
+body, html {
+  background:
+    radial-gradient(1100px 620px at 50% -12%, rgba(67, 209, 122, 0.10), rgba(0, 0, 0, 0) 55%),
+    var(--wiki-bg) !important;
+  color: var(--wiki-text) !important;
+}
+
+/* Fuera efectos de terminal */
+.bg-faded { display: none !important; }
+.scanline { display: none !important; }
+
+/* --- Nav limpio y consistente (como el sitio) --- */
+nav {
+  border-bottom: 1px solid var(--wiki-border) !important;
+  text-shadow: none !important;
+  padding: 16px 24px !important;
+  gap: 12px !important;
+  justify-content: center !important;
+  background: rgba(11, 12, 16, 0.9);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(10px);
+}
+nav a {
+  color: var(--wiki-soft) !important;
+  border: 1px solid var(--wiki-border) !important;
+  padding: 9px 15px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600 !important;
+  text-shadow: none !important;
+  transition: all 0.2s ease;
+}
+nav a:hover {
+  color: #eafff3 !important;
+  text-shadow: none !important;
+  border-color: rgba(67, 209, 122, 0.6) !important;
+  background: rgba(67, 209, 122, 0.12) !important;
+}
+
+/* --- Título sin glow agresivo --- */
+.system-brand {
+  text-shadow: 0 0 22px rgba(67, 209, 122, 0.22) !important;
+  letter-spacing: 0.10em !important;
+  color: #eafff3 !important;
+}
+.typing-text { border-right-color: var(--hacker-green) !important; color: #cdeedd !important; }
+.search-intro, .google-login-copy, .recent-copy, .sealed-carousel-copy { color: var(--wiki-soft) !important; }
+.section-kicker { color: #9cf0c2 !important; }
+
+/* --- Inputs / buscador --- */
+.search-box, input, textarea, select {
+  background: var(--wiki-surface) !important;
+  border: 1px solid var(--wiki-border-strong) !important;
+  color: var(--wiki-text) !important;
+  border-radius: 12px !important;
+}
+.search-box::placeholder, input::placeholder, textarea::placeholder { color: #7e8290 !important; }
+.search-box:focus, input:focus, textarea:focus, select:focus {
+  border-color: rgba(67, 209, 122, 0.7) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(67, 209, 122, 0.15) !important;
+}
+
+/* --- Tarjetas / contenedores --- */
+.recent-shell, .sealed-carousel-shell, .parchment-container,
+.image-preview-section, .lore-details, .upload-guide {
+  background: var(--wiki-surface) !important;
+  border: 1px solid var(--wiki-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* --- Tags / chips --- */
+.lore-tag, .meta-chip-list > * {
+  background: rgba(67, 209, 122, 0.14) !important;
+  border: 1px solid rgba(67, 209, 122, 0.40) !important;
+  color: #9cf0c2 !important;
+  border-radius: 999px !important;
+  text-shadow: none !important;
+}
+
+/* --- Botones (acento verde, estilo Inicio) --- */
+.btn-submit, .btn-admin-action {
+  background: var(--hacker-green) !important;
+  color: #04210f !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  text-shadow: none !important;
+  box-shadow: 0 12px 26px rgba(67, 209, 122, 0.28) !important;
+  transition: transform 0.18s ease, filter 0.18s ease;
+}
+.btn-submit:hover, .btn-admin-action:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.btn-secondary {
+  background: transparent !important;
+  border: 1px solid var(--wiki-border-strong) !important;
+  color: var(--wiki-soft) !important;
+  border-radius: 12px !important;
+  text-shadow: none !important;
+}
+.btn-secondary:hover { color: #fff !important; background: rgba(255, 255, 255, 0.06) !important; }
+
+.error-text { color: #ff9b9b !important; text-shadow: none !important; }
+.google-login-hint { color: var(--wiki-soft) !important; }
