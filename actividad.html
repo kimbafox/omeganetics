@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Actividad del servidor — Omeganetics</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    .act-wrap { max-width: 1000px; margin: 0 auto; padding: 48px 24px 80px; }
+    .act-head { text-align: center; margin-bottom: 40px; }
+    .act-head .section-kicker, .act-head .hero-kicker {
+      display: inline-block; text-transform: uppercase; letter-spacing: .12em;
+      font-size: 12px; font-weight: 700; color: var(--text-faint); margin-bottom: 10px;
+    }
+    .act-head h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); margin-bottom: 10px; }
+    .act-head p { color: var(--text-soft); max-width: 620px; margin: 0 auto; }
+
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 40px; }
+    .stat-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid var(--border); border-radius: 18px; padding: 24px; text-align: center;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .num { font-size: 2.6rem; font-weight: 800; line-height: 1; }
+    .stat-card .label { color: var(--text-faint); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; margin-top: 8px; }
+    .stat-card.accent .num { background: linear-gradient(135deg,#7c5cff,#5865F2); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+    .ranking { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px; box-shadow: var(--shadow); }
+    .ranking h2 { font-size: 1.2rem; margin-bottom: 4px; }
+    .ranking .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 22px; }
+    .game-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .game-rank { width: 28px; text-align: center; font-weight: 800; color: var(--text-faint); }
+    .game-body { flex: 1; min-width: 0; }
+    .game-top { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .game-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .game-count { color: var(--text-soft); font-size: 14px; white-space: nowrap; }
+    .bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); overflow: hidden; }
+    .bar > span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg,#5865F2,#7c5cff); transition: width .5s ease; }
+    .top1 .bar > span { background: linear-gradient(90deg,#ffd35c,#ff9f43); }
+    .top2 .bar > span { background: linear-gradient(90deg,#cfe0ff,#9ab4ff); }
+
+    .empty { text-align: center; color: var(--text-soft); padding: 30px 10px; }
+    .empty h3 { margin-bottom: 8px; }
+    .updated { text-align: center; color: var(--text-faint); font-size: 12px; margin-top: 22px; }
+    .back-link { display: inline-block; margin-top: 28px; color: var(--text-soft); text-decoration: none; font-size: 14px; }
+    .back-link:hover { color: var(--text); }
+    .center { text-align: center; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="assets/logo.png" class="logo" width="35" height="35" alt="Omeganetics" />
+        <h1>Omeganetics</h1>
+      </a>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
+        <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
+        <li><a href="/cuenta.html" class="nav-badge nav-badge-discord">Cuenta</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="act-wrap">
+    <div class="act-head">
+      <span class="section-kicker">En vivo</span>
+      <h1>Actividad del servidor</h1>
+      <p>Esto es lo que se está jugando ahora mismo en nuestro Discord, del más jugado al menos. Se actualiza solo.</p>
+    </div>
+
+    <div class="stat-cards">
+      <div class="stat-card accent">
+        <div class="num" id="totalActive">—</div>
+        <div class="label">Jugando ahora</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="gamesCount">—</div>
+        <div class="label">Juegos distintos</div>
+      </div>
+    </div>
+
+    <div class="ranking">
+      <h2>🎮 Juegos más activos</h2>
+      <p class="sub">Ranking en tiempo real según la presencia de Discord.</p>
+      <div id="gamesList"></div>
+      <div class="updated" id="updated"></div>
+    </div>
+
+    <div class="center"><a class="back-link" href="/">← Volver al inicio</a></div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    function timeAgo(iso) {
+      if (!iso) return 'sin datos todavía';
+      const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+      if (diff < 60) return 'hace segundos';
+      if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
+      if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
+      return `hace ${Math.floor(diff / 86400)} d`;
+    }
+
+    async function load() {
+      try {
+        const res = await fetch('/api/active-games');
+        const data = await res.json();
+        const games = data.games || [];
+        $('totalActive').textContent = data.totalActive ?? 0;
+        $('gamesCount').textContent = games.length;
+        $('updated').textContent = games.length ? `Última actualización: ${timeAgo(data.updatedAt)}` : '';
+
+        if (!games.length) {
+          $('gamesList').innerHTML = `
+            <div class="empty">
+              <h3>Aún no hay actividad reportada</h3>
+              <p>Cuando el bot esté encendido y haya gente jugando, aparecerá aquí el ranking en vivo.</p>
+            </div>`;
+          return;
+        }
+
+        const max = Math.max(...games.map((g) => g.players), 1);
+        $('gamesList').innerHTML = games.map((g, i) => {
+          const pct = Math.round((g.players / max) * 100);
+          const cls = i === 0 ? 'top1' : i === 1 ? 'top2' : '';
+          const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          return `
+            <div class="game-row ${cls}">
+              <div class="game-rank">${medal}</div>
+              <div class="game-body">
+                <div class="game-top">
+                  <span class="game-name">${g.game}</span>
+                  <span class="game-count">${g.players} ${g.players === 1 ? 'jugador' : 'jugadores'}</span>
+                </div>
+                <div class="bar"><span style="width:${pct}%"></span></div>
+              </div>
+            </div>`;
+        }).join('');
+      } catch (e) {
+        $('gamesList').innerHTML = `<div class="empty"><h3>No se pudo cargar la actividad</h3><p>Intenta de nuevo en un momento.</p></div>`;
+      }
+    }
+
+    load();
+    setInterval(load, 45000);
+  </script>
+</body>
+</html>

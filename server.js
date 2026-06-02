@@ -1125,6 +1125,30 @@ app.use("/wiki", wikiApp);
 const { router: discordAuthRouter, initAuthDiscord } = require("./auth-discord");
 app.use(discordAuthRouter);
 
+// Juegos activos del servidor (lo que el bot guarda en la base de datos).
+app.get("/api/active-games", async (req, res) => {
+  if (!teamPool) {
+    return res.json({ updatedAt: null, totalActive: 0, games: [] });
+  }
+  try {
+    const stats = await teamPool.query(
+      "SELECT total_active, games_count, updated_at FROM discord_server_stats WHERE id = 1"
+    );
+    const games = await teamPool.query(
+      "SELECT game, players FROM discord_active_games ORDER BY players DESC, game ASC"
+    );
+    const row = stats.rows[0] || {};
+    return res.json({
+      updatedAt: row.updated_at || null,
+      totalActive: row.total_active || 0,
+      games: games.rows.map((r) => ({ game: r.game, players: r.players })),
+    });
+  } catch (error) {
+    // Si el bot todavía no creó/llenó las tablas, devolvemos vacío sin romper.
+    return res.json({ updatedAt: null, totalActive: 0, games: [] });
+  }
+});
+
 if (resolvedDatabaseUrl) {
 
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");

@@ -25,6 +25,23 @@ const IS_PROD = process.env.NODE_ENV === "production";
 const API = "https://discord.com/api/v10";
 const SCOPES = "identify email guilds";
 
+// Admins: por correo (igual que el panel) o por ID de Discord (lo más confiable).
+const ADMIN_EMAILS = new Set(
+  (process.env.ADMIN_EMAILS
+    ? process.env.ADMIN_EMAILS.split(",")
+    : ["juegocrisger@gmail.com", "jsebastianarduzespa@gmail.com"]
+  )
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+);
+const ADMIN_DISCORD_IDS = new Set(
+  (process.env.ADMIN_DISCORD_IDS || "").split(",").map((s) => s.trim()).filter(Boolean)
+);
+function isAdminUser(user) {
+  const email = String(user.email || "").toLowerCase();
+  return ADMIN_EMAILS.has(email) || ADMIN_DISCORD_IDS.has(String(user.id));
+}
+
 if (!process.env.JWT_SECRET) {
   console.warn("[auth-discord] JWT_SECRET no configurado: las sesiones se invalidan al reiniciar.");
 }
@@ -195,7 +212,8 @@ router.get("/api/auth/discord/callback", async (req, res) => {
     // Emite la sesión (JWT en cookie httpOnly).
     const token = jwt.sign(
       {
-        role: "user",
+        role: isAdminUser(user) ? "admin" : "user",
+        isAdmin: isAdminUser(user),
         discordId: user.id,
         username: user.username,
         globalName: user.global_name || user.username,
@@ -227,6 +245,7 @@ router.get("/api/auth/me", (req, res) => {
       globalName: decoded.globalName,
       avatar: decoded.avatar,
       role: decoded.role,
+      isAdmin: Boolean(decoded.isAdmin),
     });
   } catch (error) {
     return res.status(401).json({ error: "Sesión inválida o expirada." });
