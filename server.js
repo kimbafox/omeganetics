@@ -1125,6 +1125,9 @@ app.use("/wiki", wikiApp);
 const { router: discordAuthRouter, initAuthDiscord } = require("./auth-discord");
 app.use(discordAuthRouter);
 
+// Lector de actividad de Discord (juegos activos) integrado al sitio.
+const { initDiscordActivity } = require("./discord-activity");
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1202,6 +1205,7 @@ async function start() {
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
+    initDiscordActivity(); // lector de juegos activos (no bloquea el arranque)
   } catch (error) {
     console.error("Error iniciando servidor:", error.message);
     process.exit(1);
