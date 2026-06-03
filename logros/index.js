@@ -22,19 +22,20 @@ const pool = databaseUrl
   : null;
 
 // Catálogo de logros. Los "auto" se otorgan según `metric` >= `threshold`.
+// tier (rareza, de menor a mayor brillo): comun < raro < epico < legendario
 const CATALOG = [
-  { key: "first_message", name: "Primer mensaje", icon: "💬", description: "Envía tu primer mensaje en el servidor.", type: "auto", metric: "messages", threshold: 1 },
-  { key: "chatty", name: "Conversador", icon: "🗨️", description: "Envía 100 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 100 },
-  { key: "unstoppable", name: "Imparable", icon: "🔥", description: "Envía 1000 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 1000 },
-  { key: "voice_starter", name: "En la llamada", icon: "🎙️", description: "Acumula 1 hora en canales de voz (sin contar el AFK).", type: "auto", metric: "voiceMinutes", threshold: 60 },
-  { key: "voice_pro", name: "Voz del servidor", icon: "🎧", description: "Acumula 10 horas en canales de voz.", type: "auto", metric: "voiceMinutes", threshold: 600 },
-  { key: "level5", name: "Nivel 5", icon: "⭐", description: "Llega al nivel 5 (XP por voz y mensajes).", type: "auto", metric: "level", threshold: 5 },
-  { key: "level10", name: "Veterano", icon: "🏅", description: "Llega al nivel 10.", type: "auto", metric: "level", threshold: 10 },
-  { key: "organizer", name: "Organizador", icon: "📅", description: "Crea un evento y que un admin lo apruebe.", type: "auto", metric: "eventsCreated", threshold: 1 },
-  { key: "champion", name: "Campeón", icon: "🏆", description: "La otorga un admin por ganar un evento o torneo.", type: "manual" },
-  { key: "streamer", name: "Streamer aliado", icon: "📺", description: "La otorga un admin a los streamers de la comunidad.", type: "manual" },
-  { key: "founder", name: "Fundador", icon: "👑", description: "La otorga un admin a los miembros fundadores.", type: "manual" },
-  { key: "mvp", name: "MVP del mes", icon: "🥇", description: "La otorga un admin al jugador más destacado del mes.", type: "manual" },
+  { key: "first_message", name: "Primer mensaje", icon: "💬", description: "Envía tu primer mensaje en el servidor.", type: "auto", metric: "messages", threshold: 1, tier: "comun" },
+  { key: "chatty", name: "Conversador", icon: "🗨️", description: "Envía 100 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 100, tier: "raro" },
+  { key: "unstoppable", name: "Imparable", icon: "🔥", description: "Envía 1000 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 1000, tier: "epico" },
+  { key: "voice_starter", name: "En la llamada", icon: "🎙️", description: "Acumula 1 hora en canales de voz (sin contar el AFK).", type: "auto", metric: "voiceMinutes", threshold: 60, tier: "comun" },
+  { key: "voice_pro", name: "Voz del servidor", icon: "🎧", description: "Acumula 10 horas en canales de voz.", type: "auto", metric: "voiceMinutes", threshold: 600, tier: "epico" },
+  { key: "level5", name: "Nivel 5", icon: "⭐", description: "Llega al nivel 5 (XP por voz y mensajes).", type: "auto", metric: "level", threshold: 5, tier: "raro" },
+  { key: "level10", name: "Veterano", icon: "🏅", description: "Llega al nivel 10.", type: "auto", metric: "level", threshold: 10, tier: "epico" },
+  { key: "organizer", name: "Organizador", icon: "📅", description: "Crea un evento y que un admin lo apruebe.", type: "auto", metric: "eventsCreated", threshold: 1, tier: "raro" },
+  { key: "champion", name: "Campeón", icon: "🏆", description: "La otorga un admin por ganar un evento o torneo.", type: "manual", tier: "legendario" },
+  { key: "streamer", name: "Streamer aliado", icon: "📺", description: "La otorga un admin a los streamers de la comunidad.", type: "manual", tier: "epico" },
+  { key: "founder", name: "Fundador", icon: "👑", description: "La otorga un admin a los miembros fundadores.", type: "manual", tier: "legendario" },
+  { key: "mvp", name: "MVP del mes", icon: "🥇", description: "La otorga un admin al jugador más destacado del mes.", type: "manual", tier: "legendario" },
 ];
 const CATALOG_KEYS = new Set(CATALOG.map((a) => a.key));
 

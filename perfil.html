@@ -56,6 +56,26 @@
     .badge-icon { font-size: 1.8rem; }
     .badge-name { font-size: 14px; font-weight: 700; margin-top: 6px; }
     .badge-desc { font-size: 12px; color: var(--text-faint); margin-top: 5px; line-height: 1.4; }
+    .badge { transition: box-shadow .3s ease, border-color .3s ease; }
+    /* Rareza / aura — solo brillan las insignias GANADAS; a mayor dificultad, más brillo */
+    .badge-rarity { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 800; margin-top: 4px; }
+    .badge.locked .badge-rarity { display: none; }
+    .tier-comun .badge-rarity { color: #8aa0ff; }
+    .tier-raro .badge-rarity { color: #43d1ff; }
+    .tier-epico .badge-rarity { color: #c084fc; }
+    .tier-legendario .badge-rarity { color: #ffd35c; }
+
+    .badge.earned.tier-comun { border-color: rgba(88,101,242,.55); box-shadow: 0 0 16px rgba(88,101,242,.30); }
+    .badge.earned.tier-raro { border-color: rgba(67,209,255,.60); box-shadow: 0 0 18px rgba(67,209,255,.38); }
+    .badge.earned.tier-raro .badge-icon { filter: drop-shadow(0 0 6px rgba(67,209,255,.6)); }
+    .badge.earned.tier-epico { border-color: rgba(192,132,252,.70); box-shadow: 0 0 24px rgba(192,132,252,.50); }
+    .badge.earned.tier-epico .badge-icon { filter: drop-shadow(0 0 9px rgba(192,132,252,.85)); }
+    .badge.earned.tier-legendario { border-color: rgba(255,211,92,.80); animation: badge-pulse 2.4s ease-in-out infinite; }
+    .badge.earned.tier-legendario .badge-icon { filter: drop-shadow(0 0 11px rgba(255,211,92,.95)); }
+    @keyframes badge-pulse {
+      0%, 100% { box-shadow: 0 0 18px rgba(255,211,92,.40); }
+      50% { box-shadow: 0 0 36px rgba(255,211,92,.80); }
+    }
     .grant-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
     .grant-row input, .grant-row select { background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; }
     .grant-row input { flex: 1; min-width: 180px; }
@@ -226,9 +246,10 @@
         const data = await r.json();
         const list = data.list || [];
         $("logrosGrid").innerHTML = list.map((a) => `
-          <div class="badge ${a.earned ? "" : "locked"}" title="${(a.description || "").replace(/"/g, "&quot;")}">
+          <div class="badge ${a.earned ? "earned" : "locked"} tier-${a.tier || "comun"}" title="${(a.description || "").replace(/"/g, "&quot;")}">
             <div class="badge-icon">${a.icon}</div>
             <div class="badge-name">${a.name}</div>
+            <div class="badge-rarity">${a.tier || "comun"}</div>
             <div class="badge-desc">${(a.description || "").replace(/</g, "&lt;")}</div>
           </div>`).join("");
         if (me && me.isAdmin) {
