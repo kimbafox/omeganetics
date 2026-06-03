@@ -404,6 +404,10 @@ function initDiscordActivity() {
     }
     setInterval(refresh, REFRESH_MINUTES * 60 * 1000);
     setInterval(flushMessages, 60 * 1000); // los mensajes se guardan cada minuto
+    if (process.env.SOUNDTEST_CHANNEL_ID && process.env.SOUNDTEST_SOUND_ID) {
+      console.log("[soundtest] activo: cada 60s en", process.env.SOUNDTEST_CHANNEL_ID);
+      setInterval(soundboardTest, 60 * 1000);
+    }
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -483,6 +487,37 @@ async function announceContent(creator, video) {
   } catch (err) {
     console.warn("[content] no pude anunciar el contenido:", err.message);
     return false;
+  }
+}
+
+// TEST: reproduce un sonido del soundboard en un canal de voz (si hay gente).
+async function soundboardTest() {
+  const channelId = process.env.SOUNDTEST_CHANNEL_ID;
+  const soundId = process.env.SOUNDTEST_SOUND_ID;
+  if (!client || !channelId || !soundId) return;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return;
+    const channel = guild.channels.cache.get(channelId);
+    if (!channel) {
+      console.warn("[soundtest] canal no encontrado:", channelId);
+      return;
+    }
+    const humans = channel.members ? channel.members.filter((m) => !m.user.bot).size : 0;
+    if (humans === 0) {
+      console.log("[soundtest] nadie en el canal, no reproduzco");
+      return;
+    }
+    // Conecta el bot al canal (voice state) y dispara el sonido del soundboard.
+    guild.shard.send({
+      op: 4,
+      d: { guild_id: GUILD_ID, channel_id: channelId, self_mute: true, self_deaf: true },
+    });
+    await new Promise((r) => setTimeout(r, 1500));
+    await client.rest.post(`/channels/${channelId}/send-soundboard-sound`, { body: { sound_id: soundId } });
+    console.log("[soundtest] sonido reproducido en", channelId);
+  } catch (err) {
+    console.warn("[soundtest] error:", err.message);
   }
 }
 
