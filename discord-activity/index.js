@@ -511,7 +511,7 @@ async function soundboardTest() {
     // Conecta el bot al canal (voice state) y dispara el sonido del soundboard.
     guild.shard.send({
       op: 4,
-      d: { guild_id: GUILD_ID, channel_id: channelId, self_mute: true, self_deaf: true },
+      d: { guild_id: GUILD_ID, channel_id: channelId, self_mute: false, self_deaf: false },
     });
     await new Promise((r) => setTimeout(r, 1500));
     await client.rest.post(`/channels/${channelId}/send-soundboard-sound`, { body: { sound_id: soundId } });
