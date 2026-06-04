@@ -45,6 +45,19 @@
     .pl-ev-game { color:#aab2ff; font-size:12px; }
     .muted { color:var(--text-soft); }
     @media (max-width:820px){ .home-stats,.how-grid{grid-template-columns:repeat(2,1fr);} .home-previews{grid-template-columns:1fr;} }
+    /* --- Inicio en slides horizontales --- */
+    .hero-slider-wrap { position: relative; }
+    .hero-slider { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .hero-slider::-webkit-scrollbar { display: none; }
+    .home-slide { min-width: 100%; scroll-snap-align: start; box-sizing: border-box; padding: 26px 24px 36px; min-height: calc(100vh - 150px); max-height: calc(100vh - 64px); overflow-y: auto; display: flex; flex-direction: column; justify-content: safe center; gap: 10px; }
+    .home-slide > section { margin: 0 auto; width: 100%; max-width: 1180px; }
+    .slide-arrow { position: absolute; top: 50%; transform: translateY(-50%); z-index: 60; background: rgba(10,10,16,.62); border: 1px solid var(--border-strong, rgba(255,255,255,.18)); color: #fff; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; font-size: 26px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+    .slide-arrow:hover { background: rgba(88,101,242,.55); }
+    .slide-arrow.prev { left: 14px; } .slide-arrow.next { right: 14px; }
+    .slide-dots { display: flex; gap: 10px; justify-content: center; padding: 14px 0 26px; }
+    .slide-dots button { width: 11px; height: 11px; border-radius: 50%; border: 0; background: rgba(255,255,255,.22); cursor: pointer; transition: width .2s, background .2s; padding: 0; }
+    .slide-dots button.active { background: var(--accent, #5865F2); width: 28px; border-radius: 6px; }
+    @media (max-width:820px){ .slide-arrow{ width:40px; height:40px; font-size:22px; } .home-slide{ justify-content:flex-start; padding-top:18px; } }
   </style>
 </head>
 <body>
@@ -85,6 +98,12 @@
     </div>
   </section>
 
+  <!-- INICIO EN SLIDES -->
+  <div class="hero-slider-wrap">
+    <button class="slide-arrow prev" id="slidePrev" aria-label="Anterior">‹</button>
+    <div class="hero-slider" id="homeSlider">
+      <section class="home-slide"><!-- slide 1: comunidad -->
+
   <!-- HERO -->
   <section class="hero">
 
@@ -115,27 +134,8 @@
     </div>
 
   </section>
-
-  <!-- STATS EN VIVO -->
-  <section class="home-stats anim">
-    <div class="hs-item"><div class="hs-num" id="hsMembers">—</div><div class="hs-lbl">👥 Miembros</div></div>
-    <div class="hs-item"><div class="hs-num" id="hsPlaying">—</div><div class="hs-lbl">🎮 Jugando ahora</div></div>
-    <div class="hs-item"><div class="hs-num" id="hsGames">—</div><div class="hs-lbl">🕹️ Juegos activos</div></div>
-    <div class="hs-item"><div class="hs-num" id="hsEvents">—</div><div class="hs-lbl">🎯 Próximos eventos</div></div>
-  </section>
-
-  <!-- CÓMO FUNCIONA -->
-  <section class="how-section anim">
-    <span class="section-kicker">Cómo funciona</span>
-    <h2>Entra, juega y asciende</h2>
-    <div class="how-grid">
-      <div class="how-card"><div class="how-ico">🎮</div><h3>Entra con Discord</h3><p>Inicia sesión en segundos con tu cuenta de Discord.</p></div>
-      <div class="how-card"><div class="how-ico">🎙️</div><h3>Juega y participa</h3><p>Gana XP y Omegacoins por hablar en voz y chatear.</p></div>
-      <div class="how-card"><div class="how-ico">⭐</div><h3>Sube de rango</h3><p>De Recluta a Mítico Omega, con logros y roles exclusivos.</p></div>
-      <div class="how-card"><div class="how-ico">🏆</div><h3>Gana premios</h3><p>Top semanal, recompensas y canjes con tus Omegacoins.</p></div>
-    </div>
-    <a href="/login.html" class="btn">Entrar con Discord</a>
-  </section>
+      </section><!-- /slide 1 -->
+      <section class="home-slide"><!-- slide 2: tarjetas de siempre -->
 
   <!-- EVENTOS -->
   <section class="eventos-section">
@@ -222,6 +222,29 @@
       </section>
       </div>
   </section>
+      </section><!-- /slide 2 -->
+      <section class="home-slide"><!-- slide 3: datos rápidos + cómo funciona -->
+
+  <!-- STATS EN VIVO -->
+  <section class="home-stats anim">
+    <div class="hs-item"><div class="hs-num" id="hsMembers">—</div><div class="hs-lbl">👥 Miembros</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsPlaying">—</div><div class="hs-lbl">🎮 Jugando ahora</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsGames">—</div><div class="hs-lbl">🕹️ Juegos activos</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsEvents">—</div><div class="hs-lbl">🎯 Próximos eventos</div></div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="how-section anim">
+    <span class="section-kicker">Cómo funciona</span>
+    <h2>Entra, juega y asciende</h2>
+    <div class="how-grid">
+      <div class="how-card"><div class="how-ico">🎮</div><h3>Entra con Discord</h3><p>Inicia sesión en segundos con tu cuenta de Discord.</p></div>
+      <div class="how-card"><div class="how-ico">🎙️</div><h3>Juega y participa</h3><p>Gana XP y Omegacoins por hablar en voz y chatear.</p></div>
+      <div class="how-card"><div class="how-ico">⭐</div><h3>Sube de rango</h3><p>De Recluta a Mítico Omega, con logros y roles exclusivos.</p></div>
+      <div class="how-card"><div class="how-ico">🏆</div><h3>Gana premios</h3><p>Top semanal, recompensas y canjes con tus Omegacoins.</p></div>
+    </div>
+    <a href="/login.html" class="btn">Entrar con Discord</a>
+  </section>
 
   <!-- PREVIEWS EN VIVO -->
   <section class="home-previews anim">
@@ -234,6 +257,8 @@
       <div id="homeEvents" class="preview-list"><div class="muted">Cargando…</div></div>
     </div>
   </section>
+      </section><!-- /slide 3 -->
+      <section class="home-slide"><!-- slide 4: creadores -->
 
   <!-- CREADORES -->
   <section class="creadores-cta anim">
@@ -245,6 +270,12 @@
     </p>
     <a href="/creadores.html" class="btn">Quiero postularme</a>
   </section>
+
+      </section><!-- /slide 4 -->
+    </div>
+    <button class="slide-arrow next" id="slideNext" aria-label="Siguiente">›</button>
+  </div>
+  <div class="slide-dots" id="slideDots"></div>
 
   <footer class="site-footer">
     <div class="site-footer-brand">
@@ -528,6 +559,31 @@
     loadWikiShowcase();
     loadStoreShowcase();
     loadHome();
+
+    // Inicio en slides: flechas, puntos y arrastrar.
+    (function initHomeSlider() {
+      const slider = document.getElementById('homeSlider');
+      if (!slider) return;
+      document.querySelectorAll('.home-slide .anim').forEach((el) => el.classList.add('show')); // visibles aunque el slide esté fuera de vista
+      const dotsWrap = document.getElementById('slideDots');
+      const slides = Array.from(slider.children);
+      slides.forEach((_, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', 'Sección ' + (i + 1));
+        b.addEventListener('click', () => slider.scrollTo({ left: i * slider.clientWidth, behavior: 'smooth' }));
+        dotsWrap.appendChild(b);
+      });
+      const update = () => {
+        const a = Math.round(slider.scrollLeft / slider.clientWidth);
+        Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('active', i === a));
+      };
+      slider.addEventListener('scroll', () => requestAnimationFrame(update));
+      document.getElementById('slidePrev').addEventListener('click', () => slider.scrollBy({ left: -slider.clientWidth, behavior: 'smooth' }));
+      document.getElementById('slideNext').addEventListener('click', () => slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }));
+      window.addEventListener('resize', update);
+      update();
+    })();
 
   </script>
   <script src="/js/auth-widget.js"></script>
