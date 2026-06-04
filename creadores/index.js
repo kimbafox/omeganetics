@@ -12,7 +12,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
-const { announceContent, dmUser } = require("../discord-activity");
+const { announceContent, dmUser, notifyAdmins } = require("../discord-activity");
 
 const router = express.Router();
 
@@ -129,6 +129,7 @@ router.post("/api/creadores", requireUser, async (req, res) => {
              reason = EXCLUDED.reason, status = 'pendiente', created_at = NOW()`,
       [req.user.discordId, fullName, nickname, channelName, channelUrl, platforms, channelType, reason],
     );
+    try { notifyAdmins?.("🎬 Nueva solicitud de creador", `**${channelName}** (${nickname})\n🔗 ${channelUrl}${reason ? `\n📝 ${reason}` : ""}\nRevísala en omeganetics.com/admin.html`, 0xff6fae); } catch (e) {}
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo enviar la solicitud." });
@@ -225,6 +226,7 @@ router.post("/api/creadores/video", requireUser, async (req, res) => {
       "INSERT INTO creator_videos (discord_id, title, url, description, status) VALUES ($1, $2, $3, $4, 'pendiente')",
       [req.user.discordId, title, url, description],
     );
+    try { notifyAdmins?.("📹 Nuevo video (pendiente)", `**${title}**\nde ${creator.channel_name || req.user.username}\n🔗 ${url}\nApruébalo en omeganetics.com/admin.html`, 0xc084fc); } catch (e) {}
     return res.json({ ok: true, pending: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo subir el contenido." });

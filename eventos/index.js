@@ -11,7 +11,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
-const { announceEvent, dmUser } = require("../discord-activity");
+const { announceEvent, dmUser, notifyAdmins } = require("../discord-activity");
 
 const router = express.Router();
 
@@ -116,6 +116,7 @@ router.post("/api/eventos", requireUser, async (req, res) => {
        RETURNING *`,
       [game, name, description, expectedDuration, startDate, endDate, filesUrl, reason, req.user.discordId, req.user.globalName || req.user.username || ""],
     );
+    try { notifyAdmins?.("📅 Nuevo evento (pendiente)", `**${name}** · 🎮 ${game}\npor ${req.user.globalName || req.user.username}${reason ? `\n📝 ${reason}` : ""}\nApruébalo en omeganetics.com/admin.html`, 0x5865f2); } catch (e) {}
     return res.json({ ok: true, event: mapEvent(r.rows[0]) });
   } catch (error) {
     return res.status(500).json({ error: "No se pudo crear el evento." });

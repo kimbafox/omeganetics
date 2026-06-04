@@ -107,7 +107,7 @@
           <div class="ic">${i.icon}</div>
           <h3>${esc(i.name)}</h3>
           <div class="d">${esc(i.desc)}</div>
-          <span class="tag ${i.type === "role" ? "tag-role" : "tag-order"}">${i.type === "role" ? "Entrega automática" : "Lo prepara un admin"}</span>
+          <span class="tag ${i.type === "order" ? "tag-order" : "tag-role"}">${i.type === "order" ? "Lo prepara un admin" : "Entrega automática"}</span>
           <div class="price">🪙 ${fmt(i.price)}</div>
           <button class="buy" data-key="${i.key}" ${me && can && !has ? "" : "disabled"}>${label}</button>
         </div>`;
@@ -128,26 +128,63 @@
       if (!key) return;
       const item = items.find((i) => i.key === key);
       if (!item) return;
-      let note = "";
-      if (item.needsNote) { note = prompt(item.needsNote) || ""; if (!note.trim()) return; }
+      if (item.pickChannel) {
+        const extra = await pickChannel();
+        if (extra) await purchase(item, extra);
+      } else if (item.needsNote) {
+        const note = prompt(item.needsNote) || "";
+        if (!note.trim()) return;
+        await purchase(item, { note });
+      } else {
+        await purchase(item, {});
+      }
+    });
+
+    async function purchase(item, extra) {
       if (!confirm(`¿Canjear "${item.name}" por ${fmt(item.price)} Omegacoins?`)) return;
-      e.target.disabled = true;
       $("msg").textContent = "Procesando…"; $("msg").className = "";
       try {
-        const r = await fetch("/api/tienda/comprar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key, note }) });
+        const r = await fetch("/api/tienda/comprar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: item.key, ...extra }) });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Error");
         balance = d.balance;
         $("bal").textContent = fmt(balance);
-        if (item.type === "role") owned.push(key);
+        if (item.type === "role") owned.push(item.key);
         $("msg").textContent = d.status === "pendiente" ? "✅ ¡Canjeado! Un admin lo prepara y te avisa." : "✅ ¡Canjeado! Disfrútalo 😎";
         $("msg").className = "ok";
         render(); loadMine();
-      } catch (err) { $("msg").textContent = "❌ " + err.message; $("msg").className = "err"; render(); }
-    });
+      } catch (err) { $("msg").textContent = "❌ " + err.message; $("msg").className = "err"; }
+    }
+
+    function pickChannel() {
+      return new Promise(async (resolve) => {
+        let chans = [];
+        try { chans = await (await fetch("/api/tienda/canales-voz")).json(); } catch (e) {}
+        if (!chans.length) { alert("No hay canales de voz disponibles ahora mismo."); return resolve(null); }
+        $("vcSel").innerHTML = chans.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join("");
+        $("vcName").value = "";
+        $("vcModal").style.display = "flex";
+        const cleanup = () => { $("vcOk").onclick = null; $("vcCancel").onclick = null; $("vcModal").style.display = "none"; };
+        $("vcOk").onclick = () => { const name = $("vcName").value.trim(); if (!name) { $("vcName").focus(); return; } cleanup(); resolve({ channelId: $("vcSel").value, note: name }); };
+        $("vcCancel").onclick = () => { cleanup(); resolve(null); };
+      });
+    }
 
     load();
   </script>
+  <div id="vcModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;padding:24px;max-width:420px;width:100%">
+      <h3 style="margin-bottom:12px">🎤 Renombrar canal de voz</h3>
+      <label class="muted" style="font-size:13px">Canal de voz</label>
+      <select id="vcSel" style="width:100%;margin:6px 0 14px;padding:10px;background:var(--surface-muted);border:1px solid var(--border-strong);color:var(--text);border-radius:10px"></select>
+      <label class="muted" style="font-size:13px">Nuevo nombre (24 h)</label>
+      <input id="vcName" maxlength="90" placeholder="Ej: Sala de Sebillas" style="width:100%;margin:6px 0 16px;padding:10px;background:var(--surface-muted);border:1px solid var(--border-strong);color:var(--text);border-radius:10px" />
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button id="vcCancel" class="buy" style="background:transparent;border:1px solid var(--border-strong);color:var(--text-soft)">Cancelar</button>
+        <button id="vcOk" class="buy">Canjear</button>
+      </div>
+    </div>
+  </div>
   <script src="/js/auth-widget.js"></script>
 </body>
 </html>

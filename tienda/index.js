@@ -9,6 +9,7 @@ const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
 const { spendCoins, addCoins, getBalance } = require("../omegacoins");
+const { hasBannedContent } = require("../lib/filter");
 
 const router = express.Router();
 const databaseUrl = process.env.DATABASE_URL;
@@ -21,15 +22,15 @@ const pool = databaseUrl
 const CATALOG = [
   { key: "nombre_aqua", name: "Nombre Aqua", icon: "🌊", desc: "Color de nombre aqua llamativo (permanente).", price: 6000, type: "role", roleName: "🌊 Aqua", color: 0x00d9ff, hoist: false },
   { key: "nombre_rosa", name: "Nombre Rosa", icon: "🌸", desc: "Color de nombre rosa (permanente).", price: 6000, type: "role", roleName: "🌸 Rosa", color: 0xff6fae, hoist: false },
-  { key: "vc_rename", name: "Renombrar canal de voz 24h", icon: "🎤", desc: "Le pones el nombre que quieras a un canal de voz por 24 horas.", price: 5000, type: "order", needsNote: "¿Qué nombre y a qué canal?" },
-  { key: "shoutout", name: "Shoutout en anuncios", icon: "📢", desc: "Te promocionamos (tu canal/contenido) en el canal de anuncios.", price: 8000, type: "order", needsNote: "¿Qué quieres que anunciemos? (link/texto)" },
+  { key: "vc_rename", name: "Renombrar canal de voz 24h", icon: "🎤", desc: "Le pones el nombre que quieras a un canal de voz por 24h (automático, con filtro).", price: 5000, type: "auto", pickChannel: true },
+  { key: "shoutout", name: "Shoutout en anuncios", icon: "📢", desc: "Publicamos tu mensaje en anuncios al instante (automático, con filtro).", price: 8000, type: "auto", needsNote: "¿Qué quieres que anunciemos? (link/texto)" },
   { key: "color_custom", name: "Color personalizado", icon: "🎨", desc: "Eliges el color EXACTO de tu nombre (permanente).", price: 9000, type: "order", needsNote: "Pon el color (ej: #ff3b3b)" },
   { key: "emoji", name: "Emoji al servidor", icon: "😎", desc: "Propones un emoji y lo agregamos al server (sujeto a aprobación).", price: 14000, type: "order", needsNote: "Link/imagen del emoji y nombre" },
   { key: "mecenas", name: "Mecenas", icon: "🎖️", desc: "Rol dorado destacado + 🎖️ junto a tu nombre (Discord y web).", price: 15000, type: "role", roleName: "🎖️ Mecenas", color: 0xffd35c, hoist: true, nameEmoji: "🎖️" },
   { key: "patron", name: "Patrón Omega", icon: "💜", desc: "Rol de prestigio morado + 💜 decorando tu nombre (Discord y web).", price: 25000, type: "role", roleName: "💜 Patrón Omega", color: 0xc084fc, hoist: true, nameEmoji: "💜" },
 ];
 const BYKEY = Object.fromEntries(CATALOG.map((i) => [i.key, i]));
-const pubItem = (i) => ({ key: i.key, name: i.name, icon: i.icon, desc: i.desc, price: i.price, type: i.type, needsNote: i.needsNote || "" });
+const pubItem = (i) => ({ key: i.key, name: i.name, icon: i.icon, desc: i.desc, price: i.price, type: i.type, needsNote: i.needsNote || "", pickChannel: !!i.pickChannel });
 
 async function initTienda() {
   if (!pool) { console.warn("[tienda] sin DATABASE_URL: módulo deshabilitado."); return; }
@@ -91,42 +92,69 @@ router.post("/api/tienda/comprar", requireUser, async (req, res) => {
     if (owned.rows.length) return res.status(400).json({ error: "Ya tienes este artículo." });
   }
   const note = String(req.body?.note || "").slice(0, 300);
+  const channelId = String(req.body?.channelId || "");
   const buyerName = req.user.globalName || req.user.username || "Jugador";
+  const da = require("../discord-activity");
+
+  // Validaciones (con filtro) de los canjes automáticos, ANTES de cobrar.
+  if (item.key === "shoutout") {
+    if (!note.trim()) return res.status(400).json({ error: "Escribe el texto del shoutout." });
+    if (hasBannedContent(note)) return res.status(400).json({ error: "Ese texto tiene contenido no permitido (odio/obsceno)." });
+  }
+  if (item.key === "vc_rename") {
+    const vcs = da.getVoiceChannels ? da.getVoiceChannels() : [];
+    if (!vcs.find((v) => v.id === channelId)) return res.status(400).json({ error: "Elige un canal de voz válido." });
+    if (!note.trim()) return res.status(400).json({ error: "Escribe el nuevo nombre del canal." });
+    if (hasBannedContent(note)) return res.status(400).json({ error: "Ese nombre tiene contenido no permitido." });
+  }
 
   const spend = await spendCoins(req.user.discordId, item.price, `Tienda: ${item.name}`);
   if (!spend.ok) return res.status(400).json({ error: spend.error === "saldo" ? "No te alcanza el saldo de Omegacoins." : "No se pudo procesar." });
+  const refund = (msg) => addCoins(req.user.discordId, item.price, `Reembolso: ${item.name}`).then(() => res.status(500).json({ error: msg }));
 
   let status = "completado";
+  let detail = note;
   if (item.type === "role") {
     let ok = false;
-    try { ok = await require("../discord-activity").grantStoreRole(req.user.discordId, item.roleName, item.color, item.hoist); } catch (e) { ok = false; }
-    if (!ok) {
-      await addCoins(req.user.discordId, item.price, `Reembolso: ${item.name}`);
-      return res.status(500).json({ error: "No se pudo entregar el rol. Te reembolsamos." });
-    }
-    // Decoración de nombre (emoji junto al nombre).
+    try { ok = await da.grantStoreRole(req.user.discordId, item.roleName, item.color, item.hoist); } catch (e) { ok = false; }
+    if (!ok) return refund("No se pudo entregar el rol. Te reembolsamos.");
     if (item.nameEmoji) {
       try { await pool.query("INSERT INTO user_decoration (discord_id, emoji) VALUES ($1,$2) ON CONFLICT (discord_id) DO UPDATE SET emoji = EXCLUDED.emoji", [req.user.discordId, item.nameEmoji]); } catch (e) {}
-      try { require("../discord-activity").setNameDecoration?.(req.user.discordId, item.nameEmoji); } catch (e) {}
+      try { da.setNameDecoration?.(req.user.discordId, item.nameEmoji); } catch (e) {}
     }
+  } else if (item.key === "shoutout") {
+    let ok = false;
+    try { ok = await da.postShoutout(note, buyerName); } catch (e) { ok = false; }
+    if (!ok) return refund("No se pudo publicar el shoutout. Te reembolsamos.");
+  } else if (item.key === "vc_rename") {
+    let ok = false;
+    try { ok = await da.renameVoiceChannel(channelId, note, 24); } catch (e) { ok = false; }
+    if (!ok) return refund("No se pudo renombrar el canal. Te reembolsamos.");
+    detail = `Canal renombrado a "${note}" por 24h`;
   } else {
-    status = "pendiente";
+    status = "pendiente"; // color_custom, emoji -> los cumple un admin
   }
 
   try {
     await pool.query(
       "INSERT INTO store_purchases (discord_id, buyer_name, item_key, item_name, price, type, status, note) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
-      [req.user.discordId, buyerName, item.key, item.name, item.price, item.type, status, note],
+      [req.user.discordId, buyerName, item.key, item.name, item.price, item.type, status, detail],
     );
   } catch (e) { /* noop */ }
 
   try {
-    const da = require("../discord-activity");
     if (status === "pendiente") da.dmUser?.(req.user.discordId, `🛒 Compraste "${item.name}". Un admin lo prepara y te avisa. ¡Gracias!`);
     else da.dmUser?.(req.user.discordId, `🛒 ¡Listo! Canjeaste "${item.name}". Disfrútalo 😎`);
+    da.notifyAdmins?.("🛒 Canje en la tienda", `**${buyerName}** canjeó **${item.name}** (${item.price} 🪙)${detail ? `\n📝 ${detail}` : ""}${status === "pendiente" ? "\n⏳ Requiere acción manual." : ""}`, 0xffd35c);
   } catch (e) { /* noop */ }
 
   return res.json({ ok: true, balance: spend.balance, status });
+});
+
+// Canales de voz para el select de la tienda.
+router.get("/api/tienda/canales-voz", (req, res) => {
+  try { return res.json(require("../discord-activity").getVoiceChannels?.() || []); }
+  catch (e) { return res.json([]); }
 });
 
 router.get("/api/tienda/mis-compras", requireUser, async (req, res) => {

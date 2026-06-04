@@ -493,6 +493,7 @@ function initDiscordActivity() {
     }
     setTimeout(bumpReminder, 2 * 60 * 1000);
     setInterval(bumpReminder, 15 * 60 * 1000); // recordatorio de /bump
+    setInterval(revertExpiredChannels, 15 * 60 * 1000); // revertir canales de voz renombrados
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -933,4 +934,67 @@ async function announceTournamentWinner(channelId, tournamentName, winnerName, w
   } catch (e) { /* noop */ }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration };
+// Aviso al canal central de administración (canjes, solicitudes, aprobaciones…).
+async function notifyAdmins(title, desc, color) {
+  const channelId = process.env.ADMIN_LOG_CHANNEL_ID;
+  if (!client || !channelId) return;
+  try {
+    const ch = await client.channels.fetch(channelId).catch(() => null);
+    if (!ch || typeof ch.send !== "function") return;
+    const embed = new EmbedBuilder().setColor(color || 0x5865f2).setTitle(title).setDescription((desc || "").slice(0, 2000)).setTimestamp(new Date());
+    await ch.send({ embeds: [embed] }).catch(() => {});
+  } catch (e) { /* noop */ }
+}
+
+// Lista de canales de voz (para el select de la tienda), sin el AFK.
+function getVoiceChannels() {
+  if (!client) return [];
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return [];
+    const afk = guild.afkChannelId;
+    return guild.channels.cache.filter((c) => c.type === 2 && c.id !== afk).map((c) => ({ id: c.id, name: c.name }));
+  } catch (e) { return []; }
+}
+
+// Renombra un canal de voz por X horas (guarda el original para revertir).
+async function renameVoiceChannel(channelId, newName, hours) {
+  if (!client) return false;
+  try {
+    const ch = await client.channels.fetch(channelId).catch(() => null);
+    if (!ch || ch.type !== 2) return false;
+    if (!(await getState("vcorig_" + channelId))) await setState("vcorig_" + channelId, ch.name);
+    await setState("vcexp_" + channelId, String(Date.now() + (hours || 24) * 3600 * 1000));
+    await ch.setName(String(newName).slice(0, 90), "Renombrado por la tienda");
+    return true;
+  } catch (e) { console.warn("[vcrename]", e.message); return false; }
+}
+async function revertExpiredChannels() {
+  if (!client || !pool) return;
+  try {
+    const r = await pool.query("SELECT key, value FROM bot_state WHERE key LIKE 'vcexp_%'");
+    for (const row of r.rows) {
+      if (Number(row.value) > Date.now()) continue;
+      const channelId = row.key.slice("vcexp_".length);
+      const orig = await getState("vcorig_" + channelId);
+      const ch = await client.channels.fetch(channelId).catch(() => null);
+      if (ch && orig) { try { await ch.setName(orig, "Fin del renombrado de la tienda"); } catch (e) {} }
+      await pool.query("DELETE FROM bot_state WHERE key IN ($1,$2)", ["vcexp_" + channelId, "vcorig_" + channelId]);
+    }
+  } catch (e) { console.warn("[vcrevert]", e.message); }
+}
+
+// Publica un shoutout (texto ya filtrado) en el canal de anuncios.
+async function postShoutout(text, byName) {
+  const channelId = process.env.SHOUTOUT_CHANNEL_ID || process.env.EVENTS_CHANNEL_ID;
+  if (!client || !channelId) return false;
+  try {
+    const ch = await client.channels.fetch(channelId).catch(() => null);
+    if (!ch || typeof ch.send !== "function") return false;
+    const embed = new EmbedBuilder().setColor(0x43d1ff).setTitle("📢 Shoutout de la comunidad").setDescription(String(text).slice(0, 1000)).setFooter({ text: `Cortesía de ${byName} · canjeado con Omegacoins` }).setTimestamp(new Date());
+    await ch.send({ embeds: [embed] }).catch(() => {});
+    return true;
+  } catch (e) { return false; }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration, notifyAdmins, getVoiceChannels, renameVoiceChannel, postShoutout };
