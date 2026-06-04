@@ -1,0 +1,3 @@
+# Fuentes para que la imagen OG por perfil (SVG -> PNG con sharp) renderice texto.
+[phases.setup]
+aptPkgs = ["fonts-dejavu-core", "fontconfig"]

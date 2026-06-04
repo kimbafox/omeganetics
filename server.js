@@ -1365,7 +1365,7 @@ app.get("/u/:id", async (req, res) => {
       title = `${data.name || data.username} — Omeganetics`;
       const roleTxt = data.role === "admin" ? "Administrador" : "Miembro";
       desc = `Nivel ${data.level.level} · ${roleTxt} · ${data.achievements.length} logros · ${data.coins} Omegacoins en Omeganetics`;
-      if (data.avatar) img = data.avatar;
+      img = `https://omeganetics.com/u/${encodeURIComponent(req.params.id)}/og.png`;
     }
   } catch (e) { /* usa valores por defecto */ }
   const url = `https://omeganetics.com/u/${encodeURIComponent(req.params.id)}`;
@@ -1376,6 +1376,55 @@ app.get("/u/:id", async (req, res) => {
     .split("__OG_URL__").join(escAttr(url));
   res.set("Content-Type", "text/html; charset=utf-8");
   res.send(html);
+});
+
+// Imagen OG a medida por perfil (tarjeta con nombre/nivel/avatar). Si sharp no está, cae al avatar.
+app.get("/u/:id/og.png", async (req, res) => {
+  let data;
+  try { data = await getPublicProfile(req.params.id); } catch (e) { data = { found: false }; }
+  let sharp = null;
+  try { sharp = require("sharp"); } catch (e) { sharp = null; }
+  if (!sharp || !data.found) {
+    return res.redirect(302, data && data.found && data.avatar ? data.avatar : "/assets/previa.png");
+  }
+  try {
+    const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let avatarTag = "";
+    if (data.avatar) {
+      try {
+        const ab = await fetch(data.avatar);
+        const raw = Buffer.from(await ab.arrayBuffer());
+        const av = await sharp(raw).resize(240, 240, { fit: "cover" }).png().toBuffer();
+        avatarTag = `<image href="data:image/png;base64,${av.toString("base64")}" x="80" y="195" width="240" height="240" clip-path="url(#circ)"/>`;
+      } catch (e) { /* sin avatar */ }
+    }
+    const role = data.role === "admin" ? "Administrador" : "Miembro";
+    const name = (data.name || data.username || "Jugador").slice(0, 22);
+    const F = "DejaVu Sans, sans-serif";
+    const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#12131c"/><stop offset="1" stop-color="#221a3c"/></linearGradient>
+        <clipPath id="circ"><circle cx="200" cy="315" r="120"/></clipPath>
+      </defs>
+      <rect width="1200" height="630" fill="url(#bg)"/>
+      <rect width="1200" height="12" fill="#5865F2"/>
+      <text x="80" y="92" fill="#8b93ff" font-family="${F}" font-size="32" font-weight="bold">OMEGANETICS</text>
+      <circle cx="200" cy="315" r="124" fill="#0a0a12" stroke="#5865F2" stroke-width="6"/>
+      ${avatarTag}
+      <text x="370" y="275" fill="#ffffff" font-family="${F}" font-size="62" font-weight="bold">${esc(name)}</text>
+      <text x="370" y="322" fill="#b4b4c4" font-family="${F}" font-size="28">@${esc((data.username || "").slice(0, 24))}  ·  ${role}</text>
+      <text x="370" y="404" fill="#9a86ff" font-family="${F}" font-size="40" font-weight="bold">Nivel ${data.level.level}</text>
+      <text x="370" y="462" fill="#ffd35c" font-family="${F}" font-size="33">${data.coins} Omegacoins</text>
+      <text x="370" y="514" fill="#cdd5ff" font-family="${F}" font-size="29">${data.achievements.length} logros desbloqueados</text>
+      <text x="80" y="600" fill="#6b6b7b" font-family="${F}" font-size="25">omeganetics.com</text>
+    </svg>`;
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=600");
+    return res.send(png);
+  } catch (e) {
+    return res.redirect(302, data.avatar || "/assets/previa.png");
+  }
 });
 
 app.get("/tiendita", (req, res) => {
