@@ -135,6 +135,30 @@ router.post("/api/creadores", requireUser, async (req, res) => {
   }
 });
 
+// Creadores destacados (público): aprobados + sus videos aprobados.
+router.get("/api/creadores/destacados", async (req, res) => {
+  if (!pool) return res.json([]);
+  try {
+    const cr = await pool.query("SELECT discord_id, nickname, channel_name, channel_url, platforms, channel_type FROM content_creators WHERE status = 'aprobado' ORDER BY created_at DESC LIMIT 30");
+    const vids = await pool.query("SELECT discord_id, title, url, description, created_at FROM creator_videos WHERE status = 'aprobado' ORDER BY created_at DESC");
+    const byCreator = {};
+    for (const v of vids.rows) {
+      (byCreator[v.discord_id] = byCreator[v.discord_id] || []).push({ title: v.title, url: v.url, description: v.description, createdAt: v.created_at });
+    }
+    const list = cr.rows.map((c) => ({
+      nickname: c.nickname,
+      channelName: c.channel_name,
+      channelUrl: c.channel_url,
+      platforms: c.platforms ? c.platforms.split(",").filter(Boolean) : [],
+      channelType: c.channel_type,
+      videos: (byCreator[c.discord_id] || []).slice(0, 6),
+    }));
+    return res.json(list);
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
 // Mi estado como creador.
 router.get("/api/creadores/mi-estado", requireUser, async (req, res) => {
   if (!pool) return res.json({ status: "none" });

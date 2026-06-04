@@ -1172,7 +1172,8 @@ app.get("/api/active-games", async (req, res) => {
 app.get("/api/home-stats", async (req, res) => {
   if (!teamPool) return res.json({ members: 0, playingNow: 0, activeGames: 0, upcomingEvents: 0 });
   let members = 0, playingNow = 0, activeGames = 0, upcomingEvents = 0;
-  try { const m = await teamPool.query("SELECT COUNT(*)::int n FROM discord_members"); members = m.rows[0]?.n || 0; } catch (e) {}
+  try { const g = await teamPool.query("SELECT value FROM bot_state WHERE key = 'guild_members'"); members = parseInt(g.rows[0]?.value, 10) || 0; } catch (e) {}
+  if (!members) { try { const m = await teamPool.query("SELECT COUNT(*)::int n FROM discord_members"); members = m.rows[0]?.n || 0; } catch (e) {} }
   try { const s = await teamPool.query("SELECT total_active, games_count FROM discord_server_stats WHERE id = 1"); playingNow = s.rows[0]?.total_active || 0; activeGames = s.rows[0]?.games_count || 0; } catch (e) {}
   try { const e = await teamPool.query("SELECT COUNT(*)::int n FROM events WHERE status = 'aprobado' AND (start_date IS NULL OR start_date >= CURRENT_DATE - INTERVAL '1 day')"); upcomingEvents = e.rows[0]?.n || 0; } catch (e) {}
   return res.json({ members, playingNow, activeGames, upcomingEvents });

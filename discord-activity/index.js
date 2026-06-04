@@ -370,6 +370,7 @@ async function refresh() {
   const voice = computeVoiceMembers(guild);
   await saveVoiceActivity(voice);
   await flushMessages();
+  try { await setState("guild_members", String(guild.memberCount || 0)); } catch (e) { /* noop */ }
   console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos · ${voice.size} en voz`);
 }
 
