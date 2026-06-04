@@ -49,6 +49,15 @@ async function initTienda() {
   `);
   // Decoración de nombre (emoji que se antepone al nombre en Discord y en la web).
   await pool.query("CREATE TABLE IF NOT EXISTS user_decoration (discord_id TEXT PRIMARY KEY, emoji TEXT NOT NULL DEFAULT '')");
+  // Backfill: quien ya compró Patrón/Mecenas antes de esta función, recibe su decoración.
+  try {
+    await pool.query(`
+      INSERT INTO user_decoration (discord_id, emoji)
+      SELECT DISTINCT discord_id, CASE WHEN item_key = 'patron' THEN '💜' ELSE '🎖️' END
+      FROM store_purchases WHERE item_key IN ('patron', 'mecenas')
+      ON CONFLICT (discord_id) DO NOTHING
+    `);
+  } catch (e) { /* noop */ }
 }
 
 function requireAdmin(req, res, next) {
