@@ -25,8 +25,8 @@ const CATALOG = [
   { key: "shoutout", name: "Shoutout en anuncios", icon: "📢", desc: "Te promocionamos (tu canal/contenido) en el canal de anuncios.", price: 8000, type: "order", needsNote: "¿Qué quieres que anunciemos? (link/texto)" },
   { key: "color_custom", name: "Color personalizado", icon: "🎨", desc: "Eliges el color EXACTO de tu nombre (permanente).", price: 9000, type: "order", needsNote: "Pon el color (ej: #ff3b3b)" },
   { key: "emoji", name: "Emoji al servidor", icon: "😎", desc: "Propones un emoji y lo agregamos al server (sujeto a aprobación).", price: 14000, type: "order", needsNote: "Link/imagen del emoji y nombre" },
-  { key: "mecenas", name: "Mecenas", icon: "🎖️", desc: "Rol dorado destacado de apoyo a la comunidad (permanente).", price: 15000, type: "role", roleName: "🎖️ Mecenas", color: 0xffd35c, hoist: true },
-  { key: "patron", name: "Patrón Omega", icon: "💜", desc: "Rol de prestigio morado, aparece destacado arriba (permanente).", price: 25000, type: "role", roleName: "💜 Patrón Omega", color: 0xc084fc, hoist: true },
+  { key: "mecenas", name: "Mecenas", icon: "🎖️", desc: "Rol dorado destacado + 🎖️ junto a tu nombre (Discord y web).", price: 15000, type: "role", roleName: "🎖️ Mecenas", color: 0xffd35c, hoist: true, nameEmoji: "🎖️" },
+  { key: "patron", name: "Patrón Omega", icon: "💜", desc: "Rol de prestigio morado + 💜 decorando tu nombre (Discord y web).", price: 25000, type: "role", roleName: "💜 Patrón Omega", color: 0xc084fc, hoist: true, nameEmoji: "💜" },
 ];
 const BYKEY = Object.fromEntries(CATALOG.map((i) => [i.key, i]));
 const pubItem = (i) => ({ key: i.key, name: i.name, icon: i.icon, desc: i.desc, price: i.price, type: i.type, needsNote: i.needsNote || "" });
@@ -47,6 +47,8 @@ async function initTienda() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  // Decoración de nombre (emoji que se antepone al nombre en Discord y en la web).
+  await pool.query("CREATE TABLE IF NOT EXISTS user_decoration (discord_id TEXT PRIMARY KEY, emoji TEXT NOT NULL DEFAULT '')");
 }
 
 function requireAdmin(req, res, next) {
@@ -92,6 +94,11 @@ router.post("/api/tienda/comprar", requireUser, async (req, res) => {
     if (!ok) {
       await addCoins(req.user.discordId, item.price, `Reembolso: ${item.name}`);
       return res.status(500).json({ error: "No se pudo entregar el rol. Te reembolsamos." });
+    }
+    // Decoración de nombre (emoji junto al nombre).
+    if (item.nameEmoji) {
+      try { await pool.query("INSERT INTO user_decoration (discord_id, emoji) VALUES ($1,$2) ON CONFLICT (discord_id) DO UPDATE SET emoji = EXCLUDED.emoji", [req.user.discordId, item.nameEmoji]); } catch (e) {}
+      try { require("../discord-activity").setNameDecoration?.(req.user.discordId, item.nameEmoji); } catch (e) {}
     }
   } else {
     status = "pendiente";

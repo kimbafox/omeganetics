@@ -123,7 +123,7 @@
       try { const r = await fetch("/api/u/" + encodeURIComponent(id)); d = await r.json(); } catch (e) { d = { found: false }; }
       if (!d || !d.found) { $("loading").style.display = "none"; $("notfound").style.display = "block"; return; }
 
-      $("u-name").textContent = d.name || d.username;
+      $("u-name").textContent = (d.nameEmoji ? d.nameEmoji + " " : "") + (d.name || d.username);
       $("u-tag").textContent = "@" + (d.username || "");
       if (d.avatar) $("u-avatar").src = d.avatar; else $("u-avatar").style.display = "none";
       if (d.role === "admin") { $("u-role").textContent = "★ Administrador"; $("u-role").className = "role-chip role-admin"; }

@@ -320,6 +320,7 @@ router.get("/api/me/profile", requireUser, async (req, res) => {
       base.createdAt = row.created_at;
       base.lastLoginAt = row.last_login_at;
     }
+    try { const de = await pool.query("SELECT emoji FROM user_decoration WHERE discord_id = $1", [req.user.discordId]); base.nameEmoji = de.rows[0]?.emoji || ""; } catch (e) { base.nameEmoji = ""; }
     return res.json(base);
   } catch (e) {
     return res.json(base);

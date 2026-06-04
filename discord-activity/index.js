@@ -587,18 +587,19 @@ async function updateLeaderboard() {
       SELECT d.discord_id,
              COALESCE(SUM(d.voice_samples),0)::int AS v,
              COALESCE(SUM(d.messages),0)::int AS m,
-             mem.display_name, mem.username
+             mem.display_name, mem.username, dec.emoji AS name_emoji
       FROM user_activity_daily d
       LEFT JOIN discord_members mem ON mem.discord_id = d.discord_id
+      LEFT JOIN user_decoration dec ON dec.discord_id = d.discord_id
       WHERE d.day >= (CURRENT_DATE - INTERVAL '6 days')
-      GROUP BY d.discord_id, mem.display_name, mem.username
+      GROUP BY d.discord_id, mem.display_name, mem.username, dec.emoji
       ORDER BY (COALESCE(SUM(d.voice_samples),0)*${VOICE_W} + COALESCE(SUM(d.messages),0)*${MSG_W}) DESC
       LIMIT 10
     `);
     const lines = r.rows.map((row, i) => {
       const pts = row.v * VOICE_W + row.m * MSG_W;
       const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `\`${i + 1}.\``;
-      const name = row.display_name || row.username || "Jugador";
+      const name = `${row.name_emoji ? row.name_emoji + " " : ""}${row.display_name || row.username || "Jugador"}`;
       const voiceH = Math.round((row.v * refreshMinutes) / 60 * 10) / 10;
       return `${medal} **${name}** — ${pts} pts · 🎙️ ${voiceH}h · 💬 ${row.m}`;
     });
@@ -899,6 +900,24 @@ async function grantStoreRole(discordId, roleName, color, hoist) {
   }
 }
 
+// Decora el nombre (apodo) del miembro con un emoji. No funciona en admins/dueño (jerarquía).
+async function setNameDecoration(discordId, emoji) {
+  if (!client || !emoji) return false;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return false;
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return false;
+    const current = member.nickname || member.user.globalName || member.user.username || "";
+    if (current.startsWith(emoji)) return true;
+    const nick = `${emoji} ${current}`.slice(0, 32);
+    await member.setNickname(nick, "Decoración de la tienda");
+    return true;
+  } catch (e) {
+    return false; // probablemente admin/dueño: no se puede cambiar su apodo
+  }
+}
+
 // Anuncia el campeón de un torneo en un canal.
 async function announceTournamentWinner(channelId, tournamentName, winnerName, winnerId) {
   if (!client || !channelId) return;
@@ -914,4 +933,4 @@ async function announceTournamentWinner(channelId, tournamentName, winnerName, w
   } catch (e) { /* noop */ }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole };
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration };

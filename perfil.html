@@ -205,7 +205,7 @@
         me = await res.json();
       } catch (e) { window.location.href = "/login.html"; return; }
 
-      $("p-name").textContent = me.globalName || me.username;
+      $("p-name").textContent = (me.nameEmoji ? me.nameEmoji + " " : "") + (me.globalName || me.username);
       $("p-tag").textContent = "@" + me.username;
       if (me.avatar) $("p-avatar").src = me.avatar; else $("p-avatar").style.display = "none";
       if (me.isAdmin) { $("p-role").textContent = "★ Administrador"; $("p-role").className = "role-chip role-admin"; }

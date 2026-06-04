@@ -1250,17 +1250,18 @@ app.get("/api/rankings", async (req, res) => {
       SELECT d.discord_id,
              COALESCE(SUM(d.voice_samples), 0)::int AS voice_samples,
              COALESCE(SUM(d.messages), 0)::int AS messages,
-             m.username, m.display_name, m.avatar_url
+             m.username, m.display_name, m.avatar_url, dec.emoji AS name_emoji
       FROM user_activity_daily d
       LEFT JOIN discord_members m ON m.discord_id = d.discord_id
+      LEFT JOIN user_decoration dec ON dec.discord_id = d.discord_id
       ${where}
-      GROUP BY d.discord_id, m.username, m.display_name, m.avatar_url
+      GROUP BY d.discord_id, m.username, m.display_name, m.avatar_url, dec.emoji
       ORDER BY (COALESCE(SUM(d.voice_samples),0)*${VOICE_W} + COALESCE(SUM(d.messages),0)*${MSG_W}) DESC
       LIMIT 15
     `);
     const top = result.rows.map((row, index) => ({
       rank: index + 1,
-      name: row.display_name || row.username || "Jugador",
+      name: `${row.name_emoji ? row.name_emoji + " " : ""}${row.display_name || row.username || "Jugador"}`,
       username: row.username || "",
       avatar: row.avatar_url || "",
       points: row.voice_samples * VOICE_W + row.messages * MSG_W,
@@ -1325,7 +1326,9 @@ async function getPublicProfile(idParam) {
       achievements = (ACHIEVEMENTS_CATALOG || []).filter((a) => earned.has(a.key)).map((a) => ({ key: a.key, name: a.name, icon: a.icon, tier: a.tier }));
     } catch (e) {}
 
-    return { found: true, discordId, username, name, avatar, role, createdAt, level: { level, xp }, activity: { voiceMinutes, messages }, coins, referrals, achievements };
+    let nameEmoji = "";
+    try { const de = await teamPool.query("SELECT emoji FROM user_decoration WHERE discord_id = $1", [discordId]); nameEmoji = de.rows[0]?.emoji || ""; } catch (e) {}
+    return { found: true, discordId, username, name, nameEmoji, avatar, role, createdAt, level: { level, xp }, activity: { voiceMinutes, messages }, coins, referrals, achievements };
   } catch (e) {
     return { found: false };
   }
@@ -1366,7 +1369,8 @@ app.get("/u/:id", async (req, res) => {
   try {
     const data = await getPublicProfile(req.params.id);
     if (data.found) {
-      title = `${data.name || data.username} — Omeganetics`;
+      const deco = data.nameEmoji ? data.nameEmoji + " " : "";
+      title = `${deco}${data.name || data.username} — Omeganetics`;
       const roleTxt = data.role === "admin" ? "Administrador" : "Miembro";
       desc = `Nivel ${data.level.level} · ${roleTxt} · ${data.achievements.length} logros · ${data.coins} Omegacoins en Omeganetics`;
       img = `https://omeganetics.com/u/${encodeURIComponent(req.params.id)}/og.png`;
