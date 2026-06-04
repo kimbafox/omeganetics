@@ -18,6 +18,10 @@
       { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
       { href: "https://discord.gg/bCWjyns8U5", icon: "💬", text: "Discord", ext: true, dot: "#5865F2" },
     ] },
+    { label: "Únete a nosotros", items: [
+      { href: "/eventos.html", icon: "🎯", text: "¿Tienes un evento?", dot: "#5865F2" },
+      { href: "/creadores.html", icon: "🎬", text: "¿Eres creador de contenido?", dot: "#ff6fae" },
+    ] },
   ];
 
   const dot = (it) => (it.dot ? `<span class="oh-dot" style="background:${it.dot}"></span>` : '<span class="oh-dot oh-dot-none"></span>');
