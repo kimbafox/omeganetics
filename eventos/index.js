@@ -55,6 +55,7 @@ async function initEventos() {
       PRIMARY KEY (event_id, discord_id)
     );
   `);
+  await pool.query("ALTER TABLE events ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT ''");
 }
 
 // Solo admins: reutiliza requireUser y exige isAdmin.
@@ -84,6 +85,7 @@ function mapEvent(r) {
     endDate: r.end_date,
     filesUrl: r.files_url,
     status: r.status,
+    reason: r.reason || "",
     createdByName: r.created_by_name,
     createdAt: r.created_at,
     interested: r.interested != null ? Number(r.interested) : 0,
@@ -100,6 +102,7 @@ router.post("/api/eventos", requireUser, async (req, res) => {
   const startDate = dateOrNull(req.body?.startDate);
   const endDate = dateOrNull(req.body?.endDate);
   const filesUrl = clean(req.body?.filesUrl);
+  const reason = clean(req.body?.reason);
 
   if (!game || !name || !description || !startDate) {
     return res.status(400).json({ error: "Juego, nombre, descripción y fecha de inicio son obligatorios." });
@@ -108,10 +111,10 @@ router.post("/api/eventos", requireUser, async (req, res) => {
   try {
     const r = await pool.query(
       `INSERT INTO events
-         (game, name, description, expected_duration, start_date, end_date, files_url, status, created_by_id, created_by_name)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendiente', $8, $9)
+         (game, name, description, expected_duration, start_date, end_date, files_url, reason, status, created_by_id, created_by_name)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pendiente', $9, $10)
        RETURNING *`,
-      [game, name, description, expectedDuration, startDate, endDate, filesUrl, req.user.discordId, req.user.globalName || req.user.username || ""],
+      [game, name, description, expectedDuration, startDate, endDate, filesUrl, reason, req.user.discordId, req.user.globalName || req.user.username || ""],
     );
     return res.json({ ok: true, event: mapEvent(r.rows[0]) });
   } catch (error) {

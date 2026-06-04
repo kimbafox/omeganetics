@@ -54,6 +54,12 @@ async function initCreadores() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  // Motivo de postulación + flujo de aprobación de videos.
+  await pool.query("ALTER TABLE content_creators ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT ''");
+  // status por defecto 'aprobado' para que los videos YA existentes no se reenvíen; los nuevos se insertan 'pendiente'.
+  await pool.query("ALTER TABLE creator_videos ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'aprobado'");
+  await pool.query("ALTER TABLE creator_videos ADD COLUMN IF NOT EXISTS reviewed_by TEXT NOT NULL DEFAULT ''");
+  await pool.query("ALTER TABLE creator_videos ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ");
 }
 
 function requireAdmin(req, res, next) {
@@ -75,7 +81,22 @@ function mapCreator(r) {
     platforms: r.platforms ? r.platforms.split(",").filter(Boolean) : [],
     channelType: r.channel_type,
     status: r.status,
+    reason: r.reason || "",
     createdAt: r.created_at,
+  };
+}
+
+function mapVideo(r) {
+  return {
+    id: r.id,
+    discordId: r.discord_id,
+    title: r.title,
+    url: r.url,
+    description: r.description,
+    status: r.status,
+    createdAt: r.created_at,
+    channelName: r.channel_name || "",
+    nickname: r.nickname || "",
   };
 }
 
@@ -90,6 +111,7 @@ router.post("/api/creadores", requireUser, async (req, res) => {
   const platforms = Array.isArray(req.body?.platforms)
     ? req.body.platforms.map((p) => clean(p)).filter(Boolean).join(",")
     : clean(req.body?.platforms);
+  const reason = clean(req.body?.reason);
 
   if (!nickname || !channelName || !channelUrl) {
     return res.status(400).json({ error: "Nick, nombre del canal y enlace del canal son obligatorios." });
@@ -98,14 +120,14 @@ router.post("/api/creadores", requireUser, async (req, res) => {
   try {
     await pool.query(
       `INSERT INTO content_creators
-         (discord_id, full_name, nickname, channel_name, channel_url, platforms, channel_type, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendiente', NOW())
+         (discord_id, full_name, nickname, channel_name, channel_url, platforms, channel_type, reason, status, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pendiente', NOW())
        ON CONFLICT (discord_id) DO UPDATE
          SET full_name = EXCLUDED.full_name, nickname = EXCLUDED.nickname,
              channel_name = EXCLUDED.channel_name, channel_url = EXCLUDED.channel_url,
              platforms = EXCLUDED.platforms, channel_type = EXCLUDED.channel_type,
-             status = 'pendiente', created_at = NOW()`,
-      [req.user.discordId, fullName, nickname, channelName, channelUrl, platforms, channelType],
+             reason = EXCLUDED.reason, status = 'pendiente', created_at = NOW()`,
+      [req.user.discordId, fullName, nickname, channelName, channelUrl, platforms, channelType, reason],
     );
     return res.json({ ok: true });
   } catch (e) {
@@ -176,14 +198,72 @@ router.post("/api/creadores/video", requireUser, async (req, res) => {
     }
 
     await pool.query(
-      "INSERT INTO creator_videos (discord_id, title, url, description) VALUES ($1, $2, $3, $4)",
+      "INSERT INTO creator_videos (discord_id, title, url, description, status) VALUES ($1, $2, $3, $4, 'pendiente')",
       [req.user.discordId, title, url, description],
     );
-
-    announceContent(mapCreator(creator), { title, url, description }).catch(() => {});
-    return res.json({ ok: true });
+    return res.json({ ok: true, pending: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo subir el contenido." });
+  }
+});
+
+// Mis videos (creador) con su estado.
+router.get("/api/creadores/mis-videos", requireUser, async (req, res) => {
+  if (!pool) return res.json([]);
+  try {
+    const r = await pool.query("SELECT * FROM creator_videos WHERE discord_id = $1 ORDER BY created_at DESC LIMIT 20", [req.user.discordId]);
+    return res.json(r.rows.map(mapVideo));
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
+// Videos pendientes de aprobación (admin).
+router.get("/api/creadores/videos/pendientes", requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(`
+      SELECT v.*, c.channel_name, c.nickname
+      FROM creator_videos v
+      LEFT JOIN content_creators c ON c.discord_id = v.discord_id
+      WHERE v.status = 'pendiente'
+      ORDER BY v.created_at ASC
+    `);
+    return res.json(r.rows.map(mapVideo));
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
+// Aprobar video (admin) -> anuncia en Discord + DM al creador.
+router.post("/api/creadores/video/:id/aprobar", requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(
+      "UPDATE creator_videos SET status = 'aprobado', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 AND status = 'pendiente' RETURNING *",
+      [req.user.globalName || req.user.username || "admin", req.params.id],
+    );
+    const v = r.rows[0];
+    if (v) {
+      const c = await pool.query("SELECT * FROM content_creators WHERE discord_id = $1", [v.discord_id]);
+      if (c.rows[0]) announceContent(mapCreator(c.rows[0]), { title: v.title, url: v.url, description: v.description }).catch(() => {});
+      dmUser(v.discord_id, `🎬 ¡Tu video "${v.title}" fue aprobado y ya está publicado!`).catch(() => {});
+    }
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "No se pudo aprobar." });
+  }
+});
+
+// Rechazar video (admin).
+router.post("/api/creadores/video/:id/rechazar", requireAdmin, async (req, res) => {
+  try {
+    const r = await pool.query(
+      "UPDATE creator_videos SET status = 'rechazado', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING discord_id, title",
+      [req.user.globalName || req.user.username || "admin", req.params.id],
+    );
+    if (r.rows[0]) dmUser(r.rows[0].discord_id, `Tu video "${r.rows[0].title}" no fue aprobado esta vez. Puedes subir otro cuando quieras.`).catch(() => {});
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "No se pudo rechazar." });
   }
 });
 

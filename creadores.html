@@ -110,6 +110,7 @@
             </div>
           </div>
           <div class="field full"><label>Tipo de canal (descripción)</label><textarea name="channelType" placeholder="¿De qué trata tu contenido? (gameplays, tutoriales, humor...)"></textarea></div>
+          <div class="field full"><label>¿Por qué deberíamos aprobarte?</label><textarea name="reason" placeholder="Cuéntanos por qué deberíamos aprobarte como creador (lo ven los admins al revisar)."></textarea></div>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn">Enviar solicitud</button>
@@ -164,7 +165,7 @@
         const body = {
           fullName: fd.get("fullName"), nickname: fd.get("nickname"),
           channelName: fd.get("channelName"), channelUrl: fd.get("channelUrl"),
-          channelType: fd.get("channelType"), platforms,
+          channelType: fd.get("channelType"), platforms, reason: fd.get("reason"),
         };
         $("appMsg").textContent = "Enviando…"; $("appMsg").className = "msg";
         try {
@@ -188,7 +189,7 @@
           const r = await fetch("/api/creadores/video", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || "Error");
-          $("vidMsg").textContent = "✅ ¡Subido! Se anunció en Discord."; $("vidMsg").className = "msg ok";
+          $("vidMsg").textContent = "✅ ¡Enviado! Quedó pendiente de aprobación por un admin."; $("vidMsg").className = "msg ok";
           f.reset();
         } catch (err) { $("vidMsg").textContent = "❌ " + err.message; $("vidMsg").className = "msg err"; }
       });
