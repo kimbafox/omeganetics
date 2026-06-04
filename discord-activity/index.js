@@ -404,8 +404,10 @@ function initDiscordActivity() {
     try {
       if (!msg.guild || msg.guild.id !== GUILD_ID) return;
       // Bump de DISBOARD: premiar 10 🪙 al que lo hizo (con candado de 2 h).
-      if (msg.author?.bot && /disboard/i.test(msg.author.username || "") && msg.interaction?.commandName === "bump" && msg.interaction.user) {
-        onBump(msg.interaction.user.id, msg.channel?.id).catch(() => {});
+      // Detecta cualquier respuesta de DISBOARD a una interacción (robusto entre versiones).
+      const bumpMeta = msg.interaction || msg.interactionMetadata;
+      if (msg.author?.bot && /disboard/i.test(msg.author.username || "") && bumpMeta && bumpMeta.user) {
+        onBump(bumpMeta.user.id, msg.channel?.id).catch(() => {});
         return;
       }
       if (!msg.author || msg.author.bot) return;
@@ -849,12 +851,12 @@ async function onBump(userId, channelId) {
   const now = Date.now();
   const lastTs = Number((await getState("bump_last_ts")) || 0);
   if (now - lastTs < 110 * 60 * 1000) return; // ya se premió hace poco
-  try { const { addCoins } = require("../omegacoins"); await addCoins(userId, 10, "Bump del servidor 🚀"); } catch (e) { /* noop */ }
   await setState("bump_last_ts", String(now));
-  await setState("bump_reminded", "false");
+  try { const { addCoins } = require("../omegacoins"); await addCoins(userId, 10, "Bump del servidor 🚀"); } catch (e) { /* noop */ }
   try {
-    const ch = channelId ? await client.channels.fetch(channelId).catch(() => null) : null;
-    if (ch && typeof ch.send === "function") await ch.send(`🚀 ¡Gracias <@${userId}> por el **/bump**! +10 🪙`).catch(() => {});
+    const target = process.env.BUMP_CHANNEL_ID || channelId;
+    const ch = target ? await client.channels.fetch(target).catch(() => null) : null;
+    if (ch && typeof ch.send === "function") await ch.send(`🚀 ¡Gracias <@${userId}> por el **/bump**! +10 🪙 — te aviso en ~2 h para el siguiente.`).catch(() => {});
   } catch (e) { /* noop */ }
 }
 
@@ -865,13 +867,14 @@ async function bumpReminder() {
   if (!channelId) return;
   try {
     const now = Date.now();
-    const lastTs = Number((await getState("bump_last_ts")) || 0);
-    const reminded = (await getState("bump_reminded")) === "true";
-    const due = lastTs === 0 || now - lastTs >= 2 * 60 * 60 * 1000;
-    if (due && !reminded) {
+    const TWO_H = 2 * 60 * 60 * 1000;
+    const lastBump = Number((await getState("bump_last_ts")) || 0);
+    const lastReminder = Number((await getState("bump_reminder_ts")) || 0);
+    // Recuerda cada ~2 h, pero solo si no se ha bumpeado en las últimas 2 h.
+    if (now - lastBump >= TWO_H && now - lastReminder >= TWO_H) {
       const ch = await client.channels.fetch(channelId).catch(() => null);
       if (ch && typeof ch.send === "function") await ch.send("⏰ ¡Ya se puede hacer **/bump**! El primero que lo haga gana **10 🪙** y ayuda a que más gente descubra el server 🚀").catch(() => {});
-      await setState("bump_reminded", "true");
+      await setState("bump_reminder_ts", String(now));
     }
   } catch (e) {
     console.warn("[bump]", e.message);
