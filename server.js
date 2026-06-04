@@ -1137,7 +1137,7 @@ const { router: omegacoinsRouter, initOmegacoins } = require("./omegacoins");
 app.use(omegacoinsRouter);
 
 // Módulo de Logros / Insignias.
-const { router: logrosRouter, initLogros } = require("./logros");
+const { router: logrosRouter, initLogros, CATALOG: ACHIEVEMENTS_CATALOG } = require("./logros");
 app.use(logrosRouter);
 
 // Módulo de Creadores de contenido.
@@ -1230,6 +1230,64 @@ app.get("/api/rankings", async (req, res) => {
   }
 });
 
+// Perfil PÚBLICO (sin login) — para compartir. :id puede ser discord_id o @usuario.
+function levelFromXpPublic(xp) {
+  let level = 1, total = 0, need = 100;
+  while (xp >= total + need) { total += need; level += 1; need = Math.round(need * 1.35); }
+  return level;
+}
+app.get("/api/u/:id", async (req, res) => {
+  if (!teamPool) return res.json({ found: false });
+  try {
+    const param = String(req.params.id || "").trim();
+    let discordId = null;
+    if (/^\d{5,}$/.test(param)) {
+      discordId = param;
+    } else {
+      const clean = param.replace(/^@/, "").toLowerCase();
+      const r1 = await teamPool.query("SELECT discord_id FROM community_users WHERE LOWER(username) = $1 LIMIT 1", [clean]);
+      discordId = r1.rows[0]?.discord_id || null;
+      if (!discordId) {
+        const r2 = await teamPool.query("SELECT discord_id FROM discord_members WHERE LOWER(username) = $1 OR LOWER(display_name) = $1 LIMIT 1", [clean]);
+        discordId = r2.rows[0]?.discord_id || null;
+      }
+    }
+    if (!discordId) return res.json({ found: false });
+
+    let name = "", username = "", avatar = "", role = "viewer", createdAt = null;
+    const cu = await teamPool.query("SELECT username, global_name, avatar_url, role, created_at FROM community_users WHERE discord_id = $1", [discordId]);
+    if (cu.rows[0]) {
+      const r = cu.rows[0];
+      username = r.username || ""; name = r.global_name || r.username || ""; avatar = r.avatar_url || ""; role = r.role || "viewer"; createdAt = r.created_at;
+    } else {
+      const dm = await teamPool.query("SELECT username, display_name, avatar_url FROM discord_members WHERE discord_id = $1", [discordId]);
+      if (dm.rows[0]) { username = dm.rows[0].username || ""; name = dm.rows[0].display_name || username; avatar = dm.rows[0].avatar_url || ""; }
+    }
+    if (!username && !name) return res.json({ found: false });
+
+    const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
+    let voiceMinutes = 0, messages = 0, level = 1, xp = 0;
+    try {
+      const a = await teamPool.query("SELECT COALESCE(SUM(voice_samples),0)::int v, COALESCE(SUM(messages),0)::int m FROM user_activity_daily WHERE discord_id = $1", [discordId]);
+      const row = a.rows[0] || {}; voiceMinutes = (row.v || 0) * refreshMinutes; messages = row.m || 0; xp = (row.v || 0) * 5 + (row.m || 0); level = levelFromXpPublic(xp);
+    } catch (e) { /* sin datos */ }
+    let coins = 0;
+    try { const c = await teamPool.query("SELECT balance FROM omegacoins WHERE discord_id = $1", [discordId]); coins = c.rows[0] ? Number(c.rows[0].balance) : 0; } catch (e) {}
+    let referrals = 0;
+    try { const rf = await teamPool.query("SELECT COUNT(*)::int n FROM referrals WHERE referrer_id = $1", [discordId]); referrals = rf.rows[0]?.n || 0; } catch (e) {}
+    let achievements = [];
+    try {
+      const ac = await teamPool.query("SELECT achievement_key FROM user_achievements WHERE discord_id = $1", [discordId]);
+      const earned = new Set(ac.rows.map((x) => x.achievement_key));
+      achievements = (ACHIEVEMENTS_CATALOG || []).filter((a) => earned.has(a.key)).map((a) => ({ key: a.key, name: a.name, icon: a.icon, tier: a.tier }));
+    } catch (e) {}
+
+    return res.json({ found: true, discordId, username, name, avatar, role, createdAt, level: { level, xp }, activity: { voiceMinutes, messages }, coins, referrals, achievements });
+  } catch (e) {
+    return res.json({ found: false });
+  }
+});
+
 if (resolvedDatabaseUrl) {
 
   const { app: tienditaApp, initDatabase: tienditaInit } = require("./TIENDITA/backend/index");
@@ -1247,6 +1305,11 @@ if (resolvedDatabaseUrl) {
 
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// Perfil público compartible.
+app.get("/u/:id", (req, res) => {
+  res.sendFile(path.join(__dirname, "u.html"));
 });
 
 app.get("/tiendita", (req, res) => {

@@ -123,6 +123,7 @@
           <div class="perfil-name" id="p-name"></div>
           <div class="perfil-tag" id="p-tag"></div>
           <span id="p-role" class="role-chip"></span>
+          <div style="margin-top:10px"><a id="pubLink" class="back-link" href="#" target="_blank" style="margin-top:0">🔗 Ver mi perfil público</a></div>
           <div class="perfil-meta">
             <span>Miembro desde: <b id="p-since">—</b></span>
             <span>Última conexión: <b id="p-last">—</b></span>
@@ -209,6 +210,7 @@
       else { $("p-role").textContent = "Miembro"; $("p-role").className = "role-chip role-viewer"; }
       $("p-since").textContent = fmtDate(me.createdAt);
       $("p-last").textContent = fmtDate(me.lastLoginAt);
+      $("pubLink").href = "/u/" + me.discordId;
 
       $("loading").style.display = "none";
       $("content").style.display = "block";

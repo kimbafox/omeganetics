@@ -183,4 +183,4 @@ router.post("/api/logros/quitar", requireAdmin, async (req, res) => {
   }
 });
 
-module.exports = { router, initLogros };
+module.exports = { router, initLogros, CATALOG };
