@@ -416,6 +416,21 @@ function initDiscordActivity() {
     }
   });
 
+  // Comando /omegacoins: muestra el saldo (mismo dato que la web).
+  client.on("interactionCreate", async (i) => {
+    try {
+      if (typeof i.isChatInputCommand !== "function" || !i.isChatInputCommand() || i.commandName !== "omegacoins") return;
+      const { getBalance } = require("../omegacoins");
+      const bal = await getBalance(i.user.id);
+      await i.reply({
+        content: `🪙 Tienes **${bal.toLocaleString("es")}** Omegacoins.\nGánalos por actividad, niveles y logros en https://omeganetics.com/perfil.html`,
+        ephemeral: true,
+      });
+    } catch (e) {
+      console.warn("[omegacoins] interacción:", e.message);
+    }
+  });
+
   client.once("ready", async () => {
     console.log(`[activity] conectado a Discord como ${client.user.tag} (refresco cada ${REFRESH_MINUTES} min)`);
     try {
@@ -426,6 +441,15 @@ function initDiscordActivity() {
     }
     setInterval(refresh, REFRESH_MINUTES * 60 * 1000);
     setInterval(flushMessages, 60 * 1000); // los mensajes se guardan cada minuto
+    try {
+      await client.application.commands.set(
+        [{ name: "omegacoins", description: "Mira tu saldo de Omegacoins 🪙" }],
+        GUILD_ID,
+      );
+      console.log("[omegacoins] comando /omegacoins registrado");
+    } catch (e) {
+      console.warn("[omegacoins] no pude registrar el comando:", e.message);
+    }
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));

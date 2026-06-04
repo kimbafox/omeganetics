@@ -48,6 +48,9 @@
     .level-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,.06); overflow: hidden; }
     .level-bar > span { display: block; height: 100%; background: linear-gradient(90deg, #5865F2, #7c5cff); transition: width .5s ease; }
     .level-xp { color: var(--text-faint); font-size: 12px; margin-top: 5px; }
+    .coins-box { display: flex; align-items: center; gap: 12px; background: linear-gradient(180deg, rgba(255,211,92,.12), rgba(255,159,67,.05)); border: 1px solid rgba(255,211,92,.32); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .coins-amt { font-size: 1.7rem; font-weight: 800; color: #ffd35c; line-height: 1; }
+    .coins-lbl { color: var(--text-soft); font-size: 12px; margin-top: 4px; }
     .logros-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
     .badge { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 14px; padding: 16px 12px; text-align: center; }
     .badge.locked { border-style: dashed; }
@@ -131,6 +134,7 @@
         <section class="panel" id="actividad">
           <h2>📊 Mi actividad</h2>
           <p class="sub">Tu tiempo en voz, mensajes y juegos en el servidor (se actualiza cada pocos minutos).</p>
+          <div id="coinsBox" class="coins-box" style="display:none"></div>
           <div id="levelBox" class="level-box" style="display:none"></div>
           <div id="act-summary" class="act-summary"></div>
           <h3 style="font-size:1rem;margin:8px 0 6px;color:var(--text-soft)">Tus juegos</h3>
@@ -198,6 +202,7 @@
 
       $("loading").style.display = "none";
       $("content").style.display = "block";
+      loadCoins();
 
       // Actividad
       try {
@@ -238,6 +243,16 @@
       }
 
       loadLogros();
+    }
+
+    async function loadCoins() {
+      try {
+        const r = await fetch("/api/me/omegacoins");
+        const d = await r.json();
+        const cb = $("coinsBox");
+        cb.style.display = "flex";
+        cb.innerHTML = `<div style="font-size:1.9rem">🪙</div><div><div class="coins-amt">${(d.balance || 0).toLocaleString("es")}</div><div class="coins-lbl">Omegacoins · gánalos por nivel, logros y actividad</div></div>`;
+      } catch (e) { /* noop */ }
     }
 
     async function loadLogros() {

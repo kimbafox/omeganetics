@@ -10,6 +10,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
+const { rewardLevelUps, rewardAchievement } = require("../omegacoins");
 
 const router = express.Router();
 
@@ -129,6 +130,11 @@ router.get("/api/me/logros", requireUser, async (req, res) => {
     const r = await pool.query("SELECT achievement_key, granted_at FROM user_achievements WHERE discord_id = $1", [req.user.discordId]);
     const earned = new Map(r.rows.map((x) => [x.achievement_key, x.granted_at]));
     const list = CATALOG.map((a) => ({ ...a, earned: earned.has(a.key), grantedAt: earned.get(a.key) || null }));
+    // Recompensas en Omegacoins: por subir de nivel y por cada logro ganado.
+    try {
+      await rewardLevelUps(req.user.discordId, stats.level);
+      for (const a of list) if (a.earned) await rewardAchievement(req.user.discordId, a.key, a.tier);
+    } catch (e) { /* no bloquea la respuesta */ }
     return res.json({ list, stats });
   } catch (e) {
     return res.json({ list: CATALOG.map((a) => ({ ...a, earned: false })), stats: {} });
@@ -146,6 +152,8 @@ router.post("/api/logros/otorgar", requireAdmin, async (req, res) => {
       "INSERT INTO user_achievements (discord_id, achievement_key, granted_at, granted_by) VALUES ($1, $2, NOW(), $3) ON CONFLICT (discord_id, achievement_key) DO NOTHING",
       [discordId, key, req.user.globalName || req.user.username || "admin"],
     );
+    const ach = CATALOG.find((a) => a.key === key);
+    if (ach) rewardAchievement(discordId, key, ach.tier).catch(() => {});
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo otorgar." });

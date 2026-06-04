@@ -16,6 +16,9 @@ Tareas **manuales** pendientes (requieren acceso a paneles de bots o cambios de 
 - [ ] **4. Conectar DISBOARD (visibilidad del server)**
   Registrar el servidor en **disboard.org** (login con Discord) y hacer `/bump` cada 2 h. Usar las **etiquetas** (`Comunidad · Gaming · Español · Latino · Eventos`) y la **descripción** que preparamos.
 
+- [ ] **5. Conseguir la base de datos de Omegacoins del bot OMEGACOINS-BANK**
+  Nuestra plataforma será la nueva fuente de Omegacoins. Para **no perder los saldos actuales**, necesitamos que quien programó OMEGACOINS-BANK **exporte la lista (usuario → monedas)** de su base de datos. Con eso **migramos** los saldos. (Si no se puede, arrancamos desde cero.)
+
 ---
 
 > Notas: el resto de bots útiles se conservan (Sapphire = moderación, Ticket King = tickets, Jockie 1 = música, DISBOARD = bumps, exaroton = Minecraft, Pingcord, OCL MatchBot, OMEGACOINS-BANK, Omeganetics).
