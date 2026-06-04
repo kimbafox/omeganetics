@@ -1387,6 +1387,41 @@ app.get("/u/:id", async (req, res) => {
 });
 
 // Imagen OG a medida por perfil (tarjeta con nombre/nivel/avatar). Si sharp no está, cae al avatar.
+// Banner branded para anuncios (@everyone). Compone logo + moneda + texto.
+app.get("/banner.png", async (req, res) => {
+  let sharp = null;
+  try { sharp = require("sharp"); } catch (e) { sharp = null; }
+  if (!sharp) return res.redirect(302, "/assets/previa.png");
+  try {
+    const logoB64 = fs.readFileSync(path.join(__dirname, "assets", "logo.png")).toString("base64");
+    const coinB64 = fs.readFileSync(path.join(__dirname, "assets", "omegacoin-actual.png")).toString("base64");
+    const F = "DejaVu Sans, sans-serif";
+    const svg = `<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0d0e16"/><stop offset="1" stop-color="#241a3e"/></linearGradient>
+        <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffd35c"/><stop offset="1" stop-color="#ff9f43"/></linearGradient>
+        <clipPath id="logoClip"><circle cx="200" cy="300" r="118"/></clipPath>
+      </defs>
+      <rect width="1200" height="630" fill="url(#bg)"/>
+      <rect width="1200" height="14" fill="#5865F2"/>
+      <circle cx="200" cy="300" r="124" fill="#0a0a12" stroke="#5865F2" stroke-width="6"/>
+      <image href="data:image/png;base64,${logoB64}" x="82" y="182" width="236" height="236" clip-path="url(#logoClip)"/>
+      <text x="356" y="250" fill="url(#gold)" font-family="${F}" font-size="78" font-weight="bold">OMEGANETICS</text>
+      <text x="360" y="300" fill="#b4b4c4" font-family="${F}" font-size="27" letter-spacing="2">EL IMPERIO GAMER DE LATAM</text>
+      <text x="360" y="372" fill="#cdd5ff" font-family="${F}" font-size="27">Sube de nivel  ·  Gana Omegacoins  ·  Compite en torneos</text>
+      <image href="data:image/png;base64,${coinB64}" x="358" y="404" width="42" height="42" clip-path="inset(0 round 21px)"/>
+      <text x="412" y="436" fill="url(#gold)" font-family="${F}" font-size="32" font-weight="bold">omeganetics.com</text>
+      <text x="84" y="600" fill="#6b6b7b" font-family="${F}" font-size="23">Únete al Discord · discord.gg/bCWjyns8U5</text>
+    </svg>`;
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    res.set("Content-Type", "image/png");
+    res.set("Cache-Control", "public, max-age=3600");
+    return res.send(png);
+  } catch (e) {
+    return res.redirect(302, "/assets/previa.png");
+  }
+});
+
 app.get("/u/:id/og.png", async (req, res) => {
   let data;
   try { data = await getPublicProfile(req.params.id); } catch (e) { data = { found: false }; }
