@@ -1,24 +1,27 @@
 # 📋 Lista de tareas — Kimba
 
-Tareas **manuales** pendientes (requieren acceso a paneles de bots o cambios de jerarquía que nuestro bot no puede hacer solo).
+Tareas **manuales** (requieren acceso a paneles de bots o cambios de jerarquía que nuestro bot no puede hacer solo).
 
 ---
 
-- [ ] **1. Desactivar la bienvenida de Sapphire**
-  Ahora **nuestro bot** da la bienvenida en ✨bienvenido✨ **con el link a la web**. Para que no salga **doble**, apaga la bienvenida en el panel de Sapphire (sapphy.gg → este servidor → *Welcome / Bienvenida* → **off**).
+- [x] **1. Desactivar la bienvenida de Sapphire** ✅ HECHO
+- [x] **2. Quitar el bot YAGPDB.xyz** ✅ HECHO
+- [x] **3. Revisar funciones de los bots eliminados** ✅ HECHO (sin problemas)
 
-- [ ] **2. Quitar el bot YAGPDB.xyz**
-  No se pudo expulsar automáticamente porque su rol está **por encima** del de "Omeganetics". Opción A: baja su rol por debajo de "Omeganetics" y avísanos. Opción B: expúlsalo a mano en **Ajustes del servidor → Miembros → YAGPDB → Expulsar**.
+- [ ] **4. Conectar DISBOARD (visibilidad del server)** — *en proceso*
+  El rol de DISBOARD **ya tiene los permisos** (crear invitación + enviar mensajes). Si sale **"Invalid Invite"**:
+  1. En **💬ᴄʜᴀᴛ-ɢᴇɴᴇʀᴀʟ** ejecuta **`/invite`** (regenera la invitación de DISBOARD).
+  2. Luego **`/bump`** y repite cada 2 h.
+  3. Si insiste: crea una invitación **permanente** (canal → Invitar → Editar → *Caducar: Nunca / Sin límite*) y vuelve a `/invite`.
+  Etiquetas sugeridas: `Comunidad · Gaming · Español · Latino · Eventos`.
 
-- [ ] **3. Revisar funciones de los bots eliminados**
-  Quitamos 10 bots redundantes (Dyno, ProBot, Jockie 2/3, Ticket Tool, SoundCloud, TTS, Redditcord, Guild Manager, FreshTok). Si alguno tenía **reaction-roles, autoroles, comandos personalizados o bienvenidas** configuradas, avísanos para **re-armarlas en nuestro bot**.
-
-- [ ] **4. Conectar DISBOARD (visibilidad del server)**
-  Registrar el servidor en **disboard.org** (login con Discord) y hacer `/bump` cada 2 h. Usar las **etiquetas** (`Comunidad · Gaming · Español · Latino · Eventos`) y la **descripción** que preparamos.
-
-- [ ] **5. Conseguir la base de datos de Omegacoins del bot OMEGACOINS-BANK**
-  Nuestra plataforma será la nueva fuente de Omegacoins. Para **no perder los saldos actuales**, necesitamos que quien programó OMEGACOINS-BANK **exporte la lista (usuario → monedas)** de su base de datos. Con eso **migramos** los saldos. (Si no se puede, arrancamos desde cero.)
+- [x] **5. Migrar Omegacoins del bot viejo** ❌ CANCELADO — se decidió **empezar de cero**. No hay nada que migrar.
 
 ---
 
-> Notas: el resto de bots útiles se conservan (Sapphire = moderación, Ticket King = tickets, Jockie 1 = música, DISBOARD = bumps, exaroton = Minecraft, Pingcord, OCL MatchBot, OMEGACOINS-BANK, Omeganetics).
+## 🔴 Pendiente (cuando decidan)
+- **Activar Twitch** (alertas de directos): crear app en dev.twitch.tv/console → pasarme Client ID + Secret.
+- **Tienda de canjes** y **Alianzas/socios**: definir contenido (ver propuestas que armamos).
+- **Limpieza de stickers**: hay un sticker con un **slur racial** que conviene **borrar** (riesgo de ToS de Discord y mala imagen para ads/alianzas).
+
+> Bots que se conservan: Sapphire (moderación), Ticket King (tickets), Jockie 1 (música), DISBOARD (bumps), exaroton (Minecraft), Pingcord, OCL MatchBot, Omeganetics (nuestro bot).
