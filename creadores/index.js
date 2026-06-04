@@ -12,7 +12,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
-const { announceContent } = require("../discord-activity");
+const { announceContent, dmUser } = require("../discord-activity");
 
 const router = express.Router();
 
@@ -141,6 +141,7 @@ router.post("/api/creadores/:id/aprobar", requireAdmin, async (req, res) => {
       "UPDATE content_creators SET status = 'aprobado', reviewed_by = $1, reviewed_at = NOW() WHERE discord_id = $2",
       [req.user.globalName || req.user.username || "admin", req.params.id],
     );
+    dmUser(req.params.id, "🎬 ¡Tu solicitud de creador fue aprobada! Ya puedes subir tu contenido en https://omeganetics.com/creadores.html").catch(() => {});
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo aprobar." });

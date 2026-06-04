@@ -95,4 +95,28 @@
     try { await fetch("/api/auth/logout", { method: "POST" }); } catch (e) {}
     window.location.reload();
   });
+
+  // Onboarding: se muestra una sola vez (primer login en este navegador).
+  if (!localStorage.getItem("omg_onboarded")) {
+    const ov = document.createElement("div");
+    ov.id = "omgOnboard";
+    ov.innerHTML = `
+      <div class="omg-ob-card">
+        <div class="omg-ob-emoji">👑</div>
+        <h2>¡Bienvenido a Omeganetics!</h2>
+        <p>Así avanzas en la comunidad:</p>
+        <ul>
+          <li>🎙️ <b>Habla en voz</b> y 💬 <b>chatea</b> para ganar <b>XP</b> y <b>Omegacoins</b>.</li>
+          <li>⭐ Sube de <b>nivel</b> y desbloquea <b>logros</b> (algunos te dan rol en Discord).</li>
+          <li>🎯 Crea o únete a <b>eventos</b> y compite en el <b>ranking semanal</b>.</li>
+          <li>🔗 Invita amigos con tu <b>link de referido</b> y gana un 10% extra.</li>
+        </ul>
+        <button class="btn" id="omgObClose">¡Entendido!</button>
+      </div>`;
+    document.body.appendChild(ov);
+    document.getElementById("omgObClose").addEventListener("click", () => {
+      localStorage.setItem("omg_onboarded", "1");
+      ov.remove();
+    });
+  }
 })();

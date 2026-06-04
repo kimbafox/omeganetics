@@ -135,6 +135,8 @@ async function ensureSchema() {
   await pool.query("ALTER TABLE user_activity_daily ADD COLUMN IF NOT EXISTS messages INTEGER NOT NULL DEFAULT 0");
   // Estado del bot (ej. id del mensaje del leaderboard para editarlo en sitio).
   await pool.query("CREATE TABLE IF NOT EXISTS bot_state (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')");
+  // A quién ya le mandamos DM de reactivación (para no repetir).
+  await pool.query("CREATE TABLE IF NOT EXISTS outreach_dm (discord_id TEXT PRIMARY KEY, sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
 }
 
 async function getState(key) {
@@ -472,6 +474,8 @@ function initDiscordActivity() {
       updateLeaderboard();
       setInterval(updateLeaderboard, 15 * 60 * 1000); // actualiza el leaderboard cada 15 min
     }
+    setTimeout(runDripIfDue, 60 * 1000); // primer chequeo de goteo al minuto
+    setInterval(runDripIfDue, 2 * 60 * 60 * 1000); // y cada 2 h (envía 1 vez por día)
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -625,4 +629,48 @@ async function grantRole(discordId, roleName, tier) {
   }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole };
+// Envía un DM a un usuario (notificaciones transaccionales).
+async function dmUser(discordId, content) {
+  if (!client || !discordId) return false;
+  try {
+    const user = await client.users.fetch(discordId);
+    await user.send(content);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Goteo diario de DMs de reactivación a miembros activos que aún NO se registraron en la web.
+async function runDripIfDue() {
+  if (!client || !pool) return;
+  const perDay = Number(process.env.DRIP_PER_DAY || 0);
+  if (perDay <= 0) return;
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    if ((await getState("drip_date")) === today) return;
+    const r = await pool.query(
+      `SELECT m.discord_id
+       FROM discord_members m
+       LEFT JOIN outreach_dm o ON o.discord_id = m.discord_id
+       LEFT JOIN community_users cu ON cu.discord_id = m.discord_id
+       WHERE o.discord_id IS NULL AND cu.discord_id IS NULL AND m.updated_at >= NOW() - INTERVAL '2 days'
+       LIMIT $1`,
+      [perDay],
+    );
+    for (const row of r.rows) {
+      await dmUser(
+        row.discord_id,
+        "👑 ¡Hola! Ahora en **Omeganetics** puedes ver tu perfil, nivel, logros y ganar **Omegacoins** por tu actividad.\nEntra con tu Discord 👉 https://omeganetics.com/login.html",
+      );
+      await pool.query("INSERT INTO outreach_dm (discord_id) VALUES ($1) ON CONFLICT DO NOTHING", [row.discord_id]);
+      await new Promise((res) => setTimeout(res, 3000)); // espaciar para no parecer spam
+    }
+    await setState("drip_date", today);
+    if (r.rows.length) console.log(`[drip] ${r.rows.length} DMs de reactivación enviados`);
+  } catch (e) {
+    console.warn("[drip]", e.message);
+  }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser };

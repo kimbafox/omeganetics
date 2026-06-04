@@ -11,7 +11,7 @@
 const express = require("express");
 const { Pool } = require("pg");
 const { requireUser } = require("../auth-discord");
-const { announceEvent } = require("../discord-activity");
+const { announceEvent, dmUser } = require("../discord-activity");
 
 const router = express.Router();
 
@@ -210,7 +210,10 @@ router.post("/api/eventos/:id/aprobar", requireAdmin, async (req, res) => {
       "UPDATE events SET status = 'aprobado', reviewed_by = $1, reviewed_at = NOW() WHERE id = $2 RETURNING *",
       [req.user.globalName || req.user.username || "admin", req.params.id],
     );
-    if (r.rows[0]) announceEvent(mapEvent(r.rows[0])).catch(() => {});
+    if (r.rows[0]) {
+      announceEvent(mapEvent(r.rows[0])).catch(() => {});
+      dmUser(r.rows[0].created_by_id, `✅ ¡Tu evento "${r.rows[0].name}" fue aprobado y ya está publicado en omeganetics.com/eventos.html!`).catch(() => {});
+    }
     return res.json({ ok: true });
   } catch (error) {
     return res.status(500).json({ error: "No se pudo aprobar." });

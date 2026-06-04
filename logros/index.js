@@ -90,14 +90,23 @@ async function getUserStats(discordId) {
 }
 
 async function autoGrant(discordId, stats) {
+  const newly = [];
   for (const a of CATALOG) {
     if (a.type !== "auto") continue;
     if ((stats[a.metric] || 0) < a.threshold) continue;
     try {
-      await pool.query(
-        "INSERT INTO user_achievements (discord_id, achievement_key, granted_at) VALUES ($1, $2, NOW()) ON CONFLICT (discord_id, achievement_key) DO NOTHING",
+      const r = await pool.query(
+        "INSERT INTO user_achievements (discord_id, achievement_key, granted_at) VALUES ($1, $2, NOW()) ON CONFLICT (discord_id, achievement_key) DO NOTHING RETURNING achievement_key",
         [discordId, a.key],
       );
+      if (r.rows.length) newly.push(a);
+    } catch (e) { /* noop */ }
+  }
+  if (newly.length) {
+    try {
+      const { dmUser } = require("../discord-activity");
+      const names = newly.map((a) => `${a.icon} ${a.name}`).join(", ");
+      dmUser(discordId, `🏅 ¡Desbloqueaste ${newly.length > 1 ? "logros" : "un logro"}: ${names}! Míralos en https://omeganetics.com/perfil.html`).catch(() => {});
     } catch (e) { /* noop */ }
   }
 }
@@ -155,14 +164,15 @@ router.post("/api/logros/otorgar", requireAdmin, async (req, res) => {
   const discordId = await resolveUser(req.body?.user);
   if (!discordId) return res.status(404).json({ error: "Usuario no encontrado (usa su @usuario o su ID de Discord)." });
   try {
-    await pool.query(
-      "INSERT INTO user_achievements (discord_id, achievement_key, granted_at, granted_by) VALUES ($1, $2, NOW(), $3) ON CONFLICT (discord_id, achievement_key) DO NOTHING",
+    const ins = await pool.query(
+      "INSERT INTO user_achievements (discord_id, achievement_key, granted_at, granted_by) VALUES ($1, $2, NOW(), $3) ON CONFLICT (discord_id, achievement_key) DO NOTHING RETURNING achievement_key",
       [discordId, key, req.user.globalName || req.user.username || "admin"],
     );
     const ach = CATALOG.find((a) => a.key === key);
     if (ach) {
       rewardAchievement(discordId, key, ach.tier).catch(() => {});
       if (ach.role) { try { require("../discord-activity").grantRole(discordId, `${ach.icon} ${ach.name}`, ach.tier); } catch (e) { /* noop */ } }
+      if (ins.rows.length) { try { require("../discord-activity").dmUser(discordId, `🏅 ¡Un admin te otorgó el logro ${ach.icon} ${ach.name}!`); } catch (e) { /* noop */ } }
     }
     return res.json({ ok: true });
   } catch (e) {

@@ -85,6 +85,16 @@ nav ul { gap: 12px !important; }
 .user-menu-logout { color: #ff9b9b !important; }
 .user-menu-head { padding: 8px 12px 4px; color: var(--text-faint); font-size: 12px; }
 
+/* --- Modal de onboarding (primer login) --- */
+#omgOnboard { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.65); backdrop-filter: blur(4px); padding: 20px; }
+#omgOnboard .omg-ob-card { background: var(--surface, #15161d); border: 1px solid var(--border-strong, rgba(255,255,255,.16)); border-radius: 18px; padding: 30px; max-width: 460px; width: 100%; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+#omgOnboard .omg-ob-emoji { font-size: 2.6rem; }
+#omgOnboard h2 { margin: 8px 0 6px; }
+#omgOnboard p { color: var(--text-soft, #b4b4b4); margin-bottom: 14px; }
+#omgOnboard ul { text-align: left; margin: 0 0 20px; padding-left: 4px; list-style: none; display: grid; gap: 10px; }
+#omgOnboard ul li { color: var(--text-soft, #b4b4b4); line-height: 1.45; }
+#omgOnboard .btn { width: 100%; }
+
 /* --- Header fijo arriba + por encima del contenido (arregla el menú cortado) --- */
 .header {
   position: sticky;
