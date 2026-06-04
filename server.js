@@ -1144,6 +1144,10 @@ app.use(torneosRouter);
 const { router: streamsRouter, initStreams } = require("./streams");
 app.use(streamsRouter);
 
+// Módulo de Tienda de canjes.
+const { router: tiendaRouter, initTienda } = require("./tienda");
+app.use(tiendaRouter);
+
 // Módulo de Logros / Insignias.
 const { router: logrosRouter, initLogros, CATALOG: ACHIEVEMENTS_CATALOG } = require("./logros");
 app.use(logrosRouter);
@@ -1462,6 +1466,7 @@ async function start() {
     await initOmegacoins();
     await initTorneos();
     await initStreams();
+    await initTienda();
     await initLogros();
     await initCreadores();
     app.listen(PORT, "0.0.0.0", () => {

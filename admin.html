@@ -123,6 +123,12 @@
       </section>
 
       <section class="panel">
+        <h2>🛒 Pedidos de tienda</h2>
+        <p class="sub">Canjes que requieren acción manual (color personalizado, shoutout, emoji, renombrar canal…).</p>
+        <div id="storeOrders"></div>
+      </section>
+
+      <section class="panel">
         <h2>🔧 Accesos rápidos</h2>
         <div class="quick">
           <a href="/admin-equipo.html"><div class="t">🛠️ Panel de equipo</div><div class="d">Editar integrantes y perfiles (login Google).</div></a>
@@ -188,6 +194,15 @@
       } catch (e) {}
     }
 
+    async function loadStoreOrders() {
+      try {
+        const list = await (await fetch("/api/tienda/pedidos")).json();
+        $("storeOrders").innerHTML = list.length
+          ? list.map((o) => `<div class="item"><h3>${esc(o.item)} <span class="meta" style="display:inline">· ${esc(o.buyer)}</span></h3>${o.note ? `<div class="reason">📝 ${esc(o.note)}</div>` : ""}<div class="actions"><button class="btn-approve" data-order-done="${o.id}">Marcar como hecho</button></div></div>`).join("")
+          : '<div class="empty">No hay pedidos pendientes. 🎉</div>';
+      } catch (e) {}
+    }
+
     async function loadStreams() {
       try {
         const list = await (await fetch("/api/streams")).json();
@@ -229,6 +244,8 @@
       const vidRj = e.target.getAttribute("data-vid-rj");
       const stDel = e.target.getAttribute("data-stream-del");
       if (stDel) { e.target.disabled = true; await fetch(`/api/streams/${stDel}`, { method: "DELETE" }).catch(() => {}); loadStreams(); return; }
+      const ordDone = e.target.getAttribute("data-order-done");
+      if (ordDone) { e.target.disabled = true; await fetch(`/api/tienda/pedido/${ordDone}/completar`, { method: "POST" }).catch(() => {}); loadStoreOrders(); return; }
       if (evAp || evRj) {
         e.target.disabled = true;
         await fetch(`/api/eventos/${evAp || evRj}/${evAp ? "aprobar" : "rechazar"}`, { method: "POST" }).catch(() => {});
@@ -277,7 +294,7 @@
       $("loading").style.display = "none";
       if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
       $("content").classList.remove("hidden");
-      loadEvents(); loadCreators(); loadVideos(); loadStreams(); loadBadges();
+      loadEvents(); loadCreators(); loadVideos(); loadStoreOrders(); loadStreams(); loadBadges();
     }
     init();
   </script>

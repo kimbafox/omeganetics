@@ -65,6 +65,7 @@
       <div class="user-menu-head">@${esc(me.username || "")}</div>
       <a role="menuitem" href="/perfil.html">Ver perfil</a>
       <a role="menuitem" href="/perfil.html#actividad">Mi actividad</a>
+      <a role="menuitem" href="/tienda.html">🛒 Tienda de canjes</a>
       <a role="menuitem" href="/creadores.html">${creatorStatus === "aprobado" ? "🎬 Subir contenido" : "🎬 Creadores"}</a>
       ${me.isAdmin ? '<a role="menuitem" href="/admin.html">Panel de admin</a>' : ""}
       <div class="user-menu-sep"></div>

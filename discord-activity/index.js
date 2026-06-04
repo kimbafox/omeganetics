@@ -876,6 +876,29 @@ async function bumpReminder() {
   }
 }
 
+// Entrega un rol cosmético comprado en la tienda (lo crea si no existe y lo posiciona alto).
+async function grantStoreRole(discordId, roleName, color, hoist) {
+  if (!client) return false;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return false;
+    let role = guild.roles.cache.find((x) => x.name === roleName);
+    if (!role) {
+      role = await guild.roles.create({ name: roleName, color: color || undefined, hoist: !!hoist, reason: "Tienda Omeganetics" });
+      try {
+        const myTop = guild.members.me?.roles?.highest;
+        if (myTop) await role.setPosition(Math.max(1, myTop.position - 1));
+      } catch (e) { /* posición best-effort */ }
+    }
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (member && !member.roles.cache.has(role.id)) await member.roles.add(role.id, "Compra en la tienda");
+    return true;
+  } catch (e) {
+    console.warn("[tienda]", e.message);
+    return false;
+  }
+}
+
 // Anuncia el campeón de un torneo en un canal.
 async function announceTournamentWinner(channelId, tournamentName, winnerName, winnerId) {
   if (!client || !channelId) return;
@@ -891,4 +914,4 @@ async function announceTournamentWinner(channelId, tournamentName, winnerName, w
   } catch (e) { /* noop */ }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner };
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole };

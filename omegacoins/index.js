@@ -79,6 +79,16 @@ async function addCoins(discordId, amount, reason) {
   await pool.query("INSERT INTO omegacoin_tx (discord_id, amount, reason) VALUES ($1, $2, $3)", [discordId, amount, reason]);
 }
 
+// Gasta monedas (atómico: solo si alcanza el saldo). Devuelve {ok, balance|error}.
+async function spendCoins(discordId, amount, reason) {
+  if (!pool || amount <= 0) return { ok: false, error: "monto" };
+  await ensureRow(discordId);
+  const r = await pool.query("UPDATE omegacoins SET balance = balance - $2, updated_at = NOW() WHERE discord_id = $1 AND balance >= $2 RETURNING balance", [discordId, amount]);
+  if (!r.rows.length) return { ok: false, error: "saldo" };
+  await pool.query("INSERT INTO omegacoin_tx (discord_id, amount, reason) VALUES ($1, $2, $3)", [discordId, -amount, reason]);
+  return { ok: true, balance: Number(r.rows[0].balance) };
+}
+
 // Referidos: si el usuario fue invitado, su referidor gana un 10% extra (bono, no se le descuenta a nadie).
 async function getReferrer(discordId) {
   if (!pool) return null;
@@ -196,4 +206,4 @@ router.post("/api/omegacoins/dar", requireAdmin, async (req, res) => {
   }
 });
 
-module.exports = { router, initOmegacoins, getBalance, addCoins, rewardLevelUps, rewardAchievement };
+module.exports = { router, initOmegacoins, getBalance, addCoins, spendCoins, rewardLevelUps, rewardAchievement };
