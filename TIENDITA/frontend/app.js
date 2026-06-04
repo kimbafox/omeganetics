@@ -6,6 +6,8 @@ const UPLOADS_BASE = "/uploads";
 const STOREFRONT_THEME_KEY = "tienditaTheme";
 const MAX_IMAGENES_EXTRA = 6;
 const MAX_TAMANIO_IMAGEN_MB = 1.5;
+const CATALOG_CACHE_KEY = "tienditaCatalogCache";
+const CATALOG_CACHE_TTL_MS = 60 * 1000;
 let googleLoginConfig = null;
 
 function login() {
@@ -271,8 +273,39 @@ function obtenerImagenesProyecto(proyecto) {
 }
 
 function resumenTexto(texto, max = 90) {
-  if (!texto) return "Sin descripción";
+  if (!texto) return "";
   return texto.length > max ? `${texto.slice(0, max).trim()}...` : texto;
+}
+
+function renderSkeletonCatalogo(cantidad = 6) {
+  const cont = document.getElementById("proyectos");
+  if (!cont) return;
+
+  cont.innerHTML = Array.from({ length: cantidad }, (_, index) => `
+    <article class="card-proyecto card-proyecto--skeleton" aria-hidden="true">
+      <div class="card-imagen-wrap skeleton-media"></div>
+      <div class="card-contenido">
+        <div class="skeleton-line skeleton-line--short"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line skeleton-line--long"></div>
+        <div class="skeleton-line skeleton-line--tiny"></div>
+      </div>
+    </article>
+  `).join("");
+}
+
+function prefetchVisibleImages(data) {
+  const lista = Array.isArray(data) ? data.slice(0, 4) : [];
+
+  lista.forEach((proyecto) => {
+    const imagenes = obtenerImagenesProyecto(proyecto);
+    imagenes.slice(0, 2).forEach((imagen) => {
+      const img = new Image();
+      img.decoding = "async";
+      img.loading = "eager";
+      img.src = buildUploadUrl(imagen);
+    });
+  });
 }
 
 function formatearCategoria(categoria) {
@@ -289,24 +322,25 @@ function formatearCategoria(categoria) {
 
 function tarjetaProyectoHTML(p) {
   const imagenes = obtenerImagenesProyecto(p);
+  const imagenesPreview = imagenes.slice(0, 2);
   const resumen = resumenTexto(p.descripcion, 180);
   const badge = p.archivo ? "Descargable" : "Galería";
   const badge2 = p.categoria === "arte y diseno" ? "Arte premium" : "Nuevo";
-  const imagenesSlides = imagenes
+  const imagenesSlides = imagenesPreview
     .map((imagen, index) => `
       <figure class="card-slide ${index === 0 ? "active" : ""}" data-slide-index="${index}">
-        <img class="card-portada" src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${p.nombre}" loading="lazy" decoding="async">
+        <img class="card-portada" src="${buildUploadUrl(imagen)}" alt="Vista ${index + 1} de ${p.nombre}" loading="${index === 0 ? "eager" : "lazy"}" decoding="async" fetchpriority="${index === 0 ? "high" : "low"}">
       </figure>
     `)
     .join("");
-  const indicadores = imagenes
+  const indicadores = imagenesPreview
     .map((_, index) => `
       <button class="card-indicador ${index === 0 ? "active" : ""}" type="button" aria-label="Ir a la imagen ${index + 1}" data-card-go="${index}"></button>
     `)
     .join("");
   const textoBoton = p.archivo ? "Ver e instalar" : "Ver producto";
   const textoGaleria = imagenes.length > 1
-    ? `${imagenes.length} vistas disponibles`
+    ? `${imagenes.length} vistas disponibles · carga ligera`
     : "Vista única";
 
   return `
@@ -407,8 +441,8 @@ function abrirDetalleProyecto(id) {
   const tieneArchivo = Boolean(proyecto.archivo);
   const archivoBoton = proyecto.archivo
     ? `<a class="btn btn-descargar" href="${buildUploadUrl(proyecto.archivo)}" download>Descargar producto</a>`
-    : `<span class="sin-archivo">Disponible para consulta visual</span>`;
-  const descripcion = proyecto.descripcion || "Sin descripcion";
+    : `<span class="sin-archivo">Visual disponible</span>`;
+  const descripcion = proyecto.descripcion || "";
   const resumen = resumenTexto(descripcion, 220);
   const imagenes = obtenerImagenesProyecto(proyecto);
   const fechaPublicacion = new Date(proyecto.fecha).toLocaleDateString("es-MX", {
@@ -439,7 +473,7 @@ function abrirDetalleProyecto(id) {
           <img id="modalImagenPrincipal" class="modal-portada" src="${buildUploadUrl(proyecto.portada)}" alt="Portada de ${proyecto.nombre}" loading="eager" decoding="async">
         </div>
         <div class="galeria-thumbs">${galeria}</div>
-        <p class="modal-gallery-caption">Explora la galeria para revisar mejor cada vista del producto.</p>
+        <p class="modal-gallery-caption">Galería de vistas del producto.</p>
       </div>
 
       <div class="modal-info">
@@ -464,12 +498,12 @@ function abrirDetalleProyecto(id) {
         </div>
         <div class="modal-copy-stack">
           <div class="modal-resumen-box">
-            <span class="modal-label">Resumen ejecutivo</span>
-            <p class="modal-resumen">${resumen}</p>
+            <span class="modal-label">Vista general</span>
+            <p class="modal-resumen">${resumen || "Sin información adicional."}</p>
           </div>
           <div class="modal-detalle-box">
-            <span class="modal-label">Descripcion completa</span>
-            <div class="modal-descripcion">${descripcionBloques}</div>
+            <span class="modal-label">Detalles</span>
+            <div class="modal-descripcion">${descripcionBloques || "Sin detalles adicionales."}</div>
           </div>
         </div>
         <div class="modal-cta-panel">
@@ -509,12 +543,34 @@ function pintarProyectos(data) {
   }
 
   cont.innerHTML = lista.map(tarjetaProyectoHTML).join("");
+  prefetchVisibleImages(lista);
 }
 
 function actualizarBotonesFiltro(cat) {
   document.querySelectorAll(".filtro-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.cat === cat);
   });
+}
+
+function leerCacheCatalogo() {
+  try {
+    const raw = localStorage.getItem(CATALOG_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.timestamp || !Array.isArray(parsed?.data)) return null;
+    if (Date.now() - parsed.timestamp > CATALOG_CACHE_TTL_MS) return null;
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function guardarCacheCatalogo(data) {
+  try {
+    localStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data }));
+  } catch {
+    // Ignorar si el navegador bloquea localStorage.
+  }
 }
 
 function normalizarTexto(texto) {
@@ -545,32 +601,38 @@ async function cargar() {
   const cont = document.getElementById("proyectos");
   if (!cont) return;
 
-  cont.innerHTML = `
-    <div class="empty-state loading-state">
-      <h3>Cargando catálogo...</h3>
-      <p>Invocando reliquias del reino.</p>
-    </div>
-  `;
+  const cache = leerCacheCatalogo();
+  if (cache?.length) {
+    proyectosCache = [...cache].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    filtroActual = { categoria: "todos", texto: "" };
+    actualizarBotonesFiltro("todos");
+    aplicarFiltro("todos", "");
+  } else {
+    renderSkeletonCatalogo(4);
+  }
 
   try {
-    const res = await fetch(`${API_BASE}/proyectos/listar`);
+    const res = await fetch(`${API_BASE}/proyectos/listar`, { cache: "force-cache" });
     const data = await res.json();
 
     proyectosCache = Array.isArray(data)
       ? [...data].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
       : [];
 
+    guardarCacheCatalogo(proyectosCache);
     filtroActual = { categoria: "todos", texto: "" };
     actualizarBotonesFiltro("todos");
     aplicarFiltro("todos", "");
 
   } catch (err) {
-    cont.innerHTML = `
-      <div class="empty-state">
-        <h3>Error cargando proyectos</h3>
-        <p>Hubo un problema al conectar con el servidor.</p>
-      </div>
-    `;
+    if (!cache?.length) {
+      cont.innerHTML = `
+        <div class="empty-state">
+          <h3>Error cargando proyectos</h3>
+          <p>Hubo un problema al conectar con el servidor.</p>
+        </div>
+      `;
+    }
   }
 }
 
@@ -710,12 +772,35 @@ function iniciarCarrusel() {
   if (slides.length === 0) return;
 
   let index = 0;
+  let intervalId = null;
 
-  setInterval(() => {
+  const avanzar = () => {
     slides[index].classList.remove("active");
     index = (index + 1) % slides.length;
     slides[index].classList.add("active");
-  }, 4000);
+  };
+
+  const iniciar = () => {
+    if (intervalId) return;
+    intervalId = setInterval(avanzar, 5000);
+  };
+
+  const detener = () => {
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      detener();
+    } else {
+      iniciar();
+    }
+  });
+
+  iniciar();
 }
 
 function aplicarTemaTienda(theme = "default") {

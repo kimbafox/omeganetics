@@ -1469,6 +1469,52 @@ button:hover {
   color: var(--text);
 }
 
+.card-proyecto--skeleton {
+  overflow: hidden;
+  min-height: 430px;
+}
+
+.skeleton-media,
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.skeleton-media {
+  min-height: 240px;
+  border-radius: 14px;
+}
+
+.skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+
+.skeleton-line--short { width: 45%; }
+.skeleton-line--long { width: 82%; }
+.skeleton-line--tiny { width: 30%; height: 10px; }
+
+.skeleton-media::after,
+.skeleton-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.card-portada {
+  transform: translateZ(0);
+  will-change: opacity;
+}
+
 /* FORMULARIOS */
 .login-container {
   display: flex;
