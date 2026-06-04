@@ -1140,6 +1140,10 @@ app.use(omegacoinsRouter);
 const { router: torneosRouter, initTorneos } = require("./torneos");
 app.use(torneosRouter);
 
+// Módulo de Streamers (alertas de Twitch).
+const { router: streamsRouter, initStreams } = require("./streams");
+app.use(streamsRouter);
+
 // Módulo de Logros / Insignias.
 const { router: logrosRouter, initLogros, CATALOG: ACHIEVEMENTS_CATALOG } = require("./logros");
 app.use(logrosRouter);
@@ -1388,6 +1392,7 @@ async function start() {
     await initEventos();
     await initOmegacoins();
     await initTorneos();
+    await initStreams();
     await initLogros();
     await initCreadores();
     app.listen(PORT, "0.0.0.0", () => {

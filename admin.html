@@ -111,6 +111,18 @@
       </section>
 
       <section class="panel">
+        <h2>🔴 Streamers (Twitch)</h2>
+        <p class="sub">Cuando uno esté en vivo, el bot avisa en Discord. Agrega su usuario de Twitch o el link del canal.</p>
+        <div class="row">
+          <input id="streamLogin" placeholder="usuario de Twitch o twitch.tv/usuario" />
+          <input id="streamDiscord" placeholder="ID de Discord (opcional)" style="max-width:190px;flex:none" />
+          <button class="btn" id="streamBtn" type="button">Agregar</button>
+          <span id="streamMsg" class="msg"></span>
+        </div>
+        <div id="streamList" style="margin-top:14px"></div>
+      </section>
+
+      <section class="panel">
         <h2>🔧 Accesos rápidos</h2>
         <div class="quick">
           <a href="/admin-equipo.html"><div class="t">🛠️ Panel de equipo</div><div class="d">Editar integrantes y perfiles (login Google).</div></a>
@@ -175,6 +187,29 @@
       } catch (e) {}
     }
 
+    async function loadStreams() {
+      try {
+        const list = await (await fetch("/api/streams")).json();
+        $("streamList").innerHTML = list.length
+          ? list.map((s) => `<div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span>${s.isLive ? "🔴 EN VIVO" : "⚫"} <b>${esc(s.login)}</b>${s.discordId ? ` <span class="meta" style="display:inline">· avisa a un miembro</span>` : ""}</span><button class="btn-reject" data-stream-del="${s.id}">Quitar</button></div>`).join("")
+          : '<div class="empty">Aún no hay streamers. Agrega el primero arriba.</div>';
+      } catch (e) {}
+    }
+
+    $("streamBtn").addEventListener("click", async () => {
+      const login = $("streamLogin").value.trim();
+      if (!login) { $("streamMsg").textContent = "Pon el usuario."; $("streamMsg").className = "msg err"; return; }
+      $("streamMsg").textContent = "Agregando…"; $("streamMsg").className = "msg";
+      try {
+        const r = await fetch("/api/streams", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ login, discordId: $("streamDiscord").value.trim() }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        $("streamMsg").textContent = "✅ Agregado."; $("streamMsg").className = "msg ok";
+        $("streamLogin").value = ""; $("streamDiscord").value = "";
+        loadStreams();
+      } catch (e) { $("streamMsg").textContent = "❌ " + e.message; $("streamMsg").className = "msg err"; }
+    });
+
     async function loadBadges() {
       try {
         const r = await fetch("/api/logros");
@@ -191,6 +226,8 @@
       const crRj = e.target.getAttribute("data-cr-rj");
       const vidAp = e.target.getAttribute("data-vid-ap");
       const vidRj = e.target.getAttribute("data-vid-rj");
+      const stDel = e.target.getAttribute("data-stream-del");
+      if (stDel) { e.target.disabled = true; await fetch(`/api/streams/${stDel}`, { method: "DELETE" }).catch(() => {}); loadStreams(); return; }
       if (evAp || evRj) {
         e.target.disabled = true;
         await fetch(`/api/eventos/${evAp || evRj}/${evAp ? "aprobar" : "rechazar"}`, { method: "POST" }).catch(() => {});
@@ -239,7 +276,7 @@
       $("loading").style.display = "none";
       if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
       $("content").classList.remove("hidden");
-      loadEvents(); loadCreators(); loadVideos(); loadBadges();
+      loadEvents(); loadCreators(); loadVideos(); loadStreams(); loadBadges();
     }
     init();
   </script>

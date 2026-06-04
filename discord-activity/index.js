@@ -479,6 +479,10 @@ function initDiscordActivity() {
     setInterval(runDripIfDue, 2 * 60 * 60 * 1000); // y cada 2 h (envía 1 vez por día)
     setTimeout(runWeeklyAwardIfDue, 90 * 1000); // chequeo del premio semanal
     setInterval(runWeeklyAwardIfDue, 2 * 60 * 60 * 1000); // cada 2 h (premia 1 vez al iniciar la semana)
+    if (process.env.TWITCH_CLIENT_ID) {
+      setTimeout(pollTwitch, 30 * 1000);
+      setInterval(pollTwitch, 4 * 60 * 1000); // alertas de Twitch cada 4 min
+    }
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -757,6 +761,73 @@ async function runWeeklyAwardIfDue() {
     console.log(`[weekly] premio semanal otorgado a ${name}`);
   } catch (e) {
     console.warn("[weekly]", e.message);
+  }
+}
+
+// --- Alertas de streamers (Twitch) ---
+let twitchToken = null, twitchTokenExp = 0;
+async function getTwitchToken() {
+  const id = process.env.TWITCH_CLIENT_ID, sec = process.env.TWITCH_CLIENT_SECRET;
+  if (!id || !sec) return null;
+  if (twitchToken && Date.now() < twitchTokenExp - 60000) return twitchToken;
+  try {
+    const r = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${id}&client_secret=${sec}&grant_type=client_credentials`, { method: "POST" });
+    const d = await r.json();
+    if (!d.access_token) return null;
+    twitchToken = d.access_token;
+    twitchTokenExp = Date.now() + (d.expires_in || 3600) * 1000;
+    return twitchToken;
+  } catch (e) { return null; }
+}
+async function announceStream(channelId, row, s) {
+  try {
+    const ch = await client.channels.fetch(channelId).catch(() => null);
+    if (!ch || typeof ch.send !== "function") return;
+    const thumb = (s.thumbnail_url || "").replace("{width}", "480").replace("{height}", "270");
+    const embed = new EmbedBuilder()
+      .setColor(0x9146ff)
+      .setTitle(`🔴 ${s.user_name} está EN VIVO`)
+      .setURL(`https://twitch.tv/${row.login}`)
+      .setDescription(s.title || "")
+      .addFields(
+        { name: "Juego", value: s.game_name || "—", inline: true },
+        { name: "Espectadores", value: String(s.viewer_count || 0), inline: true },
+      )
+      .setImage(thumb || null)
+      .setTimestamp(new Date());
+    const mention = row.discord_id ? `<@${row.discord_id}> ` : "";
+    await ch.send({ content: `${mention}🎬 ¡Directo en vivo! https://twitch.tv/${row.login}`, embeds: [embed] }).catch(() => {});
+  } catch (e) { /* noop */ }
+}
+async function pollTwitch() {
+  const id = process.env.TWITCH_CLIENT_ID;
+  if (!client || !pool || !id) return;
+  const channelId = process.env.STREAMS_CHANNEL_ID;
+  try {
+    const rows = (await pool.query("SELECT * FROM stream_watch WHERE platform = 'twitch'")).rows;
+    if (!rows.length) return;
+    const token = await getTwitchToken();
+    if (!token) return;
+    const logins = rows.map((r) => r.login);
+    const live = {};
+    for (let i = 0; i < logins.length; i += 100) {
+      const batch = logins.slice(i, i + 100);
+      const qs = batch.map((l) => `user_login=${encodeURIComponent(l)}`).join("&");
+      const r = await fetch(`https://api.twitch.tv/helix/streams?${qs}`, { headers: { "Client-ID": id, Authorization: `Bearer ${token}` } });
+      const d = await r.json();
+      for (const s of (d.data || [])) live[s.user_login.toLowerCase()] = s;
+    }
+    for (const row of rows) {
+      const s = live[row.login.toLowerCase()];
+      if (s && !row.is_live) {
+        await pool.query("UPDATE stream_watch SET is_live = true WHERE id = $1", [row.id]);
+        if (channelId) await announceStream(channelId, row, s);
+      } else if (!s && row.is_live) {
+        await pool.query("UPDATE stream_watch SET is_live = false WHERE id = $1", [row.id]);
+      }
+    }
+  } catch (e) {
+    console.warn("[twitch]", e.message);
   }
 }
 
