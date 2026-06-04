@@ -17,7 +17,6 @@
       { href: "/creadores.html", icon: "🎬", text: "Creadores", dot: "#ff6fae" },
       { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
       { href: "https://discord.gg/bCWjyns8U5", icon: "💬", text: "Discord", ext: true, dot: "#5865F2" },
-      { href: "/", icon: "👑", text: "¿Quiénes somos?", team: true },
     ] },
   ];
 
@@ -32,6 +31,7 @@
     <button class="oh-burger" type="button" aria-label="Menú"><span></span><span></span><span></span></button>
     <nav class="omega-nav">
       ${NAV.map(ddHtml).join("")}
+      <button class="oh-trigger oh-team" id="teamToggle" type="button">👑 ¿Quiénes somos?</button>
       <div class="oh-account" id="ohAccount"><a href="/login.html" id="navLogin" class="oh-login">Entrar</a></div>
     </nav>`;
 
@@ -75,18 +75,20 @@
   header.querySelector(".oh-burger").addEventListener("click", (e) => { e.stopPropagation(); header.classList.toggle("nav-open"); });
   document.addEventListener("click", (e) => { if (!header.contains(e.target)) header.classList.remove("nav-open"); });
 
-  // "¿Quiénes somos?": en el inicio abre el panel de equipo; en otras páginas va al inicio.
-  header.querySelectorAll("[data-team]").forEach((a) => {
-    a.addEventListener("click", (e) => {
-      const dd = document.getElementById("teamDropdown");
-      if (dd) {
-        e.preventDefault();
-        closeAll();
-        const open = dd.classList.contains("open");
-        dd.classList.toggle("open", !open);
-        dd.setAttribute("aria-hidden", String(open));
-      }
-    });
+  // "¿Quiénes somos?" (3ª pestaña): en el inicio abre el panel del equipo; en otras páginas va al inicio.
+  // El render de las tarjetas lo hace team-home.js (escucha este mismo #teamToggle).
+  const teamBtn = header.querySelector(".oh-team");
+  if (teamBtn) teamBtn.addEventListener("click", (e) => {
+    const dd = document.getElementById("teamDropdown");
+    if (dd) {
+      e.preventDefault();
+      closeAll();
+      const open = dd.classList.contains("open");
+      dd.classList.toggle("open", !open);
+      dd.setAttribute("aria-hidden", String(open));
+    } else {
+      window.location.href = "/";
+    }
   });
 
   // Cuenta / login (a la derecha).
