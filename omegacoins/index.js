@@ -47,6 +47,14 @@ async function initOmegacoins() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  // Referidos: quién invitó a quién (1 referidor por usuario).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      referred_id TEXT PRIMARY KEY,
+      referrer_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 }
 
 async function ensureRow(discordId) {
@@ -71,6 +79,24 @@ async function addCoins(discordId, amount, reason) {
   await pool.query("INSERT INTO omegacoin_tx (discord_id, amount, reason) VALUES ($1, $2, $3)", [discordId, amount, reason]);
 }
 
+// Referidos: si el usuario fue invitado, su referidor gana un 10% extra (bono, no se le descuenta a nadie).
+async function getReferrer(discordId) {
+  if (!pool) return null;
+  try {
+    const r = await pool.query("SELECT referrer_id FROM referrals WHERE referred_id = $1", [discordId]);
+    return r.rows[0]?.referrer_id || null;
+  } catch (e) {
+    return null;
+  }
+}
+async function applyReferralBonus(discordId, amount, baseReason) {
+  if (!pool || !amount) return;
+  const ref = await getReferrer(discordId);
+  if (!ref || ref === discordId) return;
+  const bonus = Math.floor(amount * 0.1);
+  if (bonus > 0) await addCoins(ref, bonus, `Bono referido (${baseReason})`);
+}
+
 // Nivel 2 = 100 monedas, y +10 por cada nivel siguiente.
 function levelUpReward(level) {
   return 100 + (level - 2) * 10;
@@ -90,6 +116,7 @@ async function rewardLevelUps(discordId, currentLevel) {
     [discordId, total, currentLevel],
   );
   await pool.query("INSERT INTO omegacoin_tx (discord_id, amount, reason) VALUES ($1, $2, $3)", [discordId, total, `Subiste a nivel ${currentLevel}`]);
+  await applyReferralBonus(discordId, total, `nivel ${currentLevel}`);
   return total;
 }
 
@@ -102,6 +129,7 @@ async function rewardAchievement(discordId, key, tier) {
   const exists = await pool.query("SELECT 1 FROM omegacoin_tx WHERE discord_id = $1 AND reason = $2 LIMIT 1", [discordId, reason]);
   if (exists.rows.length) return 0;
   await addCoins(discordId, amount, reason);
+  await applyReferralBonus(discordId, amount, "logro");
   return amount;
 }
 
@@ -140,6 +168,17 @@ router.get("/api/me/omegacoins", requireUser, async (req, res) => {
     return res.json({ balance, recent: tx.rows.map((t) => ({ amount: Number(t.amount), reason: t.reason, at: t.created_at })) });
   } catch (e) {
     return res.json({ balance: 0, recent: [] });
+  }
+});
+
+// Mis referidos (cuántos invité).
+router.get("/api/me/referidos", requireUser, async (req, res) => {
+  if (!pool) return res.json({ count: 0 });
+  try {
+    const c = await pool.query("SELECT COUNT(*)::int AS n FROM referrals WHERE referrer_id = $1", [req.user.discordId]);
+    return res.json({ count: c.rows[0]?.n || 0 });
+  } catch (e) {
+    return res.json({ count: 0 });
   }
 });
 

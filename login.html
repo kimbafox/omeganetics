@@ -131,6 +131,15 @@
     const $ = (id) => document.getElementById(id);
     const show = (id) => { ['loading','guest','user'].forEach(s => $(s).classList.add('hidden')); $(id).classList.remove('hidden'); };
 
+    // Si llega ?ref=<id>, lo pasamos al botón de Discord (sistema de referidos).
+    (function () {
+      const ref = new URLSearchParams(location.search).get('ref');
+      if (ref && /^\d+$/.test(ref)) {
+        const btn = document.querySelector('.discord-btn');
+        if (btn) btn.href = '/api/auth/discord?ref=' + encodeURIComponent(ref);
+      }
+    })();
+
     async function load() {
       try {
         const res = await fetch('/api/auth/me');

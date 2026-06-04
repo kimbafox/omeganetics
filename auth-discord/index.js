@@ -78,6 +78,13 @@ async function initAuthDiscord() {
   `);
   // Por si la tabla ya existía sin la columna de rol.
   await pool.query("ALTER TABLE community_users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'viewer'");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS referrals (
+      referred_id TEXT PRIMARY KEY,
+      referrer_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 }
 
 const isConfigured = () => Boolean(DISCORD_CLIENT_ID && DISCORD_CLIENT_SECRET);
@@ -127,6 +134,10 @@ router.get("/api/auth/discord", (req, res) => {
 
   const state = crypto.randomBytes(16).toString("hex");
   setCookie(res, "oauth_state", state, 600); // 10 minutos
+
+  // Referido: si llega ?ref=<discordId>, lo recordamos para el callback.
+  const ref = String(req.query.ref || "").trim();
+  if (/^\d{5,}$/.test(ref)) setCookie(res, "ref_by", ref, 600);
 
   const params = new URLSearchParams({
     response_type: "code",
@@ -203,6 +214,8 @@ router.get("/api/auth/discord/callback", async (req, res) => {
     let role = seedAdmin ? "admin" : "viewer";
 
     if (pool) {
+      const existed = await pool.query("SELECT 1 FROM community_users WHERE discord_id = $1", [user.id]);
+      const isNew = existed.rows.length === 0;
       const result = await pool.query(
         `INSERT INTO community_users (discord_id, username, global_name, email, avatar_url, role, is_member, last_login_at)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW())
@@ -218,7 +231,17 @@ router.get("/api/auth/discord/callback", async (req, res) => {
         [user.id, user.username || "", user.global_name || "", user.email || "", avatarUrl(user), role, seedAdmin],
       );
       role = result.rows[0]?.role || role;
+      // Si es un usuario NUEVO y llegó con referido, lo registramos.
+      if (isNew) {
+        const refBy = cookies.ref_by;
+        if (refBy && /^\d{5,}$/.test(refBy) && refBy !== user.id) {
+          try {
+            await pool.query("INSERT INTO referrals (referred_id, referrer_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [user.id, refBy]);
+          } catch (e) { /* noop */ }
+        }
+      }
     }
+    res.clearCookie("ref_by", { path: "/" });
 
     // Emite la sesión (JWT en cookie httpOnly). El rol viene de la base de datos.
     const token = jwt.sign(

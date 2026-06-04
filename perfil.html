@@ -157,6 +157,16 @@
         <div id="grantBox" class="hidden"></div>
       </section>
 
+      <section class="panel" id="referidos">
+        <h2>🔗 Invita y gana</h2>
+        <p class="sub">Comparte tu link. Cuando un invitado se una y gane Omegacoins, tú ganas un <b>10% extra</b> (sin quitarle nada a él).</p>
+        <div class="grant-row">
+          <input id="refLink" readonly />
+          <button class="btn" id="refCopy" type="button">Copiar</button>
+        </div>
+        <p class="sub" style="margin-top:10px">Has invitado a <b id="refCount">0</b> persona(s). 🎉</p>
+      </section>
+
       <a class="back-link" href="/">← Volver al inicio</a>
     </div>
   </main>
@@ -203,6 +213,7 @@
       $("loading").style.display = "none";
       $("content").style.display = "block";
       loadCoins();
+      loadReferidos();
 
       // Actividad
       try {
@@ -243,6 +254,22 @@
       }
 
       loadLogros();
+    }
+
+    async function loadReferidos() {
+      if (!me) return;
+      const link = location.origin + "/login.html?ref=" + me.discordId;
+      $("refLink").value = link;
+      $("refCopy").addEventListener("click", () => {
+        try { navigator.clipboard.writeText(link); } catch (e) { /* noop */ }
+        $("refCopy").textContent = "¡Copiado!";
+        setTimeout(() => { $("refCopy").textContent = "Copiar"; }, 1500);
+      });
+      try {
+        const r = await fetch("/api/me/referidos");
+        const d = await r.json();
+        $("refCount").textContent = d.count || 0;
+      } catch (e) { /* noop */ }
     }
 
     async function loadCoins() {
