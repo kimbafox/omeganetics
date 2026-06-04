@@ -9,18 +9,31 @@
 <body class="admin-page storefront-page">
 
 <header class="header">
-  <h1>Panel de catálogo</h1>
+  <div class="brand-shell">
+    <span class="logo-hint"><span class="logo-hint-chip">Admin</span> Gestión rápida del catálogo</span>
+    <h1>Panel de catálogo</h1>
+  </div>
   <nav>
-    <a href="indextienda.html" class="btn">Inicio</a>
+    <a href="indextienda.html" class="btn btn-secondary">Inicio</a>
     <a href="subir.html" class="btn">Subir proyecto</a>
-    <button class="btn" onclick="cerrarSesion()">Cerrar sesión</button>
+    <button class="btn btn-danger" onclick="cerrarSesion()">Cerrar sesión</button>
   </nav>
 </header>
 
 <main class="admin-shell">
+  <section class="admin-intro">
+    <div>
+      <h2>Panel de administración</h2>
+    </div>
+    <article class="admin-summary-card">
+      <strong id="adminTotal">0</strong>
+      <span>proyectos activos</span>
+    </article>
+  </section>
+
   <section class="admin-toolbar">
-    <input id="buscar" placeholder="Buscar por nombre o categoría..." 
-           oninput="buscarProyecto()">
+    <input id="buscar" placeholder="Buscar por nombre o categoría..." oninput="buscarProyecto()" aria-label="Buscar proyectos">
+    <p class="field-help">Busca por nombre, categoría o tipo de recurso.</p>
   </section>
 
   <div id="lista" class="grid"></div>
@@ -54,23 +67,34 @@ async function cargarAdmin() {
 
 function mostrar(data) {
   const cont = document.getElementById("lista");
+  const total = document.getElementById("adminTotal");
   cont.innerHTML = "";
+  if (total) total.textContent = String(data.length || 0);
 
   data.forEach(p => {
-    const resumen = (p.descripcion || "Sin descripción").slice(0, 160);
     const galeria = Array.isArray(p.imagenes) ? p.imagenes.length : 0;
+    const tieneArchivo = Boolean(p.archivo);
 
     cont.innerHTML += `
-      <div class="card-proyecto">
+      <article class="card-proyecto admin-card">
         <div class="card-imagen-wrap">
-          <img class="card-portada" src="${UPLOADS_BASE}/${encodeURIComponent(p.portada)}">
+          <img class="card-portada" src="${UPLOADS_BASE}/${encodeURIComponent(p.portada)}" alt="Portada de ${p.nombre}">
         </div>
-        <p class="card-categoria">${p.categoria}</p>
-        <h3 class="card-titulo">${p.nombre}</h3>
-        <p class="card-descripcion">${resumen}${(p.descripcion || "").length > 160 ? "..." : ""}</p>
-        <small class="card-fecha">Galería: ${galeria} imagen${galeria === 1 ? "" : "es"}</small>
-        <button class="btn btn-danger" onclick="eliminar(${p.id})">Eliminar</button>
-      </div>
+        <div class="card-contenido">
+          <div class="card-cabecera">
+            <p class="card-categoria">${p.categoria}</p>
+            <small class="card-fecha">${new Date(p.fecha).toLocaleDateString()}</small>
+          </div>
+          <h3 class="card-titulo">${p.nombre}</h3>
+          <div class="card-badges">
+            <span class="mini-badge mini-badge--gallery">${galeria} vista${galeria === 1 ? "" : "s"}</span>
+            <span class="mini-badge ${tieneArchivo ? "mini-badge--download" : "mini-badge--new"}">${tieneArchivo ? "Descargable" : "Galería"}</span>
+          </div>
+          <div class="admin-actions">
+            <button class="btn btn-danger" onclick="eliminar(${p.id})">Eliminar</button>
+          </div>
+        </div>
+      </article>
     `;
   });
 }

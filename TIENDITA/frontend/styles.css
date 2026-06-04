@@ -1907,8 +1907,60 @@ label {
   padding: 24px 0 40px;
 }
 
+.admin-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.admin-intro h2 {
+  margin: 8px 0 6px;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.admin-copy {
+  margin: 0;
+  color: var(--muted);
+  max-width: 58ch;
+}
+
+.admin-summary-card {
+  min-width: 180px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 248, 235, 0.82), rgba(231, 217, 184, 0.94));
+  border: 1px solid rgba(61, 35, 23, 0.16);
+  box-shadow: var(--shadow);
+  text-align: right;
+}
+
+.admin-summary-card strong {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-size: 1.8rem;
+  color: #2e190f;
+}
+
+.admin-summary-card span {
+  color: #5d4a3d;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
 .admin-toolbar {
   margin-bottom: 18px;
+}
+
+.admin-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-card {
+  align-items: stretch;
 }
 
 .btn-danger {
@@ -1947,6 +1999,15 @@ label {
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
+  .admin-intro {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .admin-summary-card {
+    text-align: left;
+  }
+
   .hero-panel,
   .upload-container,
   .realm-stats {
