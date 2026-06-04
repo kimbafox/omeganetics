@@ -6,19 +6,19 @@
   const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
   const NAV = [
-    { label: "Actividad", items: [
+    { label: "Actividad", tour: "actividad", items: [
       { href: "/actividad.html", icon: "📊", text: "Actividad del servidor" },
       { href: "/eventos.html", icon: "🎯", text: "Eventos" },
       { href: "/torneos.html", icon: "🏆", text: "Torneos" },
     ] },
-    { label: "Comunidad", items: [
-      { href: "/wiki/", icon: "📚", text: "Wiki", dot: "#3ba55c" },
+    { label: "Comunidad", tour: "comunidad", items: [
+      { href: "/reglas.html", icon: "📜", text: "Reglas de la comunidad", dot: "#ffd35c" },
+      { href: "/wiki/", icon: "📚", text: "Wiki (lore)", dot: "#3ba55c" },
       { href: "/tiendita/indextienda.html", icon: "🏰", text: "Realm", dot: "#c0392b" },
-      { href: "/creadores.html", icon: "🎬", text: "Creadores", dot: "#ff6fae" },
       { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
       { href: "https://discord.gg/bCWjyns8U5", icon: "💬", text: "Discord", ext: true, dot: "#5865F2" },
     ] },
-    { label: "Únete a nosotros", items: [
+    { label: "Únete a nosotros", tour: "unete", items: [
       { href: "/eventos.html", icon: "🎯", text: "¿Tienes un evento?", dot: "#5865F2" },
       { href: "/creadores.html", icon: "🎬", text: "¿Eres creador de contenido?", dot: "#ff6fae" },
     ] },
@@ -26,7 +26,7 @@
 
   const dot = (it) => (it.dot ? `<span class="oh-dot" style="background:${it.dot}"></span>` : '<span class="oh-dot oh-dot-none"></span>');
   const itemHtml = (it) => `<a role="menuitem" href="${esc(it.href)}"${it.ext ? ' target="_blank" rel="noopener"' : ""}${it.team ? ' data-team="1"' : ""}>${dot(it)}<span class="oh-ic">${it.icon}</span> ${esc(it.text)}</a>`;
-  const ddHtml = (g) => `<div class="oh-dd"><button class="oh-trigger" type="button" aria-haspopup="true" aria-expanded="false">${esc(g.label)} <span class="oh-caret">▾</span></button><div class="oh-menu" hidden>${g.items.map(itemHtml).join("")}</div></div>`;
+  const ddHtml = (g) => `<div class="oh-dd"><button class="oh-trigger" type="button" data-tour="${g.tour || ""}" aria-haspopup="true" aria-expanded="false">${esc(g.label)} <span class="oh-caret">▾</span></button><div class="oh-menu" hidden>${g.items.map(itemHtml).join("")}</div></div>`;
 
   const header = document.createElement("header");
   header.className = "header omega-header";
@@ -147,7 +147,7 @@
     const acc = header.querySelector("#ohAccount");
     acc.innerHTML = `
       <div class="oh-dd oh-user">
-        <button class="oh-trigger oh-userbtn" type="button" aria-haspopup="true" aria-expanded="false">
+        <button class="oh-trigger oh-userbtn" type="button" data-tour="cuenta" aria-haspopup="true" aria-expanded="false">
           ${me.avatar ? `<img src="${esc(me.avatar)}" class="oh-avatar" alt="">` : ""}
           <span class="oh-uname">${esc(name)}</span>
           ${me.isAdmin ? '<span class="oh-badge">admin</span>' : ""}
@@ -169,28 +169,72 @@
       window.location.reload();
     });
 
-    // Onboarding (una sola vez).
-    if (!localStorage.getItem("omg_onboarded")) {
-      const ov = document.createElement("div");
-      ov.id = "omgOnboard";
-      ov.innerHTML = `
-        <div class="omg-ob-card">
-          <div class="omg-ob-emoji">👑</div>
-          <h2>¡Bienvenido a Omeganetics!</h2>
-          <p>Así avanzas en la comunidad:</p>
-          <ul>
-            <li>🎙️ <b>Habla en voz</b> y 💬 <b>chatea</b> para ganar <b>XP</b> y <b>Omegacoins</b>.</li>
-            <li>⭐ Sube de <b>nivel</b> y desbloquea <b>logros</b> (algunos te dan rol en Discord).</li>
-            <li>🎯 Crea o únete a <b>eventos</b> y compite en el <b>ranking semanal</b>.</li>
-            <li>🔗 Invita amigos con tu <b>link de referido</b> y gana un 10% extra.</li>
-          </ul>
-          <button class="btn" id="omgObClose">¡Entendido!</button>
-        </div>`;
-      document.body.appendChild(ov);
-      document.getElementById("omgObClose").addEventListener("click", () => {
-        localStorage.setItem("omg_onboarded", "1");
-        ov.remove();
-      });
-    }
+    // Tutorial de bienvenida (recorrido guiado, una sola vez, solo en el inicio).
+    startTour(header, esc);
   })();
+
+  // --- Tutorial guiado de bienvenida ---
+  function startTour(header, esc) {
+    const isHome = location.pathname === "/" || /\/index\.html$/.test(location.pathname);
+    if (!isHome || localStorage.getItem("omg_tour_v2")) return;
+    const STEPS = [
+      { title: "¡Bienvenido a OmeganeticsCorp! 👑", body: "Te damos un recorrido rápido por el sitio. Toca «Siguiente».", sel: null },
+      { title: "Actividad", body: "Aquí ves la actividad del servidor: juegos más jugados, personas más activas y eventos actuales.", sel: '[data-tour="actividad"]' },
+      { title: "Comunidad", body: "Descubre la info de nuestro Discord: reglas, lore y nuestra tienda de canjes.", sel: '[data-tour="comunidad"]' },
+      { title: "Únete a nosotros", body: "¿Eres creador de contenido o tienes ideas de eventos increíbles? ¡Muéstranos! Apoyamos a creadores e ideas innovadoras.", sel: '[data-tour="unete"]' },
+      { title: "Tu perfil", body: "Aquí ves tus datos. Tu presencia se recompensa: gana logros, sé de los más activos y consigue OMEGACOINS 🪙 para canjear cosméticos, cosas exclusivas y tarjetas de regalo.", sel: '[data-tour="cuenta"]' },
+    ];
+    let i = 0;
+    const prevZ = header.style.zIndex;
+    header.style.zIndex = "100001";
+    const backdrop = document.createElement("div"); backdrop.className = "tour-backdrop";
+    const ring = document.createElement("div"); ring.className = "tour-ring";
+    const card = document.createElement("div"); card.className = "tour-card";
+    document.body.append(backdrop, ring, card);
+
+    const finish = () => {
+      localStorage.setItem("omg_tour_v2", "1");
+      header.style.zIndex = prevZ;
+      backdrop.remove(); ring.remove(); card.remove();
+      window.removeEventListener("resize", render);
+    };
+
+    function render() {
+      const step = STEPS[i];
+      const target = step.sel ? header.querySelector(step.sel) : null;
+      if (target) {
+        const r = target.getBoundingClientRect();
+        ring.style.display = "block";
+        ring.style.left = (r.left - 6) + "px";
+        ring.style.top = (r.top - 6) + "px";
+        ring.style.width = (r.width + 12) + "px";
+        ring.style.height = (r.height + 12) + "px";
+      } else {
+        ring.style.display = "none";
+      }
+      const last = i === STEPS.length - 1;
+      card.innerHTML = `
+        <div class="tour-step">${i + 1} / ${STEPS.length}</div>
+        <h3>${esc(step.title)}</h3>
+        <p>${esc(step.body)}</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip">Saltar</button>
+          <button type="button" class="tour-next">${last ? "¡Entendido!" : "Siguiente →"}</button>
+        </div>`;
+      if (target) {
+        const r = target.getBoundingClientRect();
+        card.style.top = (r.bottom + 14) + "px";
+        let left = r.left + r.width / 2 - 160;
+        left = Math.max(12, Math.min(left, window.innerWidth - 332));
+        card.style.left = left + "px";
+        card.style.transform = "none";
+      } else {
+        card.style.top = "50%"; card.style.left = "50%"; card.style.transform = "translate(-50%, -50%)";
+      }
+      card.querySelector(".tour-skip").addEventListener("click", finish);
+      card.querySelector(".tour-next").addEventListener("click", () => { if (last) finish(); else { i += 1; render(); } });
+    }
+    window.addEventListener("resize", render);
+    setTimeout(render, 450);
+  }
 })();

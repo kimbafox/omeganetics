@@ -212,10 +212,12 @@ router.get("/api/auth/discord/callback", async (req, res) => {
     // Si ya tenía un rol asignado a mano, no se pisa (salvo que sea admin por lista).
     const seedAdmin = isAdminUser(user);
     let role = seedAdmin ? "admin" : "viewer";
+    let firstLogin = false;
 
     if (pool) {
       const existed = await pool.query("SELECT 1 FROM community_users WHERE discord_id = $1", [user.id]);
       const isNew = existed.rows.length === 0;
+      firstLogin = isNew;
       const result = await pool.query(
         `INSERT INTO community_users (discord_id, username, global_name, email, avatar_url, role, is_member, last_login_at)
          VALUES ($1, $2, $3, $4, $5, $6, TRUE, NOW())
@@ -259,7 +261,8 @@ router.get("/api/auth/discord/callback", async (req, res) => {
     );
     setCookie(res, "session", token, 60 * 60 * 24 * 30); // 30 días
 
-    res.redirect("/login.html");
+    // En el primer login lo mandamos al inicio (ahí sale el tutorial); si no, al portal.
+    res.redirect(firstLogin ? "/" : "/login.html");
   } catch (error) {
     console.error("[auth-discord] callback error:", error.message);
     res.status(500).send("Error al iniciar sesión con Discord.");

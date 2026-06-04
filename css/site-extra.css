@@ -95,6 +95,17 @@ nav ul { gap: 12px !important; }
 #omgOnboard ul li { color: var(--text-soft, #b4b4b4); line-height: 1.45; }
 #omgOnboard .btn { width: 100%; }
 
+/* --- Tutorial guiado de bienvenida --- */
+.tour-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.66); z-index: 100000; }
+.tour-ring { position: fixed; border: 2px solid #ffd35c; border-radius: 12px; box-shadow: 0 0 0 4px rgba(255,211,92,.22), 0 0 20px rgba(255,211,92,.5); z-index: 100002; pointer-events: none; transition: left .2s ease, top .2s ease, width .2s ease, height .2s ease; }
+.tour-card { position: fixed; width: 320px; max-width: calc(100vw - 24px); background: var(--surface, #15161d); border: 1px solid var(--border-strong, rgba(255,255,255,.16)); border-radius: 16px; padding: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.6); z-index: 100003; }
+.tour-card .tour-step { color: var(--text-faint, #8a8a99); font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+.tour-card h3 { margin: 4px 0 6px; font-size: 1.12rem; color: #fff; }
+.tour-card p { color: var(--text-soft, #b4b4c4); font-size: 14px; line-height: 1.5; }
+.tour-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.tour-skip { background: none; border: 0; color: var(--text-faint, #8a8a99); cursor: pointer; font: inherit; font-size: 13px; }
+.tour-next { background: linear-gradient(135deg, #5865F2, #7c5cff); color: #fff; border: 0; border-radius: 10px; padding: 9px 18px; font-weight: 700; cursor: pointer; font: inherit; }
+
 /* ============================================================
    Encabezado unificado (inyectado por js/auth-widget.js).
    2 desplegables neutros + cuenta. Aparece en TODAS las páginas.
