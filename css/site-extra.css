@@ -99,7 +99,9 @@ nav ul { gap: 12px !important; }
    Encabezado unificado (inyectado por js/auth-widget.js).
    2 desplegables neutros + cuenta. Aparece en TODAS las páginas.
    ============================================================ */
-.omega-header { display: flex; align-items: center; gap: 16px; padding: 10px 22px; background: rgba(12, 13, 20, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); position: sticky; top: 0; z-index: 1000; font-family: Inter, system-ui, sans-serif; }
+.omega-header { display: flex; align-items: center; gap: 16px; padding: 10px 22px; background: rgba(12, 13, 20, 0.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); position: sticky; top: 0; z-index: 9999; font-family: Inter, system-ui, sans-serif; }
+/* Realm: ocultar su bloque de marca (redundante con el header unificado) */
+.storefront-page .brand-shell { display: none !important; }
 .omega-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text, #fff); font-weight: 800; font-size: 1.05rem; }
 .omega-logo img { border-radius: 8px; }
 .omega-nav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
@@ -107,7 +109,7 @@ nav ul { gap: 12px !important; }
 .oh-trigger { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid transparent; color: var(--text-soft, #c2c2cc); border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 600; font-size: 14px; cursor: pointer; }
 .oh-trigger:hover, .oh-dd.open .oh-trigger, .oh-trigger.active { background: rgba(255, 255, 255, 0.07); color: var(--text, #fff); }
 .oh-caret { font-size: 10px; color: var(--text-faint, #8a8a99); }
-.oh-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 232px; background: var(--surface, #15161d); border: 1px solid var(--border-strong, rgba(255,255,255,.16)); border-radius: 14px; box-shadow: 0 18px 44px rgba(0,0,0,.5); padding: 7px; display: flex; flex-direction: column; gap: 2px; z-index: 1200; }
+.oh-menu { position: absolute; top: calc(100% + 8px); left: 0; min-width: 232px; background: var(--surface, #15161d); border: 1px solid var(--border-strong, rgba(255,255,255,.16)); border-radius: 14px; box-shadow: 0 18px 44px rgba(0,0,0,.5); padding: 7px; display: flex; flex-direction: column; gap: 2px; z-index: 10000; }
 .oh-menu[hidden] { display: none; }
 .oh-menu-right { right: 0; left: auto; }
 .oh-menu a, .oh-menu button { display: flex; align-items: center; gap: 9px; text-align: left; background: none; border: 0; color: var(--text, #fff); font: inherit; font-size: 14px; text-decoration: none; padding: 9px 11px; border-radius: 9px; cursor: pointer; }
