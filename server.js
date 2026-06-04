@@ -1136,6 +1136,10 @@ app.use(eventosRouter);
 const { router: omegacoinsRouter, initOmegacoins } = require("./omegacoins");
 app.use(omegacoinsRouter);
 
+// Módulo de Torneos.
+const { router: torneosRouter, initTorneos } = require("./torneos");
+app.use(torneosRouter);
+
 // Módulo de Logros / Insignias.
 const { router: logrosRouter, initLogros, CATALOG: ACHIEVEMENTS_CATALOG } = require("./logros");
 app.use(logrosRouter);
@@ -1383,6 +1387,7 @@ async function start() {
     await initAuthDiscord();
     await initEventos();
     await initOmegacoins();
+    await initTorneos();
     await initLogros();
     await initCreadores();
     app.listen(PORT, "0.0.0.0", () => {

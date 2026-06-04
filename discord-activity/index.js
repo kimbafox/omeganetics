@@ -760,4 +760,19 @@ async function runWeeklyAwardIfDue() {
   }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel };
+// Anuncia el campeón de un torneo en un canal.
+async function announceTournamentWinner(channelId, tournamentName, winnerName, winnerId) {
+  if (!client || !channelId) return;
+  try {
+    const ch = await client.channels.fetch(channelId).catch(() => null);
+    if (!ch || typeof ch.send !== "function") return;
+    const embed = new EmbedBuilder()
+      .setColor(0xffd35c)
+      .setTitle("🏆 ¡Tenemos campeón!")
+      .setDescription(`**${winnerName}** ganó el torneo **${tournamentName}** 🎉`)
+      .setTimestamp(new Date());
+    await ch.send({ content: `@everyone ¡Felicidades <@${winnerId}>! 👑`, embeds: [embed], allowedMentions: { parse: ["everyone"], users: [winnerId] } }).catch(() => {});
+  } catch (e) { /* noop */ }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner };

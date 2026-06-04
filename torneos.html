@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Torneos — Omeganetics</title>
+  <meta name="description" content="Torneos de la comunidad Omeganetics: inscríbete, compite y sube en el bracket." />
+  <meta property="og:title" content="Torneos — Omeganetics" />
+  <meta property="og:description" content="Inscríbete y compite en los torneos de la comunidad. 🏆" />
+  <meta property="og:image" content="/assets/previa.png" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .tr-wrap { max-width: 1000px; margin: 0 auto; padding: 48px 24px 80px; }
+    .tr-head { text-align: center; margin-bottom: 28px; }
+    .tr-head h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 8px 0; }
+    .tr-head p { color: var(--text-soft); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); margin-bottom: 22px; }
+    .panel h2 { font-size: 1.15rem; margin-bottom: 4px; } .panel .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 14px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row input { background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; flex:1; min-width:140px; }
+    .t-card { background: var(--surface-muted); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:12px; cursor:pointer; transition:border-color .2s, transform .2s; }
+    .t-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+    .t-card h3 { margin-bottom:6px; }
+    .t-badge { display:inline-block; border-radius:999px; padding:2px 10px; font-size:12px; font-weight:700; }
+    .st-inscripcion { background:rgba(67,209,255,.16); color:#7fdcff; border:1px solid rgba(67,209,255,.4); }
+    .st-en_curso { background:rgba(255,211,92,.16); color:#ffd35c; border:1px solid rgba(255,211,92,.4); }
+    .st-finalizado { background:rgba(120,224,163,.16); color:#7be0a3; border:1px solid rgba(120,224,163,.4); }
+    .muted { color: var(--text-soft); } .muted a { color:#aab2ff; }
+    .btn-sm { background: var(--accent); color:#fff; border:0; border-radius:10px; padding:9px 16px; font-weight:700; cursor:pointer; font:inherit; }
+    .btn-ghost { background:transparent; color:var(--text-soft); border:1px solid var(--border-strong); border-radius:10px; padding:9px 16px; font-weight:700; cursor:pointer; font:inherit; }
+    .btn-danger { background:transparent; color:#ff9b9b; border:1px solid rgba(255,107,107,.4); border-radius:10px; padding:9px 16px; font-weight:700; cursor:pointer; font:inherit; }
+    .parts { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+    .part-chip { background:var(--surface-muted); border:1px solid var(--border); border-radius:999px; padding:6px 12px; font-size:13px; }
+    .bracket { display:flex; gap:28px; overflow-x:auto; padding:10px 2px 16px; }
+    .round-col { display:flex; flex-direction:column; justify-content:space-around; gap:16px; min-width:190px; }
+    .round-title { text-align:center; color:var(--text-faint); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px; }
+    .match { background:var(--surface-muted); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .player { display:flex; justify-content:space-between; align-items:center; padding:9px 12px; font-size:14px; border-bottom:1px solid var(--border); }
+    .player:last-child { border-bottom:0; }
+    .player.win { background:rgba(120,224,163,.14); color:#cdebd9; font-weight:700; }
+    .player.empty { color:var(--text-faint); font-style:italic; }
+    .player.clickable { cursor:pointer; } .player.clickable:hover { background:rgba(88,101,242,.18); }
+    .hidden { display:none; }
+    .winner-banner { text-align:center; background:linear-gradient(180deg,rgba(255,211,92,.14),rgba(255,159,67,.05)); border:1px solid rgba(255,211,92,.4); border-radius:14px; padding:18px; margin-bottom:16px; }
+    .winner-banner .big { font-size:1.4rem; font-weight:800; color:#ffd35c; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="assets/logo.png" class="logo" width="35" height="35" alt="Omeganetics" />
+        <h1>Omeganetics</h1>
+      </a>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
+        <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
+        <li><a href="/eventos.html" class="nav-badge nav-badge-team">Eventos</a></li>
+        <li><a href="/torneos.html" class="nav-badge nav-badge-team">Torneos</a></li>
+        <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="tr-wrap">
+    <div class="tr-head">
+      <span class="section-kicker">Competitivo</span>
+      <h1>🏆 Torneos</h1>
+      <p>Inscríbete, compite y escala en el bracket. ¡El campeón gana el logro y Omegacoins!</p>
+    </div>
+
+    <!-- ADMIN: crear torneo -->
+    <section id="createPanel" class="panel hidden">
+      <h2>➕ Crear torneo</h2>
+      <p class="sub">Solo admins. Se abre en inscripción; luego generas el bracket.</p>
+      <div class="row" style="margin-bottom:10px">
+        <input id="cName" placeholder="Nombre del torneo" />
+        <input id="cGame" placeholder="Juego" />
+        <input id="cMax" type="number" placeholder="Máx. (0 = sin límite)" style="max-width:170px;flex:none" />
+      </div>
+      <div class="row">
+        <input id="cDesc" placeholder="Descripción (opcional)" />
+        <button class="btn-sm" id="cBtn" type="button">Crear</button>
+        <span id="cMsg" class="muted" style="font-size:13px"></span>
+      </div>
+    </section>
+
+    <!-- LISTA -->
+    <section id="listView" class="panel">
+      <h2>Torneos</h2>
+      <div id="tList"><div class="muted">Cargando…</div></div>
+    </section>
+
+    <!-- DETALLE -->
+    <section id="detailView" class="hidden">
+      <button class="btn-ghost" id="backBtn" type="button" style="margin-bottom:14px">← Volver</button>
+      <div id="detail"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const STLABEL = { inscripcion: "Inscripción abierta", en_curso: "En curso", finalizado: "Finalizado" };
+    let me = null, current = null;
+
+    async function loadList() {
+      $("detailView").classList.add("hidden");
+      $("listView").classList.remove("hidden");
+      try {
+        const list = await (await fetch("/api/torneos")).json();
+        $("tList").innerHTML = list.length ? list.map((t) => `
+          <div class="t-card" data-open="${t.id}">
+            <h3>${esc(t.name)} <span class="t-badge st-${t.status}">${STLABEL[t.status] || t.status}</span></h3>
+            <div class="muted">🎮 ${esc(t.game)} · 👥 ${t.players} inscritos${t.winnerName ? ` · 🏆 ${esc(t.winnerName)}` : ""}</div>
+          </div>`).join("") : '<div class="muted">No hay torneos todavía.</div>';
+      } catch (e) { $("tList").innerHTML = '<div class="muted">No se pudieron cargar.</div>'; }
+    }
+
+    function roundTitle(round, total) {
+      if (round === total) return "Final";
+      if (round === total - 1) return "Semifinal";
+      if (round === total - 2) return "Cuartos";
+      return "Ronda " + round;
+    }
+
+    async function openDetail(id) {
+      try {
+        const d = await (await fetch("/api/torneos/" + id)).json();
+        if (d.error) return;
+        current = d;
+        const t = d.tournament;
+        const isAdmin = me && me.isAdmin;
+        const inscrito = me && d.participants.some((p) => p.discordId === me.discordId);
+        const totalRounds = d.matches.length ? Math.max(...d.matches.map((m) => m.round)) : 0;
+
+        let html = `<div class="panel">
+          <h2>${esc(t.name)} <span class="t-badge st-${t.status}">${STLABEL[t.status] || t.status}</span></h2>
+          <div class="muted" style="margin-bottom:10px">🎮 ${esc(t.game)} · 👥 ${d.participants.length} inscritos</div>
+          ${t.description ? `<p style="margin-bottom:10px">${esc(t.description)}</p>` : ""}`;
+
+        if (t.status === "finalizado" && t.winnerName) {
+          html += `<div class="winner-banner"><div class="muted">Campeón</div><div class="big">🏆 ${esc(t.winnerName)}</div></div>`;
+        }
+
+        // Acciones de inscripción
+        if (t.status === "inscripcion") {
+          if (me) html += `<div class="row" style="margin:8px 0">${inscrito
+            ? `<button class="btn-danger" id="leaveBtn">Salir del torneo</button><span class="muted">Estás inscrito ✅</span>`
+            : `<button class="btn-sm" id="joinBtn">Inscribirme</button>`}</div>`;
+          else html += `<p class="muted"><a href="/login.html">Inicia sesión</a> para inscribirte.</p>`;
+        }
+
+        // Participantes
+        html += `<div class="parts">${d.participants.map((p) => `<span class="part-chip">${esc(p.name)}</span>`).join("") || '<span class="muted">Aún no hay inscritos.</span>'}</div>`;
+
+        // Controles admin
+        if (isAdmin) {
+          html += `<div class="row" style="margin-top:8px">`;
+          if (t.status === "inscripcion") html += `<button class="btn-sm" id="genBtn">Generar bracket</button>`;
+          html += `<button class="btn-danger" id="delBtn">Eliminar torneo</button></div>`;
+        }
+        html += `</div>`;
+
+        // Bracket
+        if (d.matches.length) {
+          const byRound = {};
+          d.matches.forEach((m) => { (byRound[m.round] = byRound[m.round] || []).push(m); });
+          html += `<div class="panel"><h2>Bracket</h2><div class="bracket">`;
+          for (let r = 1; r <= totalRounds; r++) {
+            const ms = (byRound[r] || []).sort((a, b) => a.slot - b.slot);
+            html += `<div class="round-col"><div class="round-title">${roundTitle(r, totalRounds)}</div>`;
+            for (const m of ms) {
+              html += `<div class="match">${playerRow(m, "p1", isAdmin, t.status)}${playerRow(m, "p2", isAdmin, t.status)}</div>`;
+            }
+            html += `</div>`;
+          }
+          html += `</div></div>`;
+        }
+
+        $("detail").innerHTML = html;
+        $("listView").classList.add("hidden");
+        $("detailView").classList.remove("hidden");
+        bindDetail(id);
+      } catch (e) { /* noop */ }
+    }
+
+    function playerRow(m, side, isAdmin, status) {
+      const pid = side === "p1" ? m.p1Id : m.p2Id;
+      const pname = side === "p1" ? m.p1 : m.p2;
+      const isWin = m.winnerId && m.winnerId === pid;
+      const canPick = isAdmin && status === "en_curso" && !m.winnerId && m.p1Id && m.p2Id;
+      const cls = `player${isWin ? " win" : ""}${!pname ? " empty" : ""}${canPick ? " clickable" : ""}`;
+      const attrs = canPick ? ` data-match="${m.id}" data-winner="${pid}"` : "";
+      return `<div class="${cls}"${attrs}><span>${pname ? esc(pname) : "—"}</span>${isWin ? "<span>✓</span>" : ""}</div>`;
+    }
+
+    function bindDetail(id) {
+      $("joinBtn")?.addEventListener("click", async () => { await fetch(`/api/torneos/${id}/inscribir`, { method: "POST" }); openDetail(id); });
+      $("leaveBtn")?.addEventListener("click", async () => { await fetch(`/api/torneos/${id}/salir`, { method: "POST" }); openDetail(id); });
+      $("genBtn")?.addEventListener("click", async () => {
+        const r = await fetch(`/api/torneos/${id}/generar`, { method: "POST" });
+        if (!r.ok) { const e = await r.json(); alert(e.error || "Error"); return; }
+        openDetail(id);
+      });
+      $("delBtn")?.addEventListener("click", async () => { if (!confirm("¿Eliminar el torneo?")) return; await fetch(`/api/torneos/${id}`, { method: "DELETE" }); loadList(); });
+      $("detail").querySelectorAll(".player.clickable").forEach((el) => {
+        el.addEventListener("click", async () => {
+          const matchId = el.getAttribute("data-match"), winnerId = el.getAttribute("data-winner");
+          if (!confirm("¿Marcar a este jugador como ganador del match?")) return;
+          await fetch(`/api/torneos/match/${matchId}/ganador`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ winnerId }) });
+          openDetail(id);
+        });
+      });
+    }
+
+    $("tList").addEventListener("click", (e) => {
+      const card = e.target.closest("[data-open]");
+      if (card) openDetail(card.getAttribute("data-open"));
+    });
+    $("backBtn").addEventListener("click", loadList);
+
+    $("cBtn").addEventListener("click", async () => {
+      const name = $("cName").value.trim(), game = $("cGame").value.trim();
+      if (!name || !game) { $("cMsg").textContent = "Nombre y juego obligatorios."; return; }
+      $("cMsg").textContent = "Creando…";
+      const r = await fetch("/api/torneos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, game, description: $("cDesc").value.trim(), maxParticipants: $("cMax").value }) });
+      const d = await r.json();
+      if (!r.ok) { $("cMsg").textContent = "❌ " + (d.error || "Error"); return; }
+      $("cName").value = ""; $("cGame").value = ""; $("cDesc").value = ""; $("cMax").value = "";
+      $("cMsg").textContent = "✅ Creado";
+      loadList();
+    });
+
+    async function init() {
+      try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) {}
+      if (me && me.isAdmin) $("createPanel").classList.remove("hidden");
+      loadList();
+    }
+    init();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>
