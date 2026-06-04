@@ -60,16 +60,25 @@ router.get("/api/tienda", async (req, res) => {
   return res.json({ items: CATALOG.map(pubItem) });
 });
 
-// Mi saldo (para la tienda).
+// Mi saldo + artículos ya comprados (para la tienda).
 router.get("/api/tienda/saldo", requireUser, async (req, res) => {
-  try { return res.json({ balance: await getBalance(req.user.discordId) }); }
-  catch (e) { return res.json({ balance: 0 }); }
+  try {
+    const balance = await getBalance(req.user.discordId);
+    let owned = [];
+    try { const o = await pool.query("SELECT DISTINCT item_key FROM store_purchases WHERE discord_id = $1", [req.user.discordId]); owned = o.rows.map((r) => r.item_key); } catch (e) {}
+    return res.json({ balance, owned });
+  } catch (e) { return res.json({ balance: 0, owned: [] }); }
 });
 
 router.post("/api/tienda/comprar", requireUser, async (req, res) => {
   if (!pool) return res.status(503).json({ error: "BD no configurada." });
   const item = BYKEY[String(req.body?.key || "")];
   if (!item) return res.status(400).json({ error: "Artículo inválido." });
+  // Los roles permanentes son de compra única.
+  if (item.type === "role") {
+    const owned = await pool.query("SELECT 1 FROM store_purchases WHERE discord_id = $1 AND item_key = $2 LIMIT 1", [req.user.discordId, item.key]);
+    if (owned.rows.length) return res.status(400).json({ error: "Ya tienes este artículo." });
+  }
   const note = String(req.body?.note || "").slice(0, 300);
   const buyerName = req.user.globalName || req.user.username || "Jugador";
 

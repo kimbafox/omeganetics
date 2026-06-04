@@ -80,14 +80,14 @@
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const fmt = (n) => (n || 0).toLocaleString("es");
-    let me = null, items = [], balance = 0;
+    let me = null, items = [], balance = 0, owned = [];
 
     async function load() {
       try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) {}
       try { items = (await (await fetch("/api/tienda")).json()).items || []; } catch (e) {}
       if (me) {
         $("balanceBar").style.display = "flex";
-        try { balance = (await (await fetch("/api/tienda/saldo")).json()).balance || 0; } catch (e) {}
+        try { const s = await (await fetch("/api/tienda/saldo")).json(); balance = s.balance || 0; owned = s.owned || []; } catch (e) {}
         $("bal").textContent = fmt(balance);
         $("minePanel").style.display = "block";
         loadMine();
@@ -99,14 +99,17 @@
 
     function render() {
       $("grid").innerHTML = items.map((i) => {
+        const has = i.type === "role" && owned.includes(i.key);
         const can = me && balance >= i.price;
+        let label = "Inicia sesión";
+        if (me) label = has ? "✅ Ya lo tienes" : (can ? "Canjear" : "Saldo insuficiente");
         return `<div class="card">
           <div class="ic">${i.icon}</div>
           <h3>${esc(i.name)}</h3>
           <div class="d">${esc(i.desc)}</div>
           <span class="tag ${i.type === "role" ? "tag-role" : "tag-order"}">${i.type === "role" ? "Entrega automática" : "Lo prepara un admin"}</span>
           <div class="price">🪙 ${fmt(i.price)}</div>
-          <button class="buy" data-key="${i.key}" ${me ? (can ? "" : "disabled") : "disabled"}>${me ? (can ? "Canjear" : "Saldo insuficiente") : "Inicia sesión"}</button>
+          <button class="buy" data-key="${i.key}" ${me && can && !has ? "" : "disabled"}>${label}</button>
         </div>`;
       }).join("");
     }
@@ -136,6 +139,7 @@
         if (!r.ok) throw new Error(d.error || "Error");
         balance = d.balance;
         $("bal").textContent = fmt(balance);
+        if (item.type === "role") owned.push(key);
         $("msg").textContent = d.status === "pendiente" ? "✅ ¡Canjeado! Un admin lo prepara y te avisa." : "✅ ¡Canjeado! Disfrútalo 😎";
         $("msg").className = "ok";
         render(); loadMine();
