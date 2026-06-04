@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Métricas — Omeganetics</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .mx-wrap { max-width: 1000px; margin: 0 auto; padding: 48px 24px 80px; }
+    .mx-head { text-align: center; margin-bottom: 28px; }
+    .mx-head h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 8px 0; }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); margin-bottom: 22px; }
+    .panel h2 { font-size: 1.05rem; margin-bottom: 14px; }
+    .kpis { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 22px; }
+    .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; text-align: center; box-shadow: var(--shadow); }
+    .kpi .n { font-size: 1.6rem; font-weight: 800; }
+    .kpi .l { color: var(--text-faint); font-size: 12px; margin-top: 4px; }
+    .muted { color: var(--text-soft); } .center { text-align:center; }
+    .hidden { display: none; }
+    canvas { max-height: 300px; }
+    @media (max-width:720px){ .kpis{grid-template-columns:repeat(2,1fr);} }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="assets/logo.png" class="logo" width="35" height="35" alt="Omeganetics" />
+        <h1>Omeganetics</h1>
+      </a>
+    </div>
+    <nav><ul>
+      <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
+      <li><a href="/admin.html" class="nav-badge nav-badge-team">Panel</a></li>
+      <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
+    </ul></nav>
+  </header>
+
+  <main class="mx-wrap">
+    <div class="mx-head">
+      <span class="section-kicker">Administración</span>
+      <h1>📊 Métricas del servidor</h1>
+    </div>
+
+    <div id="loading" class="panel"><p class="muted">Cargando…</p></div>
+    <div id="denied" class="panel center hidden"><h2>Acceso restringido</h2><p class="muted">Solo administradores.</p></div>
+
+    <div id="content" class="hidden">
+      <div class="kpis">
+        <div class="kpi"><div class="n" id="kMembers">—</div><div class="l">👥 Miembros</div></div>
+        <div class="kpi"><div class="n" id="kVoice">—</div><div class="l">🎙️ Voz (30d, h)</div></div>
+        <div class="kpi"><div class="n" id="kMsgs">—</div><div class="l">💬 Mensajes (30d)</div></div>
+        <div class="kpi"><div class="n" id="kGames">—</div><div class="l">🕹️ Juegos (30d)</div></div>
+      </div>
+      <section class="panel"><h2>👥 Crecimiento de miembros</h2><canvas id="chMembers"></canvas></section>
+      <section class="panel"><h2>📈 Actividad diaria (voz y mensajes)</h2><canvas id="chActivity"></canvas></section>
+      <section class="panel"><h2>🕹️ Juegos más jugados (30 días)</h2><canvas id="chGames"></canvas></section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const GRID = "rgba(255,255,255,.06)", TICK = "#9aa0b4";
+    Chart && (Chart.defaults.color = TICK, Chart.defaults.borderColor = GRID, Chart.defaults.font.family = "Inter, sans-serif");
+
+    async function init() {
+      let me = null;
+      try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) {}
+      $("loading").style.display = "none";
+      if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
+      $("content").classList.remove("hidden");
+      let d = { activity: [], members: [], topGames: [] };
+      try { d = await (await fetch("/api/metrics")).json(); } catch (e) {}
+
+      const lastMembers = d.members.length ? d.members[d.members.length - 1].members : 0;
+      const voiceH = Math.round(d.activity.reduce((a, x) => a + x.voiceMinutes, 0) / 60);
+      const msgs = d.activity.reduce((a, x) => a + x.messages, 0);
+      $("kMembers").textContent = lastMembers.toLocaleString("es");
+      $("kVoice").textContent = voiceH.toLocaleString("es");
+      $("kMsgs").textContent = msgs.toLocaleString("es");
+      $("kGames").textContent = d.topGames.length;
+
+      const fmtDay = (s) => s.slice(5); // MM-DD
+      if (d.members.length) new Chart($("chMembers"), {
+        type: "line",
+        data: { labels: d.members.map((x) => fmtDay(x.day)), datasets: [{ label: "Miembros", data: d.members.map((x) => x.members), borderColor: "#5865F2", backgroundColor: "rgba(88,101,242,.15)", fill: true, tension: .3 }] },
+        options: { plugins: { legend: { display: false } } },
+      });
+      if (d.activity.length) new Chart($("chActivity"), {
+        type: "line",
+        data: { labels: d.activity.map((x) => fmtDay(x.day)), datasets: [
+          { label: "Minutos en voz", data: d.activity.map((x) => x.voiceMinutes), borderColor: "#43d1ff", backgroundColor: "rgba(67,209,255,.12)", fill: true, tension: .3 },
+          { label: "Mensajes", data: d.activity.map((x) => x.messages), borderColor: "#7be0a3", backgroundColor: "rgba(123,224,163,.12)", fill: true, tension: .3 },
+        ] },
+      });
+      if (d.topGames.length) new Chart($("chGames"), {
+        type: "bar",
+        data: { labels: d.topGames.map((x) => x.game), datasets: [{ label: "Actividad", data: d.topGames.map((x) => x.samples), backgroundColor: "#7c5cff" }] },
+        options: { plugins: { legend: { display: false } }, indexAxis: "y" },
+      });
+    }
+    init();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>

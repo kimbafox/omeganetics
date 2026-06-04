@@ -137,6 +137,8 @@ async function ensureSchema() {
   await pool.query("CREATE TABLE IF NOT EXISTS bot_state (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')");
   // A quién ya le mandamos DM de reactivación (para no repetir).
   await pool.query("CREATE TABLE IF NOT EXISTS outreach_dm (discord_id TEXT PRIMARY KEY, sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW())");
+  // Snapshot diario de miembros (para la gráfica de crecimiento).
+  await pool.query("CREATE TABLE IF NOT EXISTS server_daily (day DATE PRIMARY KEY, members INTEGER NOT NULL DEFAULT 0)");
 }
 
 async function getState(key) {
@@ -371,6 +373,7 @@ async function refresh() {
   await saveVoiceActivity(voice);
   await flushMessages();
   try { await setState("guild_members", String(guild.memberCount || 0)); } catch (e) { /* noop */ }
+  try { await pool.query("INSERT INTO server_daily (day, members) VALUES (CURRENT_DATE, $1) ON CONFLICT (day) DO UPDATE SET members = EXCLUDED.members", [guild.memberCount || 0]); } catch (e) { /* noop */ }
   console.log(`[activity] ${snap.totalActive} jugando · ${snap.games.length} juegos · ${voice.size} en voz`);
 }
 

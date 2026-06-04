@@ -1176,6 +1176,26 @@ app.get("/api/active-games", async (req, res) => {
   }
 });
 
+// Métricas/analytics del servidor (para la página de métricas).
+app.get("/api/metrics", async (req, res) => {
+  const out = { activity: [], members: [], topGames: [] };
+  if (!teamPool) return res.json(out);
+  const ref = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
+  try {
+    const a = await teamPool.query("SELECT to_char(day,'YYYY-MM-DD') d, COALESCE(SUM(voice_samples),0)::int v, COALESCE(SUM(messages),0)::int m FROM user_activity_daily WHERE day > CURRENT_DATE - 30 GROUP BY day ORDER BY day");
+    out.activity = a.rows.map((r) => ({ day: r.d, voiceMinutes: r.v * ref, messages: r.m }));
+  } catch (e) {}
+  try {
+    const mm = await teamPool.query("SELECT to_char(day,'YYYY-MM-DD') d, members FROM server_daily WHERE day > CURRENT_DATE - 60 ORDER BY day");
+    out.members = mm.rows.map((r) => ({ day: r.d, members: r.members }));
+  } catch (e) {}
+  try {
+    const g = await teamPool.query("SELECT game, SUM(samples)::int s FROM game_activity_daily WHERE day > CURRENT_DATE - 30 GROUP BY game ORDER BY s DESC LIMIT 8");
+    out.topGames = g.rows.map((r) => ({ game: r.game, samples: r.s }));
+  } catch (e) {}
+  return res.json(out);
+});
+
 // Números para el Inicio (stats en vivo).
 app.get("/api/home-stats", async (req, res) => {
   if (!teamPool) return res.json({ members: 0, playingNow: 0, activeGames: 0, upcomingEvents: 0 });
