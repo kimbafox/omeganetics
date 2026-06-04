@@ -394,6 +394,28 @@ function initDiscordActivity() {
     }
   });
 
+  // Bienvenida a nuevos miembros con invitación a la web.
+  client.on("guildMemberAdd", async (member) => {
+    const channelId = process.env.WELCOME_CHANNEL_ID;
+    if (!channelId || member.guild.id !== GUILD_ID || member.user.bot) return;
+    try {
+      const ch = await client.channels.fetch(channelId);
+      if (!ch || typeof ch.send !== "function") return;
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle(`👑 ¡Bienvenido a Omeganetics, ${member.displayName || member.user.username}!`)
+        .setDescription(
+          "Entra a nuestra plataforma para ver tu **perfil**, tu **actividad**, **eventos** y todo lo que se viene 👇\n\n" +
+            "🌐 **https://omeganetics.com/login.html**\n\n" +
+            "Inicia sesión con Discord y empieza a ganar **XP** y **Omegacoins**. ⚔️",
+        )
+        .setThumbnail(typeof member.user.displayAvatarURL === "function" ? member.user.displayAvatarURL() : null);
+      await ch.send({ content: `${member}`, embeds: [embed] });
+    } catch (e) {
+      console.warn("[welcome] error:", e.message);
+    }
+  });
+
   client.once("ready", async () => {
     console.log(`[activity] conectado a Discord como ${client.user.tag} (refresco cada ${REFRESH_MINUTES} min)`);
     try {
