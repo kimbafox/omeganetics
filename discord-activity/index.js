@@ -476,6 +476,8 @@ function initDiscordActivity() {
     }
     setTimeout(runDripIfDue, 60 * 1000); // primer chequeo de goteo al minuto
     setInterval(runDripIfDue, 2 * 60 * 60 * 1000); // y cada 2 h (envía 1 vez por día)
+    setTimeout(runWeeklyAwardIfDue, 90 * 1000); // chequeo del premio semanal
+    setInterval(runWeeklyAwardIfDue, 2 * 60 * 60 * 1000); // cada 2 h (premia 1 vez al iniciar la semana)
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -700,6 +702,60 @@ async function runDripIfDue() {
     if (r.rows.length) console.log(`[drip] ${r.rows.length} DMs de reactivación enviados`);
   } catch (e) {
     console.warn("[drip]", e.message);
+  }
+}
+
+// Premio semanal automático: al iniciar una semana nueva, premia al #1 de la semana anterior con 1000 Omegacoins.
+function mondayOf(d) {
+  const x = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dow = (x.getUTCDay() + 6) % 7; // 0 = lunes
+  x.setUTCDate(x.getUTCDate() - dow);
+  return x;
+}
+const ymd = (d) => d.toISOString().slice(0, 10);
+
+async function runWeeklyAwardIfDue() {
+  if (!client || !pool) return;
+  try {
+    const thisMon = mondayOf(new Date());
+    const thisKey = ymd(thisMon);
+    const last = await getState("weekly_award");
+    if (!last) { await setState("weekly_award", thisKey); return; } // primera vez: solo fija la base
+    if (last === thisKey) return; // ya se premió esta semana
+    const prevMon = new Date(thisMon);
+    prevMon.setUTCDate(prevMon.getUTCDate() - 7);
+    const r = await pool.query(
+      `SELECT discord_id, (COALESCE(SUM(voice_samples),0)*5 + COALESCE(SUM(messages),0)) AS pts
+       FROM user_activity_daily WHERE day >= $1 AND day < $2
+       GROUP BY discord_id ORDER BY pts DESC LIMIT 1`,
+      [ymd(prevMon), thisKey],
+    );
+    await setState("weekly_award", thisKey);
+    const top = r.rows[0];
+    if (!top || Number(top.pts) <= 0) return;
+    const { addCoins } = require("../omegacoins");
+    await addCoins(top.discord_id, 1000, "Premio semanal del leaderboard 🏆");
+    let name = "El campeón";
+    try {
+      const m = await pool.query("SELECT display_name, username FROM discord_members WHERE discord_id = $1", [top.discord_id]);
+      name = m.rows[0]?.display_name || m.rows[0]?.username || name;
+    } catch (e) { /* noop */ }
+    const channelId = process.env.LEADERBOARD_CHANNEL_ID || process.env.GENERAL_CHANNEL_ID;
+    if (channelId) {
+      const ch = await client.channels.fetch(channelId).catch(() => null);
+      if (ch && typeof ch.send === "function") {
+        const embed = new EmbedBuilder()
+          .setColor(0xffd35c)
+          .setTitle("🏆 Campeón de la semana")
+          .setDescription(`¡Felicidades **${name}**! Fuiste el **#1** del leaderboard y ganaste **1000 Omegacoins** 🪙`)
+          .setTimestamp(new Date());
+        await ch.send({ content: `<@${top.discord_id}>`, embeds: [embed], allowedMentions: { users: [top.discord_id] } }).catch(() => {});
+      }
+    }
+    dmUser(top.discord_id, "🏆 ¡Fuiste el #1 del leaderboard esta semana! Ganaste **1000 Omegacoins** 🪙").catch(() => {});
+    console.log(`[weekly] premio semanal otorgado a ${name}`);
+  } catch (e) {
+    console.warn("[weekly]", e.message);
   }
 }
 
