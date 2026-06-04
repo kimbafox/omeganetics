@@ -64,6 +64,20 @@
     .btn-interesa { background:rgba(88,101,242,.16); border:1px solid rgba(115,138,255,.4); color:#cdd5ff; border-radius:10px; padding:8px 14px; cursor:pointer; font:inherit; font-weight:700; }
     .btn-interesa.on { background:var(--accent); border-color:var(--accent); color:#fff; }
     .ev-interested { color:var(--text-soft); font-size:14px; }
+    .view-toggle { display:flex; gap:8px; margin-bottom:16px; }
+    .vt-btn { background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--text-soft); border-radius:10px; padding:8px 16px; cursor:pointer; font:inherit; font-weight:700; }
+    .vt-btn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .cal-nav { display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:14px; }
+    .cal-nav button { background:var(--surface-muted); border:1px solid var(--border-strong); color:var(--text); border-radius:8px; width:36px; height:36px; cursor:pointer; font-size:18px; }
+    .cal-nav span { font-weight:800; min-width:180px; text-align:center; text-transform:capitalize; }
+    .cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+    .cal-dow { text-align:center; color:var(--text-faint); font-size:12px; font-weight:700; padding:4px 0; }
+    .cal-cell { min-height:84px; background:var(--surface-muted); border:1px solid var(--border); border-radius:10px; padding:6px; }
+    .cal-cell.empty { background:transparent; border:0; }
+    .cal-cell.today { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+    .cal-daynum { color:var(--text-faint); font-weight:700; font-size:11px; }
+    .cal-ev { display:block; background:var(--accent-soft); border:1px solid rgba(115,138,255,.3); color:#cdd5ff; border-radius:6px; padding:2px 5px; margin-top:4px; font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media (max-width:640px){ .cal-cell{min-height:54px;padding:4px;} .cal-ev{font-size:10px;} .cal-nav span{min-width:120px;} }
   </style>
 </head>
 <body>
@@ -129,11 +143,21 @@
     <section class="panel">
       <h2>🎯 Eventos</h2>
       <p class="sub">Eventos aprobados por la comunidad.</p>
-      <div id="gameFilter" class="filter-bar"></div>
-      <h3 class="ev-subhead">📅 Próximos</h3>
-      <div id="eventsList"></div>
-      <h3 class="ev-subhead">🕘 Pasados</h3>
-      <div id="pastList"></div>
+      <div class="view-toggle">
+        <button class="vt-btn on" type="button" data-view="list">📋 Lista</button>
+        <button class="vt-btn" type="button" data-view="cal">📅 Calendario</button>
+      </div>
+      <div id="listView">
+        <div id="gameFilter" class="filter-bar"></div>
+        <h3 class="ev-subhead">📅 Próximos</h3>
+        <div id="eventsList"></div>
+        <h3 class="ev-subhead">🕘 Pasados</h3>
+        <div id="pastList"></div>
+      </div>
+      <div id="calendarView" class="hidden">
+        <div class="cal-nav"><button type="button" id="calPrev" aria-label="Mes anterior">‹</button><span id="calLabel"></span><button type="button" id="calNext" aria-label="Mes siguiente">›</button></div>
+        <div class="cal-grid" id="calGrid"></div>
+      </div>
     </section>
   </main>
 
@@ -271,6 +295,44 @@
         loadApproved();
       } catch (err) { e.target.disabled = false; }
     });
+
+    // Vista Lista / Calendario
+    let calMonth = null;
+    document.querySelector(".view-toggle").addEventListener("click", (e) => {
+      const v = e.target.getAttribute("data-view");
+      if (!v) return;
+      document.querySelectorAll(".vt-btn").forEach((b) => b.classList.toggle("on", b.getAttribute("data-view") === v));
+      $("listView").classList.toggle("hidden", v !== "list");
+      $("calendarView").classList.toggle("hidden", v !== "cal");
+      if (v === "cal") { if (!calMonth) { const n = new Date(); calMonth = new Date(n.getFullYear(), n.getMonth(), 1); } renderCalendar(); }
+    });
+    $("calPrev").addEventListener("click", () => { calMonth.setMonth(calMonth.getMonth() - 1); renderCalendar(); });
+    $("calNext").addEventListener("click", () => { calMonth.setMonth(calMonth.getMonth() + 1); renderCalendar(); });
+
+    function renderCalendar() {
+      const year = calMonth.getFullYear(), month = calMonth.getMonth();
+      const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+      $("calLabel").textContent = `${monthNames[month]} ${year}`;
+      const dow = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+      const startOffset = (new Date(year, month, 1).getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const today = new Date();
+      const isThisMonth = today.getFullYear() === year && today.getMonth() === month;
+      const evByDay = {};
+      for (const e of allApproved) {
+        if (!e.startDate) continue;
+        const d = new Date(e.startDate);
+        if (d.getFullYear() === year && d.getMonth() === month) (evByDay[d.getDate()] = evByDay[d.getDate()] || []).push(e);
+      }
+      let html = dow.map((d) => `<div class="cal-dow">${d}</div>`).join("");
+      for (let i = 0; i < startOffset; i++) html += '<div class="cal-cell empty"></div>';
+      for (let day = 1; day <= daysInMonth; day++) {
+        const evs = evByDay[day] || [];
+        const todayCls = isThisMonth && today.getDate() === day ? " today" : "";
+        html += `<div class="cal-cell${todayCls}"><div class="cal-daynum">${day}</div>${evs.map((e) => `<span class="cal-ev" title="${esc(e.name)} · ${esc(e.game || "")}">${esc(e.name)}</span>`).join("")}</div>`;
+      }
+      $("calGrid").innerHTML = html;
+    }
 
     // Filtro por juego
     $("gameFilter").addEventListener("click", (e) => {
