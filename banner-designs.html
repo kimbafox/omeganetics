@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Banners Omeganetics — pruebas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0b0b10; color: #eee; font-family: system-ui, "Segoe UI", sans-serif; padding: 30px 20px 80px; }
+  h1 { text-align: center; font-size: 1.5rem; }
+  .hint { text-align: center; color: #9a9aac; max-width: 640px; margin: 6px auto 30px; font-size: 14px; }
+  .row { max-width: 1080px; margin: 0 auto 40px; }
+  .row > .label { font-weight: 700; margin-bottom: 8px; color: #ffd35c; }
+  .row > .dl { background: linear-gradient(135deg,#5865F2,#7c5cff); color:#fff; border:0; border-radius:8px; padding:8px 16px; font-weight:700; cursor:pointer; margin-top:10px; }
+  .stage { overflow-x: auto; }
+
+  /* tamaño de exportación de cada banner */
+  .banner { width: 1040px; height: 400px; position: relative; overflow: hidden; border-radius: 16px; font-family: "Segoe UI", system-ui, sans-serif; color: #fff; }
+  .banner .accent { position:absolute; top:0; left:0; right:0; height:12px; }
+  .logo-wrap { position:absolute; left:70px; top:50%; transform:translateY(-50%); width:230px; height:230px; }
+  .logo-ring { width:230px; height:230px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  .logo-ring img { width:100%; height:100%; object-fit:cover; }
+  .txt { position:absolute; left:340px; top:50%; transform:translateY(-50%); }
+  .txt .kick { font-size:20px; letter-spacing:3px; opacity:.85; margin:0 0 6px; }
+  .txt .title { font-size:64px; font-weight:900; margin:0; line-height:1; }
+  .txt .sub { font-size:23px; margin:14px 0 0; opacity:.9; }
+  .txt .url { font-size:26px; font-weight:800; margin-top:18px; display:flex; align-items:center; gap:10px; }
+  .txt .url img { width:34px; height:34px; border-radius:50%; }
+  .foot { position:absolute; left:70px; bottom:22px; font-size:18px; opacity:.6; }
+  .emoji-deco { position:absolute; font-size:40px; }
+
+  /* --- D1 Imperio Dorado --- */
+  .d1 { background: radial-gradient(120% 140% at 0% 0%, #2a1d4d 0%, #0d0e16 60%); }
+  .d1 .accent { background:#5865F2; }
+  .d1 .logo-ring { background:#0a0a12; box-shadow:0 0 0 6px #5865F2, 0 0 40px rgba(88,101,242,.6); }
+  .d1 .title { background:linear-gradient(135deg,#ffd35c,#ff9f43); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .d1 .kick { color:#cdd5ff; }
+  .d1 .crown { top:6px; left:96px; }
+
+  /* --- D2 Neón Púrpura --- */
+  .d2 { background: radial-gradient(100% 120% at 100% 0%, #3a0d5e 0%, #0a0a14 65%); }
+  .d2 .accent { background:linear-gradient(90deg,#7c5cff,#ff6fae); }
+  .d2 .logo-ring { background:#10081c; box-shadow:0 0 0 5px #b06bff, 0 0 50px rgba(176,107,255,.8); }
+  .d2 .title { color:#fff; text-shadow:0 0 18px rgba(176,107,255,.9),0 0 40px rgba(255,111,174,.5); }
+  .d2 .kick { color:#e3b8ff; }
+  .d2 .sub { color:#dcdcff; }
+
+  /* --- D3 Guerrero (busto con armadura) --- */
+  .d3 { background:linear-gradient(160deg,#1b1410 0%, #0c0a08 100%); }
+  .d3 .accent { background:linear-gradient(90deg,#b8860b,#ffd35c,#b8860b); }
+  .d3 .logo-wrap { width:250px; height:300px; }
+  .d3 .armor { position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); width:300px; height:150px; background:linear-gradient(180deg,#5a5f6b,#23262e); border-radius:150px 150px 40px 40px; box-shadow:inset 0 6px 14px rgba(255,255,255,.18), 0 4px 18px rgba(0,0,0,.6); }
+  .d3 .armor::before, .d3 .armor::after { content:""; position:absolute; top:18px; width:70px; height:70px; border-radius:50%; background:linear-gradient(180deg,#6b7280,#2b2f37); box-shadow:inset 0 4px 8px rgba(255,255,255,.2); }
+  .d3 .armor::before { left:-12px; } .d3 .armor::after { right:-12px; }
+  .d3 .logo-ring { position:absolute; top:0; left:50%; transform:translateX(-50%); width:200px; height:200px; background:#0a0a08; box-shadow:0 0 0 5px #ffd35c, 0 0 30px rgba(255,211,92,.5); z-index:2; }
+  .d3 .title { color:#ffd35c; letter-spacing:1px; }
+  .d3 .kick { color:#d8b56a; }
+  .d3 .swords { top:50%; left:120px; transform:translateY(-50%); font-size:120px; opacity:.10; z-index:1; }
+
+  /* --- D4 Marine (casco) --- */
+  .d4 { background:linear-gradient(160deg,#16201a 0%, #0a0f0c 100%); }
+  .d4 .accent { background:linear-gradient(90deg,#3b5d3b,#7aa05a); }
+  .d4 .logo-wrap { width:250px; height:280px; }
+  .d4 .logo-ring { width:210px; height:210px; background:#0a0f0c; box-shadow:0 0 0 5px #7aa05a, 0 0 26px rgba(122,160,90,.5); margin-top:40px; }
+  .d4 .helmet { position:absolute; top:8px; left:50%; transform:translateX(-50%); font-size:120px; z-index:3; filter:drop-shadow(0 4px 6px rgba(0,0,0,.6)); }
+  .d4 .title { color:#cfe0b8; }
+  .d4 .kick { color:#9ab87a; }
+  .d4 .sub { color:#cfe0b8; }
+
+  /* --- D5 Monedas --- */
+  .d5 { background:radial-gradient(120% 130% at 50% 0%, #2a230d 0%, #0d0c08 60%); }
+  .d5 .accent { background:linear-gradient(90deg,#ffd35c,#ff9f43); }
+  .d5 .logo-ring { background:#0c0b06; box-shadow:0 0 0 6px #ffd35c, 0 0 40px rgba(255,211,92,.6); }
+  .d5 .title { background:linear-gradient(135deg,#ffe9a8,#ffb347); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .d5 .kick { color:#e9cf8a; }
+  .d5 .coin-bg { position:absolute; border-radius:50%; opacity:.12; }
+
+  /* --- D6 Minimal centrado --- */
+  .d6 { background:#0d0e16; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+  .d6 .accent { background:#5865F2; }
+  .d6 .logo-ring { position:static; transform:none; width:130px; height:130px; background:#0a0a12; box-shadow:0 0 0 4px #5865F2; margin-bottom:14px; }
+  .d6 .ctitle { font-size:58px; font-weight:900; background:linear-gradient(135deg,#ffd35c,#ff9f43); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin:0; }
+  .d6 .csub { font-size:22px; color:#cdd5ff; margin:10px 0 0; }
+</style>
+</head>
+<body>
+<h1>🎨 Banners Omeganetics — elige y descarga</h1>
+<p class="hint">Pasa el mouse, elige el que más te guste y dale <b>Descargar PNG</b>. Se exporta en alta calidad para usarlo en el @everyone. (Los diseños 3 y 4 son pruebas de "cuerpo de guerrero" y "casco marine" con CSS/emoji.)</p>
+
+<!-- D1 -->
+<div class="row"><div class="label">1 · Imperio Dorado</div><div class="stage">
+  <div class="banner d1" id="b1">
+    <div class="accent"></div>
+    <span class="emoji-deco crown">👑</span>
+    <div class="logo-wrap"><div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div></div>
+    <div class="txt">
+      <p class="kick">EL IMPERIO GAMER DE LATAM</p>
+      <h2 class="title">OMEGANETICS</h2>
+      <p class="sub">Sube de nivel · Gana Omegacoins · Compite en torneos</p>
+      <div class="url"><img src="/assets/omegacoin-actual.png" crossorigin="anonymous">omeganetics.com</div>
+    </div>
+    <div class="foot">Únete al Discord · discord.gg/bCWjyns8U5</div>
+  </div></div>
+  <button class="dl" data-target="b1">⬇️ Descargar PNG</button>
+</div>
+
+<!-- D2 -->
+<div class="row"><div class="label">2 · Neón Púrpura</div><div class="stage">
+  <div class="banner d2" id="b2">
+    <div class="accent"></div>
+    <div class="logo-wrap"><div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div></div>
+    <div class="txt">
+      <p class="kick">COMUNIDAD GAMER · LATAM</p>
+      <h2 class="title">OMEGANETICS</h2>
+      <p class="sub">Tu actividad se recompensa. Únete al Imperio.</p>
+      <div class="url"><img src="/assets/omegacoin-actual.png" crossorigin="anonymous">omeganetics.com</div>
+    </div>
+    <div class="foot">discord.gg/bCWjyns8U5</div>
+  </div></div>
+  <button class="dl" data-target="b2">⬇️ Descargar PNG</button>
+</div>
+
+<!-- D3 Guerrero -->
+<div class="row"><div class="label">3 · Guerrero (busto con armadura)</div><div class="stage">
+  <div class="banner d3" id="b3">
+    <div class="accent"></div>
+    <span class="emoji-deco swords">⚔️</span>
+    <div class="logo-wrap">
+      <div class="armor"></div>
+      <div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div>
+    </div>
+    <div class="txt">
+      <p class="kick">FORJADO PARA LA BATALLA</p>
+      <h2 class="title">OMEGANETICS</h2>
+      <p class="sub">Asciende de Recluta a Mítico Omega 👑</p>
+      <div class="url"><img src="/assets/omegacoin-actual.png" crossorigin="anonymous">omeganetics.com</div>
+    </div>
+    <div class="foot">discord.gg/bCWjyns8U5</div>
+  </div></div>
+  <button class="dl" data-target="b3">⬇️ Descargar PNG</button>
+</div>
+
+<!-- D4 Marine -->
+<div class="row"><div class="label">4 · Marine (casco)</div><div class="stage">
+  <div class="banner d4" id="b4">
+    <div class="accent"></div>
+    <div class="logo-wrap">
+      <span class="helmet">🪖</span>
+      <div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div>
+    </div>
+    <div class="txt">
+      <p class="kick">ESCUADRÓN OMEGA</p>
+      <h2 class="title">OMEGANETICS</h2>
+      <p class="sub">Entra, juega en grupo y conquista 🎮</p>
+      <div class="url"><img src="/assets/omegacoin-actual.png" crossorigin="anonymous">omeganetics.com</div>
+    </div>
+    <div class="foot">discord.gg/bCWjyns8U5</div>
+  </div></div>
+  <button class="dl" data-target="b4">⬇️ Descargar PNG</button>
+</div>
+
+<!-- D5 Monedas -->
+<div class="row"><div class="label">5 · Monedas (economía)</div><div class="stage">
+  <div class="banner d5" id="b5">
+    <div class="accent"></div>
+    <div class="logo-wrap"><div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div></div>
+    <div class="txt">
+      <p class="kick">LA ECONOMÍA DEL IMPERIO</p>
+      <h2 class="title">OMEGACOINS</h2>
+      <p class="sub">Gánalos por tu actividad y canjéalos por premios 🪙</p>
+      <div class="url"><img src="/assets/omegacoin-actual.png" crossorigin="anonymous">omeganetics.com</div>
+    </div>
+    <div class="foot">discord.gg/bCWjyns8U5</div>
+  </div></div>
+  <button class="dl" data-target="b5">⬇️ Descargar PNG</button>
+</div>
+
+<!-- D6 Minimal -->
+<div class="row"><div class="label">6 · Minimal centrado</div><div class="stage">
+  <div class="banner d6" id="b6">
+    <div class="accent"></div>
+    <div class="logo-ring"><img src="/assets/logo.png" crossorigin="anonymous"></div>
+    <h2 class="ctitle">OMEGANETICS</h2>
+    <p class="csub">El imperio gamer de LATAM · omeganetics.com</p>
+  </div></div>
+  <button class="dl" data-target="b6">⬇️ Descargar PNG</button>
+</div>
+
+<script>
+document.querySelectorAll(".dl").forEach((btn) => {
+  btn.addEventListener("click", async () => {
+    const el = document.getElementById(btn.dataset.target);
+    btn.textContent = "Generando...";
+    try {
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
+      const a = document.createElement("a");
+      a.download = "omeganetics-banner-" + btn.dataset.target + ".png";
+      a.href = canvas.toDataURL("image/png");
+      a.click();
+      btn.textContent = "⬇️ Descargar PNG";
+    } catch (e) {
+      btn.textContent = "Error — reintenta";
+      console.error(e);
+    }
+  });
+});
+</script>
+</body>
+</html>
