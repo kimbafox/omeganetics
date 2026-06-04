@@ -946,14 +946,19 @@ async function notifyAdmins(title, desc, color) {
   } catch (e) { /* noop */ }
 }
 
-// Lista de canales de voz (para el select de la tienda), sin el AFK.
+// Canales de voz renombrables desde la tienda (allowlist: campos de batalla + campo-global).
+const RENAMABLE_VC = (process.env.RENAMABLE_VC_IDS || "1395843129285935337,1183607153802620960,1428934172436729866,1421370530082066583")
+  .split(",").map((s) => s.trim()).filter(Boolean);
 function getVoiceChannels() {
   if (!client) return [];
   try {
     const guild = client.guilds.cache.get(GUILD_ID);
     if (!guild) return [];
-    const afk = guild.afkChannelId;
-    return guild.channels.cache.filter((c) => c.type === 2 && c.id !== afk).map((c) => ({ id: c.id, name: c.name }));
+    // Ordenados como en la allowlist.
+    return RENAMABLE_VC
+      .map((id) => guild.channels.cache.get(id))
+      .filter((c) => c && c.type === 2)
+      .map((c) => ({ id: c.id, name: c.name }));
   } catch (e) { return []; }
 }
 
