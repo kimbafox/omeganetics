@@ -403,6 +403,11 @@ function initDiscordActivity() {
   client.on("messageCreate", (msg) => {
     try {
       if (!msg.guild || msg.guild.id !== GUILD_ID) return;
+      // Bump de DISBOARD: premiar 10 🪙 al que lo hizo (con candado de 2 h).
+      if (msg.author?.bot && /disboard/i.test(msg.author.username || "") && msg.interaction?.commandName === "bump" && msg.interaction.user) {
+        onBump(msg.interaction.user.id, msg.channel?.id).catch(() => {});
+        return;
+      }
       if (!msg.author || msg.author.bot) return;
       const id = msg.author.id;
       const prev = pendingMessages.get(id) || { count: 0, username: "", displayName: "", avatar: "" };
@@ -486,6 +491,8 @@ function initDiscordActivity() {
       setTimeout(pollTwitch, 30 * 1000);
       setInterval(pollTwitch, 4 * 60 * 1000); // alertas de Twitch cada 4 min
     }
+    setTimeout(bumpReminder, 2 * 60 * 1000);
+    setInterval(bumpReminder, 15 * 60 * 1000); // recordatorio de /bump
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -831,6 +838,41 @@ async function pollTwitch() {
     }
   } catch (e) {
     console.warn("[twitch]", e.message);
+  }
+}
+
+// Premia 10 Omegacoins a quien hace /bump (candado de 2 h para no farmear).
+async function onBump(userId, channelId) {
+  if (!pool || !userId) return;
+  const now = Date.now();
+  const lastTs = Number((await getState("bump_last_ts")) || 0);
+  if (now - lastTs < 110 * 60 * 1000) return; // ya se premió hace poco
+  try { const { addCoins } = require("../omegacoins"); await addCoins(userId, 10, "Bump del servidor 🚀"); } catch (e) { /* noop */ }
+  await setState("bump_last_ts", String(now));
+  await setState("bump_reminded", "false");
+  try {
+    const ch = channelId ? await client.channels.fetch(channelId).catch(() => null) : null;
+    if (ch && typeof ch.send === "function") await ch.send(`🚀 ¡Gracias <@${userId}> por el **/bump**! +10 🪙`).catch(() => {});
+  } catch (e) { /* noop */ }
+}
+
+// Recordatorio de bump (~2 h después del último, una sola vez por ciclo).
+async function bumpReminder() {
+  if (!client || !pool) return;
+  const channelId = process.env.BUMP_CHANNEL_ID || process.env.GENERAL_CHANNEL_ID;
+  if (!channelId) return;
+  try {
+    const now = Date.now();
+    const lastTs = Number((await getState("bump_last_ts")) || 0);
+    const reminded = (await getState("bump_reminded")) === "true";
+    const due = lastTs === 0 || now - lastTs >= 2 * 60 * 60 * 1000;
+    if (due && !reminded) {
+      const ch = await client.channels.fetch(channelId).catch(() => null);
+      if (ch && typeof ch.send === "function") await ch.send("⏰ ¡Ya se puede hacer **/bump**! El primero que lo haga gana **10 🪙** y ayuda a que más gente descubra el server 🚀").catch(() => {});
+      await setState("bump_reminded", "true");
+    }
+  } catch (e) {
+    console.warn("[bump]", e.message);
   }
 }
 
