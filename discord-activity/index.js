@@ -629,6 +629,36 @@ async function grantRole(discordId, roleName, tier) {
   }
 }
 
+// Rangos por nivel (escalera). Solo SUMA el rango alcanzado (nunca quita, para no romper accesos a canales).
+const RANK_LADDER = [
+  { match: "recluta", level: 1 },
+  { match: "conquista", level: 5 },
+  { match: "exterminador", level: 10 },
+  { match: "erudito", level: 20 },
+  { match: "élite omega", level: 30 },
+  { match: "mítico omega", level: 50 },
+];
+async function assignRankByLevel(discordId, level) {
+  if (!client || !level) return;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return;
+    let target = null;
+    for (const r of RANK_LADDER) {
+      if (r.level > level) continue;
+      const role = guild.roles.cache.find((x) => x.name.toLowerCase().includes(r.match));
+      if (role) target = role;
+    }
+    if (!target) return;
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (member && !member.roles.cache.has(target.id)) {
+      await member.roles.add(target.id, `Rango por nivel ${level}`);
+    }
+  } catch (e) {
+    console.warn("[rangos]", e.message);
+  }
+}
+
 // Envía un DM a un usuario (notificaciones transaccionales).
 async function dmUser(discordId, content) {
   if (!client || !discordId) return false;
@@ -673,4 +703,4 @@ async function runDripIfDue() {
   }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser };
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel };

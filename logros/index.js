@@ -142,6 +142,7 @@ router.get("/api/me/logros", requireUser, async (req, res) => {
     // Recompensas en Omegacoins: por subir de nivel y por cada logro ganado.
     try {
       await rewardLevelUps(req.user.discordId, stats.level);
+      try { require("../discord-activity").assignRankByLevel(req.user.discordId, stats.level); } catch (e) { /* noop */ }
       let da = null;
       for (const a of list) {
         if (!a.earned) continue;
