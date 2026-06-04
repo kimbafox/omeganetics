@@ -22,6 +22,29 @@
 
   <style>
     html { scroll-behavior: smooth; }
+    .home-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; max-width:1100px; margin:0 auto; padding:8px 24px; }
+    .hs-item { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:22px 16px; text-align:center; box-shadow:var(--shadow); }
+    .hs-num { font-size:2rem; font-weight:800; background:linear-gradient(135deg,#5865F2,#7c5cff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .hs-lbl { color:var(--text-soft); font-size:13px; margin-top:6px; }
+    .how-section { max-width:1100px; margin:0 auto; padding:48px 24px; text-align:center; }
+    .how-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:24px 0; }
+    .how-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px 16px; box-shadow:var(--shadow); }
+    .how-ico { font-size:2rem; margin-bottom:8px; }
+    .how-card h3 { font-size:1rem; margin-bottom:6px; }
+    .how-card p { color:var(--text-soft); font-size:14px; }
+    .home-previews { display:grid; grid-template-columns:1fr 1fr; gap:24px; max-width:1100px; margin:0 auto; padding:16px 24px 56px; }
+    .preview-col { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:22px; box-shadow:var(--shadow); }
+    .preview-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .preview-head h3 { font-size:1.05rem; }
+    .preview-head a { color:#aab2ff; text-decoration:none; font-weight:700; font-size:14px; }
+    .preview-list { list-style:none; display:flex; flex-direction:column; gap:10px; padding:0; margin:0; }
+    .pl-row { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--surface-muted); border:1px solid var(--border); border-radius:12px; }
+    .pl-rank { font-weight:800; color:var(--text-faint); min-width:26px; }
+    .pl-name { font-weight:700; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pl-pts { color:#aab2ff; font-size:13px; font-weight:700; }
+    .pl-ev-game { color:#aab2ff; font-size:12px; }
+    .muted { color:var(--text-soft); }
+    @media (max-width:820px){ .home-stats,.how-grid{grid-template-columns:repeat(2,1fr);} .home-previews{grid-template-columns:1fr;} }
   </style>
 </head>
 <body>
@@ -89,6 +112,27 @@
       </a>
     </div>
 
+  </section>
+
+  <!-- STATS EN VIVO -->
+  <section class="home-stats anim">
+    <div class="hs-item"><div class="hs-num" id="hsMembers">—</div><div class="hs-lbl">👥 Miembros</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsPlaying">—</div><div class="hs-lbl">🎮 Jugando ahora</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsGames">—</div><div class="hs-lbl">🕹️ Juegos activos</div></div>
+    <div class="hs-item"><div class="hs-num" id="hsEvents">—</div><div class="hs-lbl">🎯 Próximos eventos</div></div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="how-section anim">
+    <span class="section-kicker">Cómo funciona</span>
+    <h2>Entra, juega y asciende</h2>
+    <div class="how-grid">
+      <div class="how-card"><div class="how-ico">🎮</div><h3>Entra con Discord</h3><p>Inicia sesión en segundos con tu cuenta de Discord.</p></div>
+      <div class="how-card"><div class="how-ico">🎙️</div><h3>Juega y participa</h3><p>Gana XP y Omegacoins por hablar en voz y chatear.</p></div>
+      <div class="how-card"><div class="how-ico">⭐</div><h3>Sube de rango</h3><p>De Recluta a Mítico Omega, con logros y roles exclusivos.</p></div>
+      <div class="how-card"><div class="how-ico">🏆</div><h3>Gana premios</h3><p>Top semanal, recompensas y canjes con tus Omegacoins.</p></div>
+    </div>
+    <a href="/login.html" class="btn">Entrar con Discord</a>
   </section>
 
   <!-- EVENTOS -->
@@ -175,6 +219,18 @@
         </div>
       </section>
       </div>
+  </section>
+
+  <!-- PREVIEWS EN VIVO -->
+  <section class="home-previews anim">
+    <div class="preview-col">
+      <div class="preview-head"><h3>🏆 Top jugadores de la semana</h3><a href="/actividad.html">Ver ranking →</a></div>
+      <div id="homeTop" class="preview-list"><div class="muted">Cargando…</div></div>
+    </div>
+    <div class="preview-col">
+      <div class="preview-head"><h3>🎯 Próximos eventos</h3><a href="/eventos.html">Ver eventos →</a></div>
+      <div id="homeEvents" class="preview-list"><div class="muted">Cargando…</div></div>
+    </div>
   </section>
 
   <!-- CREADORES -->
@@ -475,9 +531,35 @@
       }
     };
 
+    const loadHome = async () => {
+      try {
+        const s = await (await fetch('/api/home-stats')).json();
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v || 0).toLocaleString('es'); };
+        set('hsMembers', s.members); set('hsPlaying', s.playingNow); set('hsGames', s.activeGames); set('hsEvents', s.upcomingEvents);
+      } catch (e) { /* noop */ }
+      try {
+        const r = await (await fetch('/api/rankings?period=week')).json();
+        const top = (r.top || []).slice(0, 5);
+        const el = document.getElementById('homeTop');
+        if (el) el.innerHTML = top.length
+          ? top.map((p) => `<div class="pl-row"><span class="pl-rank">${p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : '#' + p.rank}</span><span class="pl-name">${escapeHtml(p.name)}</span><span class="pl-pts">${p.points} pts</span></div>`).join('')
+          : '<div class="muted">Aún no hay actividad esta semana. ¡Sé el primero!</div>';
+      } catch (e) { /* noop */ }
+      try {
+        const evs = await (await fetch('/api/eventos')).json();
+        const cutoff = Date.now() - 86400000;
+        const up = (Array.isArray(evs) ? evs : []).filter((e) => !e.startDate || new Date(e.startDate).getTime() >= cutoff).slice(0, 5);
+        const el = document.getElementById('homeEvents');
+        if (el) el.innerHTML = up.length
+          ? up.map((e) => `<div class="pl-row"><span class="pl-name">${escapeHtml(e.name)}</span><span class="pl-ev-game">${escapeHtml(e.game || '')}</span></div>`).join('')
+          : '<div class="muted">No hay próximos eventos. ¡Crea uno!</div>';
+      } catch (e) { /* noop */ }
+    };
+
     setupCarousel(document.getElementById('heroCarousel'));
     loadWikiShowcase();
     loadStoreShowcase();
+    loadHome();
 
   </script>
   <script src="js/team-home.js"></script>
