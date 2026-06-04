@@ -1236,10 +1236,10 @@ function levelFromXpPublic(xp) {
   while (xp >= total + need) { total += need; level += 1; need = Math.round(need * 1.35); }
   return level;
 }
-app.get("/api/u/:id", async (req, res) => {
-  if (!teamPool) return res.json({ found: false });
+async function getPublicProfile(idParam) {
+  if (!teamPool) return { found: false };
   try {
-    const param = String(req.params.id || "").trim();
+    const param = String(idParam || "").trim();
     let discordId = null;
     if (/^\d{5,}$/.test(param)) {
       discordId = param;
@@ -1252,7 +1252,7 @@ app.get("/api/u/:id", async (req, res) => {
         discordId = r2.rows[0]?.discord_id || null;
       }
     }
-    if (!discordId) return res.json({ found: false });
+    if (!discordId) return { found: false };
 
     let name = "", username = "", avatar = "", role = "viewer", createdAt = null;
     const cu = await teamPool.query("SELECT username, global_name, avatar_url, role, created_at FROM community_users WHERE discord_id = $1", [discordId]);
@@ -1263,7 +1263,7 @@ app.get("/api/u/:id", async (req, res) => {
       const dm = await teamPool.query("SELECT username, display_name, avatar_url FROM discord_members WHERE discord_id = $1", [discordId]);
       if (dm.rows[0]) { username = dm.rows[0].username || ""; name = dm.rows[0].display_name || username; avatar = dm.rows[0].avatar_url || ""; }
     }
-    if (!username && !name) return res.json({ found: false });
+    if (!username && !name) return { found: false };
 
     const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
     let voiceMinutes = 0, messages = 0, level = 1, xp = 0;
@@ -1282,11 +1282,12 @@ app.get("/api/u/:id", async (req, res) => {
       achievements = (ACHIEVEMENTS_CATALOG || []).filter((a) => earned.has(a.key)).map((a) => ({ key: a.key, name: a.name, icon: a.icon, tier: a.tier }));
     } catch (e) {}
 
-    return res.json({ found: true, discordId, username, name, avatar, role, createdAt, level: { level, xp }, activity: { voiceMinutes, messages }, coins, referrals, achievements });
+    return { found: true, discordId, username, name, avatar, role, createdAt, level: { level, xp }, activity: { voiceMinutes, messages }, coins, referrals, achievements };
   } catch (e) {
-    return res.json({ found: false });
+    return { found: false };
   }
-});
+}
+app.get("/api/u/:id", async (req, res) => res.json(await getPublicProfile(req.params.id)));
 
 if (resolvedDatabaseUrl) {
 
@@ -1307,9 +1308,35 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// Perfil público compartible.
-app.get("/u/:id", (req, res) => {
-  res.sendFile(path.join(__dirname, "u.html"));
+// Perfil público compartible (con OpenGraph dinámico por usuario).
+let uHtmlCache = null;
+function getUHtml() {
+  if (!uHtmlCache) uHtmlCache = fs.readFileSync(path.join(__dirname, "u.html"), "utf8");
+  return uHtmlCache;
+}
+const escAttr = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+app.get("/u/:id", async (req, res) => {
+  let html = getUHtml();
+  let title = "Perfil — Omeganetics";
+  let desc = "Mira el rango, nivel y logros de este miembro de Omeganetics.";
+  let img = "/assets/previa.png";
+  try {
+    const data = await getPublicProfile(req.params.id);
+    if (data.found) {
+      title = `${data.name || data.username} — Omeganetics`;
+      const roleTxt = data.role === "admin" ? "Administrador" : "Miembro";
+      desc = `Nivel ${data.level.level} · ${roleTxt} · ${data.achievements.length} logros · ${data.coins} Omegacoins en Omeganetics`;
+      if (data.avatar) img = data.avatar;
+    }
+  } catch (e) { /* usa valores por defecto */ }
+  const url = `https://omeganetics.com/u/${encodeURIComponent(req.params.id)}`;
+  html = html
+    .split("__OG_TITLE__").join(escAttr(title))
+    .split("__OG_DESC__").join(escAttr(desc))
+    .split("__OG_IMAGE__").join(escAttr(img))
+    .split("__OG_URL__").join(escAttr(url));
+  res.set("Content-Type", "text/html; charset=utf-8");
+  res.send(html);
 });
 
 app.get("/tiendita", (req, res) => {

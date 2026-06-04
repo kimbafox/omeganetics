@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /perfil.html
+
+Sitemap: https://omeganetics.com/sitemap.xml
