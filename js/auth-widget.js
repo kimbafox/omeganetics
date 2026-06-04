@@ -66,7 +66,7 @@
       <a role="menuitem" href="/perfil.html">Ver perfil</a>
       <a role="menuitem" href="/perfil.html#actividad">Mi actividad</a>
       <a role="menuitem" href="/creadores.html">${creatorStatus === "aprobado" ? "🎬 Subir contenido" : "🎬 Creadores"}</a>
-      ${me.isAdmin ? '<a role="menuitem" href="/admin-equipo.html">Panel de admin</a>' : ""}
+      ${me.isAdmin ? '<a role="menuitem" href="/admin.html">Panel de admin</a>' : ""}
       <div class="user-menu-sep"></div>
       <button role="menuitem" type="button" class="user-menu-logout">Cerrar sesión</button>
     </div>`;

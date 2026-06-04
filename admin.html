@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel admin — Omeganetics</title>
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .adm-wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
+    .adm-head { text-align: center; margin-bottom: 32px; }
+    .adm-head h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 8px 0; }
+    .adm-head p { color: var(--text-soft); }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); margin-bottom: 22px; }
+    .panel h2 { font-size: 1.15rem; margin-bottom: 4px; }
+    .panel .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 16px; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .row input, .row select { background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; }
+    .row input { flex: 1; min-width: 160px; }
+    .msg { font-size: 14px; } .msg.ok { color: #7be0a3; } .msg.err { color: #ff9b9b; }
+    .item { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+    .item h3 { margin-bottom: 4px; }
+    .item .meta { color: var(--text-faint); font-size: 13px; margin-bottom: 4px; }
+    .actions { display: flex; gap: 10px; margin-top: 10px; }
+    .btn-approve { background: #3ba55c; color: #fff; border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
+    .btn-reject { background: transparent; color: #ff9b9b; border: 1px solid rgba(255,107,107,.4); border-radius: 10px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
+    .empty { color: var(--text-soft); padding: 12px 0; }
+    .chip { display:inline-block; background: var(--accent-soft); border:1px solid rgba(115,138,255,.3); color:#aab2ff; border-radius:999px; padding:2px 10px; font-size:12px; margin:2px; }
+    .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 12px; }
+    .quick a { display:block; text-decoration:none; color:inherit; background:var(--surface-muted); border:1px solid var(--border); border-radius:14px; padding:18px; transition:transform .2s, border-color .2s; }
+    .quick a:hover { transform:translateY(-3px); border-color:var(--border-strong); }
+    .quick .t { font-weight:800; margin-bottom:4px; }
+    .quick .d { color:var(--text-faint); font-size:13px; }
+    .center { text-align:center; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
+        <img src="assets/logo.png" class="logo" width="35" height="35" alt="Omeganetics" />
+        <h1>Omeganetics</h1>
+      </a>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
+        <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
+        <li><a href="/eventos.html" class="nav-badge nav-badge-team">Eventos</a></li>
+        <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="adm-wrap">
+    <div class="adm-head">
+      <span class="section-kicker">Administración</span>
+      <h1>🛡️ Panel admin</h1>
+      <p>Todo en un solo lugar: aprobar eventos y creadores, dar insignias y Omegacoins.</p>
+    </div>
+
+    <div id="loading" class="panel"><p class="empty">Cargando…</p></div>
+    <div id="denied" class="panel center hidden"><h2>Acceso restringido</h2><p class="empty">Solo administradores. <a href="/login.html" style="color:#aab2ff">Inicia sesión</a> con una cuenta admin.</p></div>
+
+    <div id="content" class="hidden">
+      <section class="panel">
+        <h2>📅 Eventos pendientes</h2>
+        <p class="sub">Revisa y aprueba o rechaza eventos enviados por la comunidad.</p>
+        <div id="pendingEvents"></div>
+      </section>
+
+      <section class="panel">
+        <h2>🎬 Creadores pendientes</h2>
+        <p class="sub">Solicitudes de creadores de contenido.</p>
+        <div id="pendingCreators"></div>
+      </section>
+
+      <section class="panel">
+        <h2>🏅 Otorgar insignia</h2>
+        <p class="sub">Da una insignia manual (Campeón, Streamer, etc.). Por @usuario o ID de Discord.</p>
+        <div class="row">
+          <input id="badgeUser" placeholder="@usuario o ID" />
+          <select id="badgeKey"></select>
+          <button class="btn" id="badgeBtn" type="button">Otorgar</button>
+          <span id="badgeMsg" class="msg"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>🪙 Dar Omegacoins</h2>
+        <p class="sub">Otorga monedas (ej. premio semanal del leaderboard: 1000).</p>
+        <div class="row">
+          <input id="coinUser" placeholder="@usuario o ID" />
+          <input id="coinAmount" type="number" placeholder="Cantidad" style="max-width:130px;flex:none" />
+          <input id="coinReason" placeholder="Motivo (opcional)" />
+          <button class="btn" id="coinBtn" type="button">Dar</button>
+          <span id="coinMsg" class="msg"></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>🔧 Accesos rápidos</h2>
+        <div class="quick">
+          <a href="/admin-equipo.html"><div class="t">🛠️ Panel de equipo</div><div class="d">Editar integrantes y perfiles (login Google).</div></a>
+          <a href="/eventos.html"><div class="t">📅 Eventos</div><div class="d">Ver/gestionar todos los eventos.</div></a>
+          <a href="/creadores.html"><div class="t">🎬 Creadores</div><div class="d">Ver/gestionar creadores.</div></a>
+          <a href="/actividad.html"><div class="t">📊 Actividad</div><div class="d">Rankings y actividad del servidor.</div></a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const fmtDate = (iso) => { if (!iso) return "—"; try { return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" }); } catch (e) { return "—"; } };
+
+    async function loadEvents() {
+      try {
+        const r = await fetch("/api/eventos/pendientes");
+        if (!r.ok) return;
+        const list = await r.json();
+        $("pendingEvents").innerHTML = list.length ? list.map((e) => `
+          <div class="item">
+            <h3>${esc(e.name)} <span class="chip">${esc(e.game)}</span></h3>
+            <div class="meta">por ${esc(e.createdByName || "—")} · inicio ${fmtDate(e.startDate)}</div>
+            <div>${esc(e.description)}</div>
+            <div class="actions"><button class="btn-approve" data-ev-ap="${e.id}">Aprobar</button><button class="btn-reject" data-ev-rj="${e.id}">Rechazar</button></div>
+          </div>`).join("") : '<div class="empty">No hay eventos pendientes. 🎉</div>';
+      } catch (e) {}
+    }
+
+    async function loadCreators() {
+      try {
+        const r = await fetch("/api/creadores/pendientes");
+        if (!r.ok) return;
+        const list = await r.json();
+        $("pendingCreators").innerHTML = list.length ? list.map((c) => `
+          <div class="item">
+            <h3>${esc(c.channelName)} <span style="color:var(--text-faint);font-size:13px">(${esc(c.nickname)})</span></h3>
+            <div class="meta">👤 ${esc(c.fullName || "—")} · 🔗 <a href="${esc(c.channelUrl)}" target="_blank" rel="noopener" style="color:#aab2ff">${esc(c.channelUrl)}</a></div>
+            <div class="meta">${(c.platforms || []).map((p) => `<span class="chip">${esc(p)}</span>`).join("")}</div>
+            <div>${esc(c.channelType || "")}</div>
+            <div class="actions"><button class="btn-approve" data-cr-ap="${c.discordId}">Aprobar</button><button class="btn-reject" data-cr-rj="${c.discordId}">Rechazar</button></div>
+          </div>`).join("") : '<div class="empty">No hay creadores pendientes. 🎉</div>';
+      } catch (e) {}
+    }
+
+    async function loadBadges() {
+      try {
+        const r = await fetch("/api/logros");
+        const list = await r.json();
+        const manual = list.filter((a) => a.type === "manual");
+        $("badgeKey").innerHTML = manual.map((a) => `<option value="${a.key}">${a.icon} ${a.name}</option>`).join("");
+      } catch (e) {}
+    }
+
+    document.addEventListener("click", async (e) => {
+      const evAp = e.target.getAttribute("data-ev-ap");
+      const evRj = e.target.getAttribute("data-ev-rj");
+      const crAp = e.target.getAttribute("data-cr-ap");
+      const crRj = e.target.getAttribute("data-cr-rj");
+      if (evAp || evRj) {
+        e.target.disabled = true;
+        await fetch(`/api/eventos/${evAp || evRj}/${evAp ? "aprobar" : "rechazar"}`, { method: "POST" }).catch(() => {});
+        loadEvents();
+      } else if (crAp || crRj) {
+        e.target.disabled = true;
+        await fetch(`/api/creadores/${crAp || crRj}/${crAp ? "aprobar" : "rechazar"}`, { method: "POST" }).catch(() => {});
+        loadCreators();
+      }
+    });
+
+    $("badgeBtn").addEventListener("click", async () => {
+      const user = $("badgeUser").value.trim();
+      const key = $("badgeKey").value;
+      if (!user) { $("badgeMsg").textContent = "Escribe un usuario."; $("badgeMsg").className = "msg err"; return; }
+      $("badgeMsg").textContent = "Otorgando…"; $("badgeMsg").className = "msg";
+      try {
+        const r = await fetch("/api/logros/otorgar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user, key }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        $("badgeMsg").textContent = "✅ Otorgada."; $("badgeMsg").className = "msg ok"; $("badgeUser").value = "";
+      } catch (e) { $("badgeMsg").textContent = "❌ " + e.message; $("badgeMsg").className = "msg err"; }
+    });
+
+    $("coinBtn").addEventListener("click", async () => {
+      const user = $("coinUser").value.trim();
+      const amount = parseInt($("coinAmount").value, 10);
+      const reason = $("coinReason").value.trim();
+      if (!user || !amount) { $("coinMsg").textContent = "Usuario y cantidad obligatorios."; $("coinMsg").className = "msg err"; return; }
+      $("coinMsg").textContent = "Dando…"; $("coinMsg").className = "msg";
+      try {
+        const r = await fetch("/api/omegacoins/dar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user, amount, reason }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        $("coinMsg").textContent = "✅ Entregados."; $("coinMsg").className = "msg ok"; $("coinUser").value = ""; $("coinAmount").value = "";
+      } catch (e) { $("coinMsg").textContent = "❌ " + e.message; $("coinMsg").className = "msg err"; }
+    });
+
+    async function init() {
+      let me = null;
+      try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) {}
+      $("loading").style.display = "none";
+      if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
+      $("content").classList.remove("hidden");
+      loadEvents(); loadCreators(); loadBadges();
+    }
+    init();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>
