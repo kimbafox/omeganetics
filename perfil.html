@@ -282,7 +282,7 @@
         const d = await r.json();
         const cb = $("coinsBox");
         cb.style.display = "flex";
-        cb.innerHTML = `<div style="font-size:1.9rem">🪙</div><div><div class="coins-amt">${(d.balance || 0).toLocaleString("es")}</div><div class="coins-lbl">Omegacoins · gánalos por nivel, logros y actividad</div></div>`;
+        cb.innerHTML = `<img src="/assets/omegacoin-actual.png" alt="Omegacoin" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 12px rgba(255,211,92,.45)"><div><div class="coins-amt">${(d.balance || 0).toLocaleString("es")}</div><div class="coins-lbl">Omegacoins · gánalos por nivel, logros y actividad</div></div>`;
       } catch (e) { /* noop */ }
     }
 
