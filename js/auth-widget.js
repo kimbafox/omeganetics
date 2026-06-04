@@ -105,11 +105,11 @@
   // En páginas normales (no inicio, no sub-apps) inyectamos y rellenamos el panel del equipo,
   // así "¿Quiénes somos?" se despliega en cualquier página.
   (async function ensureTeamPanel() {
-    if (prepend) return; // wiki/realm: el botón lleva al inicio
     if (document.getElementById("teamDropdown")) return; // el inicio ya lo tiene (lo llena team-home.js)
     const panel = document.createElement("section");
     panel.id = "teamDropdown";
-    panel.className = "team-dropdown";
+    // En sub-apps (wiki/realm) usamos estilos propios de site-extra (clase marca).
+    panel.className = "team-dropdown" + (prepend ? " omega-team-panel" : "");
     panel.setAttribute("aria-hidden", "true");
     panel.innerHTML = `<div class="team-dropdown-inner">
       <div class="team-dropdown-header"><div><span class="team-eyebrow">¿Quiénes somos?</span><h2 id="teamTitle">Equipo Omeganetics</h2></div><button id="teamClose" class="team-close-button" type="button">Cerrar</button></div>
