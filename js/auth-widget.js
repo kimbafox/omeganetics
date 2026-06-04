@@ -32,6 +32,7 @@
   header.className = "header omega-header";
   header.innerHTML = `
     <a class="omega-logo" href="/"><img src="/assets/logo.png" width="34" height="34" alt=""><span>Omeganetics</span></a>
+    <span class="oh-tagline" aria-hidden="true">⚔️ EL IMPERIO GAMER DE LATAM</span>
     <button class="oh-burger" type="button" aria-label="Menú"><span></span><span></span><span></span></button>
     <nav class="omega-nav">
       ${NAV.map(ddHtml).join("")}
