@@ -78,10 +78,12 @@
   // "¿Quiénes somos?" (3ª pestaña): en el inicio abre el panel del equipo; en otras páginas va al inicio.
   // El render de las tarjetas lo hace team-home.js (escucha este mismo #teamToggle).
   const teamBtn = header.querySelector(".oh-team");
+  const closeTeam = () => { const dd = document.getElementById("teamDropdown"); if (dd) { dd.classList.remove("open"); dd.setAttribute("aria-hidden", "true"); } };
   if (teamBtn) teamBtn.addEventListener("click", (e) => {
     const dd = document.getElementById("teamDropdown");
     if (dd) {
       e.preventDefault();
+      e.stopPropagation();
       closeAll();
       const open = dd.classList.contains("open");
       dd.classList.toggle("open", !open);
@@ -90,6 +92,15 @@
       window.location.href = "/";
     }
   });
+  // Cerrar el panel del equipo: botón "Cerrar", clic afuera y Escape.
+  document.getElementById("teamClose")?.addEventListener("click", closeTeam);
+  document.addEventListener("click", (e) => {
+    const dd = document.getElementById("teamDropdown");
+    if (!dd || !dd.classList.contains("open")) return;
+    if (dd.contains(e.target) || (teamBtn && teamBtn.contains(e.target))) return;
+    closeTeam();
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTeam(); });
 
   // Cuenta / login (a la derecha).
   (async function () {

@@ -276,41 +276,7 @@
       observer.observe(el);
     });
 
-    const teamToggle = document.getElementById('teamToggle');
-    const teamDropdown = document.getElementById('teamDropdown');
-    const teamClose = document.getElementById('teamClose');
-
-    const setTeamDropdown = (isOpen) => {
-      if (!teamToggle || !teamDropdown) return;
-      teamDropdown.classList.toggle('open', isOpen);
-      teamDropdown.setAttribute('aria-hidden', String(!isOpen));
-      teamToggle.setAttribute('aria-expanded', String(isOpen));
-    };
-
-    if (teamToggle && teamDropdown) {
-      teamToggle.addEventListener('click', () => {
-        const isOpen = teamDropdown.classList.contains('open');
-        setTeamDropdown(!isOpen);
-      });
-    }
-
-    if (teamClose) {
-      teamClose.addEventListener('click', () => setTeamDropdown(false));
-    }
-
-    window.addEventListener('click', (event) => {
-      if (!teamDropdown || !teamToggle) return;
-      const clickedInside = teamDropdown.contains(event.target) || teamToggle.contains(event.target);
-      if (!clickedInside) {
-        setTeamDropdown(false);
-      }
-    });
-
-    window.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        setTeamDropdown(false);
-      }
-    });
+    // El panel "¿Quiénes somos?" lo maneja el encabezado unificado (js/auth-widget.js).
 
     const carouselTimers = new WeakMap();
 
