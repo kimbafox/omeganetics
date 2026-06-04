@@ -133,6 +133,24 @@ async function ensureSchema() {
   // Columnas extra de actividad diaria: tiempo en voz y mensajes.
   await pool.query("ALTER TABLE user_activity_daily ADD COLUMN IF NOT EXISTS voice_samples INTEGER NOT NULL DEFAULT 0");
   await pool.query("ALTER TABLE user_activity_daily ADD COLUMN IF NOT EXISTS messages INTEGER NOT NULL DEFAULT 0");
+  // Estado del bot (ej. id del mensaje del leaderboard para editarlo en sitio).
+  await pool.query("CREATE TABLE IF NOT EXISTS bot_state (key TEXT PRIMARY KEY, value TEXT NOT NULL DEFAULT '')");
+}
+
+async function getState(key) {
+  if (!pool) return null;
+  try {
+    const r = await pool.query("SELECT value FROM bot_state WHERE key = $1", [key]);
+    return r.rows[0]?.value || null;
+  } catch (e) {
+    return null;
+  }
+}
+async function setState(key, value) {
+  if (!pool) return;
+  try {
+    await pool.query("INSERT INTO bot_state (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2", [key, value]);
+  } catch (e) { /* noop */ }
 }
 
 async function save(snap) {
@@ -450,6 +468,10 @@ function initDiscordActivity() {
     } catch (e) {
       console.warn("[omegacoins] no pude registrar el comando:", e.message);
     }
+    if (process.env.LEADERBOARD_CHANNEL_ID) {
+      updateLeaderboard();
+      setInterval(updateLeaderboard, 15 * 60 * 1000); // actualiza el leaderboard cada 15 min
+    }
   });
 
   client.on("error", (e) => console.warn("[activity] error de cliente:", e.message));
@@ -532,4 +554,75 @@ async function announceContent(creator, video) {
   }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent };
+// Publica/actualiza el leaderboard semanal en un canal (mensaje editado en sitio).
+async function updateLeaderboard() {
+  const channelId = process.env.LEADERBOARD_CHANNEL_ID;
+  if (!client || !pool || !channelId) return;
+  try {
+    const VOICE_W = 5;
+    const MSG_W = 1;
+    const refreshMinutes = Number(process.env.ACTIVITY_REFRESH_MINUTES || 5);
+    const r = await pool.query(`
+      SELECT d.discord_id,
+             COALESCE(SUM(d.voice_samples),0)::int AS v,
+             COALESCE(SUM(d.messages),0)::int AS m,
+             mem.display_name, mem.username
+      FROM user_activity_daily d
+      LEFT JOIN discord_members mem ON mem.discord_id = d.discord_id
+      WHERE d.day >= (CURRENT_DATE - INTERVAL '6 days')
+      GROUP BY d.discord_id, mem.display_name, mem.username
+      ORDER BY (COALESCE(SUM(d.voice_samples),0)*${VOICE_W} + COALESCE(SUM(d.messages),0)*${MSG_W}) DESC
+      LIMIT 10
+    `);
+    const lines = r.rows.map((row, i) => {
+      const pts = row.v * VOICE_W + row.m * MSG_W;
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `\`${i + 1}.\``;
+      const name = row.display_name || row.username || "Jugador";
+      const voiceH = Math.round((row.v * refreshMinutes) / 60 * 10) / 10;
+      return `${medal} **${name}** — ${pts} pts · 🎙️ ${voiceH}h · 💬 ${row.m}`;
+    });
+    const embed = new EmbedBuilder()
+      .setColor(0x5865f2)
+      .setTitle("🏆 Top jugadores de la semana")
+      .setDescription(lines.length ? lines.join("\n") : "Aún no hay actividad registrada esta semana.")
+      .setFooter({ text: "Por voz + mensajes · omeganetics.com/actividad.html" })
+      .setTimestamp(new Date());
+
+    const channel = await client.channels.fetch(channelId);
+    if (!channel || typeof channel.send !== "function") return;
+    const msgId = await getState("leaderboard_msg");
+    if (msgId) {
+      try {
+        const msg = await channel.messages.fetch(msgId);
+        await msg.edit({ embeds: [embed] });
+        return;
+      } catch (e) { /* el mensaje ya no existe, se reenvía abajo */ }
+    }
+    const sent = await channel.send({ embeds: [embed] });
+    await setState("leaderboard_msg", sent.id);
+  } catch (e) {
+    console.warn("[leaderboard]", e.message);
+  }
+}
+
+// Crea (si hace falta) y asigna un rol de Discord por un logro.
+const TIER_COLOR = { comun: 0x8aa0ff, raro: 0x43d1ff, epico: 0xc084fc, legendario: 0xffd35c };
+async function grantRole(discordId, roleName, tier) {
+  if (!client) return;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return;
+    let role = guild.roles.cache.find((x) => x.name === roleName);
+    if (!role) {
+      role = await guild.roles.create({ name: roleName, color: TIER_COLOR[tier] || 0x99aab5, hoist: false, reason: "Logro de Omeganetics" });
+    }
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (member && !member.roles.cache.has(role.id)) {
+      await member.roles.add(role.id, "Logro desbloqueado");
+    }
+  } catch (e) {
+    console.warn("[roles] grantRole:", e.message);
+  }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole };

@@ -27,16 +27,16 @@ const pool = databaseUrl
 const CATALOG = [
   { key: "first_message", name: "Primer mensaje", icon: "💬", description: "Envía tu primer mensaje en el servidor.", type: "auto", metric: "messages", threshold: 1, tier: "comun" },
   { key: "chatty", name: "Conversador", icon: "🗨️", description: "Envía 100 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 100, tier: "raro" },
-  { key: "unstoppable", name: "Imparable", icon: "🔥", description: "Envía 1000 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 1000, tier: "epico" },
+  { key: "unstoppable", name: "Imparable", icon: "🔥", description: "Envía 1000 mensajes en el servidor.", type: "auto", metric: "messages", threshold: 1000, tier: "epico", role: true },
   { key: "voice_starter", name: "En la llamada", icon: "🎙️", description: "Acumula 1 hora en canales de voz (sin contar el AFK).", type: "auto", metric: "voiceMinutes", threshold: 60, tier: "comun" },
-  { key: "voice_pro", name: "Voz del servidor", icon: "🎧", description: "Acumula 10 horas en canales de voz.", type: "auto", metric: "voiceMinutes", threshold: 600, tier: "epico" },
+  { key: "voice_pro", name: "Voz del servidor", icon: "🎧", description: "Acumula 10 horas en canales de voz.", type: "auto", metric: "voiceMinutes", threshold: 600, tier: "epico", role: true },
   { key: "level5", name: "Nivel 5", icon: "⭐", description: "Llega al nivel 5 (XP por voz y mensajes).", type: "auto", metric: "level", threshold: 5, tier: "raro" },
-  { key: "level10", name: "Veterano", icon: "🏅", description: "Llega al nivel 10.", type: "auto", metric: "level", threshold: 10, tier: "epico" },
+  { key: "level10", name: "Veterano", icon: "🏅", description: "Llega al nivel 10.", type: "auto", metric: "level", threshold: 10, tier: "epico", role: true },
   { key: "organizer", name: "Organizador", icon: "📅", description: "Crea un evento y que un admin lo apruebe.", type: "auto", metric: "eventsCreated", threshold: 1, tier: "raro" },
-  { key: "champion", name: "Campeón", icon: "🏆", description: "La otorga un admin por ganar un evento o torneo.", type: "manual", tier: "legendario" },
-  { key: "streamer", name: "Streamer aliado", icon: "📺", description: "La otorga un admin a los streamers de la comunidad.", type: "manual", tier: "epico" },
-  { key: "founder", name: "Fundador", icon: "👑", description: "La otorga un admin a los miembros fundadores.", type: "manual", tier: "legendario" },
-  { key: "mvp", name: "MVP del mes", icon: "🥇", description: "La otorga un admin al jugador más destacado del mes.", type: "manual", tier: "legendario" },
+  { key: "champion", name: "Campeón", icon: "🏆", description: "La otorga un admin por ganar un evento o torneo.", type: "manual", tier: "legendario", role: true },
+  { key: "streamer", name: "Streamer aliado", icon: "📺", description: "La otorga un admin a los streamers de la comunidad.", type: "manual", tier: "epico", role: true },
+  { key: "founder", name: "Fundador", icon: "👑", description: "La otorga un admin a los miembros fundadores.", type: "manual", tier: "legendario", role: true },
+  { key: "mvp", name: "MVP del mes", icon: "🥇", description: "La otorga un admin al jugador más destacado del mes.", type: "manual", tier: "legendario", role: true },
 ];
 const CATALOG_KEYS = new Set(CATALOG.map((a) => a.key));
 
@@ -133,7 +133,14 @@ router.get("/api/me/logros", requireUser, async (req, res) => {
     // Recompensas en Omegacoins: por subir de nivel y por cada logro ganado.
     try {
       await rewardLevelUps(req.user.discordId, stats.level);
-      for (const a of list) if (a.earned) await rewardAchievement(req.user.discordId, a.key, a.tier);
+      let da = null;
+      for (const a of list) {
+        if (!a.earned) continue;
+        await rewardAchievement(req.user.discordId, a.key, a.tier);
+        if (a.role) {
+          try { da = da || require("../discord-activity"); da.grantRole(req.user.discordId, `${a.icon} ${a.name}`, a.tier); } catch (e) { /* noop */ }
+        }
+      }
     } catch (e) { /* no bloquea la respuesta */ }
     return res.json({ list, stats });
   } catch (e) {
@@ -153,7 +160,10 @@ router.post("/api/logros/otorgar", requireAdmin, async (req, res) => {
       [discordId, key, req.user.globalName || req.user.username || "admin"],
     );
     const ach = CATALOG.find((a) => a.key === key);
-    if (ach) rewardAchievement(discordId, key, ach.tier).catch(() => {});
+    if (ach) {
+      rewardAchievement(discordId, key, ach.tier).catch(() => {});
+      if (ach.role) { try { require("../discord-activity").grantRole(discordId, `${ach.icon} ${ach.name}`, ach.tier); } catch (e) { /* noop */ } }
+    }
     return res.json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: "No se pudo otorgar." });
