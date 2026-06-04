@@ -248,18 +248,6 @@
   </div>
   <div class="slide-dots" id="slideDots"></div>
 
-  <!-- PREVIEWS EN VIVO -->
-  <section class="home-previews anim">
-    <div class="preview-col">
-      <div class="preview-head"><h3>🏆 Top jugadores de la semana</h3><a href="/actividad.html">Ver ranking →</a></div>
-      <div id="homeTop" class="preview-list"><div class="muted">Cargando…</div></div>
-    </div>
-    <div class="preview-col">
-      <div class="preview-head"><h3>🎯 Próximos eventos</h3><a href="/eventos.html">Ver eventos →</a></div>
-      <div id="homeEvents" class="preview-list"><div class="muted">Cargando…</div></div>
-    </div>
-  </section>
-
   <!-- CREADORES -->
   <section class="creadores-cta anim">
     <span class="section-kicker">Creadores</span>
@@ -571,12 +559,16 @@
       const update = () => {
         const a = Math.round(slider.scrollLeft / slider.clientWidth);
         Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('active', i === a));
+        const s = slides[a];
+        if (s) slider.style.height = s.offsetHeight + 'px'; // altura del slide visible (sin hueco)
       };
       slider.addEventListener('scroll', () => requestAnimationFrame(update));
       document.getElementById('slidePrev').addEventListener('click', () => slider.scrollBy({ left: -slider.clientWidth, behavior: 'smooth' }));
       document.getElementById('slideNext').addEventListener('click', () => slider.scrollBy({ left: slider.clientWidth, behavior: 'smooth' }));
       window.addEventListener('resize', update);
+      window.addEventListener('load', update);
       update();
+      setTimeout(update, 400); // re-ajustar cuando carguen imágenes
     })();
 
   </script>
