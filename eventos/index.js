@@ -46,6 +46,15 @@ async function initEventos() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  // "Me interesa" / RSVP por evento.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS event_rsvp (
+      event_id INTEGER NOT NULL,
+      discord_id TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (event_id, discord_id)
+    );
+  `);
 }
 
 // Solo admins: reutiliza requireUser y exige isAdmin.
@@ -77,6 +86,7 @@ function mapEvent(r) {
     status: r.status,
     createdByName: r.created_by_name,
     createdAt: r.created_at,
+    interested: r.interested != null ? Number(r.interested) : 0,
   };
 }
 
@@ -113,12 +123,59 @@ router.post("/api/eventos", requireUser, async (req, res) => {
 router.get("/api/eventos", async (req, res) => {
   if (!pool) return res.json([]);
   try {
-    const r = await pool.query(
-      "SELECT * FROM events WHERE status = 'aprobado' ORDER BY start_date ASC NULLS LAST, created_at DESC",
-    );
+    const r = await pool.query(`
+      SELECT e.*, COALESCE(c.n, 0) AS interested
+      FROM events e
+      LEFT JOIN (SELECT event_id, COUNT(*) AS n FROM event_rsvp GROUP BY event_id) c ON c.event_id = e.id
+      WHERE e.status = 'aprobado'
+      ORDER BY e.start_date ASC NULLS LAST, e.created_at DESC
+    `);
     return res.json(r.rows.map(mapEvent));
   } catch (error) {
     return res.json([]);
+  }
+});
+
+// Marcar/desmarcar "me interesa".
+router.post("/api/eventos/:id/interesa", requireUser, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: "Base de datos no configurada." });
+  const id = parseInt(req.params.id, 10);
+  try {
+    const ex = await pool.query("SELECT 1 FROM event_rsvp WHERE event_id = $1 AND discord_id = $2", [id, req.user.discordId]);
+    let interested;
+    if (ex.rows.length) {
+      await pool.query("DELETE FROM event_rsvp WHERE event_id = $1 AND discord_id = $2", [id, req.user.discordId]);
+      interested = false;
+    } else {
+      await pool.query("INSERT INTO event_rsvp (event_id, discord_id) VALUES ($1, $2) ON CONFLICT DO NOTHING", [id, req.user.discordId]);
+      interested = true;
+    }
+    const c = await pool.query("SELECT COUNT(*)::int AS n FROM event_rsvp WHERE event_id = $1", [id]);
+    return res.json({ interested, count: c.rows[0]?.n || 0 });
+  } catch (e) {
+    return res.status(500).json({ error: "No se pudo." });
+  }
+});
+
+// Eventos en los que marqué interés (ids).
+router.get("/api/eventos/mis-interes", requireUser, async (req, res) => {
+  if (!pool) return res.json([]);
+  try {
+    const r = await pool.query("SELECT event_id FROM event_rsvp WHERE discord_id = $1", [req.user.discordId]);
+    return res.json(r.rows.map((x) => x.event_id));
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
+// Eliminar evento (admin).
+router.delete("/api/eventos/:id", requireAdmin, async (req, res) => {
+  try {
+    await pool.query("DELETE FROM event_rsvp WHERE event_id = $1", [req.params.id]);
+    await pool.query("DELETE FROM events WHERE id = $1", [req.params.id]);
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "No se pudo eliminar." });
   }
 });
 

@@ -50,6 +50,14 @@
     .login-cta { text-align: center; color: var(--text-soft); }
     .login-cta a { color: #aab2ff; font-weight: 700; text-decoration: none; }
     .hidden { display: none; }
+    .chip { display:inline-block; background: var(--accent-soft); border:1px solid rgba(115,138,255,.3); color:#aab2ff; border-radius:999px; padding:2px 10px; font-size:12px; margin:2px; }
+    .filter-bar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+    .filter-chip { background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--text-soft); border-radius:999px; padding:7px 14px; cursor:pointer; font:inherit; font-weight:600; }
+    .filter-chip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .ev-subhead { font-size:1rem; color:var(--text-soft); margin:14px 0 10px; }
+    .btn-interesa { background:rgba(88,101,242,.16); border:1px solid rgba(115,138,255,.4); color:#cdd5ff; border-radius:10px; padding:8px 14px; cursor:pointer; font:inherit; font-weight:700; }
+    .btn-interesa.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .ev-interested { color:var(--text-soft); font-size:14px; }
   </style>
 </head>
 <body>
@@ -110,11 +118,15 @@
       </form>
     </section>
 
-    <!-- Próximos eventos -->
+    <!-- Eventos aprobados -->
     <section class="panel">
-      <h2>🎯 Próximos eventos</h2>
+      <h2>🎯 Eventos</h2>
       <p class="sub">Eventos aprobados por la comunidad.</p>
+      <div id="gameFilter" class="filter-bar"></div>
+      <h3 class="ev-subhead">📅 Próximos</h3>
       <div id="eventsList"></div>
+      <h3 class="ev-subhead">🕘 Pasados</h3>
+      <div id="pastList"></div>
     </section>
   </main>
 
@@ -129,15 +141,20 @@
 
     let me = null;
 
-    function eventCard(ev, admin) {
+    function eventCard(ev, opts) {
+      opts = opts || {};
       const fin = ev.endDate ? ` → <b>${fmtDate(ev.endDate)}</b>` : "";
       const dur = ev.expectedDuration ? `<span>Duración: <b>${esc(ev.expectedDuration)}</b></span>` : "";
       const files = ev.filesUrl ? `<a class="ev-files" href="${esc(ev.filesUrl)}" target="_blank" rel="noopener">📎 Archivos</a>` : "";
-      const actions = admin ? `
-        <div class="pending-actions">
-          <button class="btn-approve" data-approve="${ev.id}">Aprobar</button>
-          <button class="btn-reject" data-reject="${ev.id}">Rechazar</button>
-        </div>` : "";
+      let actions = "";
+      if (opts.mode === "pending") {
+        actions = `<div class="pending-actions"><button class="btn-approve" data-approve="${ev.id}">Aprobar</button><button class="btn-reject" data-reject="${ev.id}">Rechazar</button></div>`;
+      } else {
+        const mine = opts.interestedSet && opts.interestedSet.has(ev.id);
+        const interesaBtn = me ? `<button class="btn-interesa ${mine ? "on" : ""}" data-interesa="${ev.id}">${mine ? "✓ Te interesa" : "⭐ Me interesa"}</button>` : "";
+        const delBtn = opts.isAdmin ? `<button class="btn-reject" data-delete="${ev.id}">Eliminar</button>` : "";
+        actions = `<div class="pending-actions"><span class="ev-interested">⭐ <b data-count="${ev.id}">${ev.interested || 0}</b> interesados</span>${interesaBtn}${delBtn}</div>`;
+      }
       return `
         <div class="ev-card">
           <div class="ev-card-top">
@@ -155,16 +172,33 @@
         </div>`;
     }
 
+    let allApproved = [];
+    let interestedSet = new Set();
+    let gameFilterValue = "todos";
+
     async function loadApproved() {
       try {
         const r = await fetch("/api/eventos");
-        const list = await r.json();
-        $("eventsList").innerHTML = list.length
-          ? list.map((e) => eventCard(e, false)).join("")
-          : `<div class="empty">Aún no hay eventos aprobados. ¡Sé el primero en crear uno!</div>`;
+        allApproved = await r.json();
+        if (me) {
+          try { const mi = await fetch("/api/eventos/mis-interes"); interestedSet = new Set(await mi.json()); } catch (e) {}
+        }
+        renderApproved();
       } catch (e) {
         $("eventsList").innerHTML = `<div class="empty">No se pudieron cargar los eventos.</div>`;
       }
+    }
+
+    function renderApproved() {
+      const games = ["todos", ...Array.from(new Set(allApproved.map((e) => e.game).filter(Boolean)))];
+      $("gameFilter").innerHTML = games.map((g) => `<button class="filter-chip ${g === gameFilterValue ? "on" : ""}" data-filter="${esc(g)}">${g === "todos" ? "Todos" : esc(g)}</button>`).join("");
+      const cutoff = Date.now() - 86400000; // los de hoy siguen como "próximos"
+      const filtered = allApproved.filter((e) => gameFilterValue === "todos" || e.game === gameFilterValue);
+      const upcoming = filtered.filter((e) => !e.startDate || new Date(e.startDate).getTime() >= cutoff);
+      const past = filtered.filter((e) => e.startDate && new Date(e.startDate).getTime() < cutoff);
+      const isAdmin = me && me.isAdmin;
+      $("eventsList").innerHTML = upcoming.length ? upcoming.map((e) => eventCard(e, { mode: "approved", isAdmin, interestedSet })).join("") : `<div class="empty">No hay próximos eventos.</div>`;
+      $("pastList").innerHTML = past.length ? past.map((e) => eventCard(e, { mode: "approved", isAdmin, interestedSet })).join("") : `<div class="empty" style="font-size:13px">Sin eventos pasados.</div>`;
     }
 
     async function loadPending() {
@@ -173,7 +207,7 @@
         if (!r.ok) return;
         const list = await r.json();
         $("pendingList").innerHTML = list.length
-          ? list.map((e) => eventCard(e, true)).join("")
+          ? list.map((e) => eventCard(e, { mode: "pending" })).join("")
           : `<div class="empty">No hay eventos pendientes. 🎉</div>`;
       } catch (e) {}
     }
@@ -230,6 +264,38 @@
         loadApproved();
       } catch (err) { e.target.disabled = false; }
     });
+
+    // Filtro por juego
+    $("gameFilter").addEventListener("click", (e) => {
+      const g = e.target.getAttribute("data-filter");
+      if (!g) return;
+      gameFilterValue = g;
+      renderApproved();
+    });
+
+    // "Me interesa" y eliminar (en próximos y pasados)
+    async function handleApprovedClick(e) {
+      const interesaId = e.target.getAttribute("data-interesa");
+      const delId = e.target.getAttribute("data-delete");
+      if (interesaId) {
+        e.target.disabled = true;
+        try {
+          const r = await fetch(`/api/eventos/${interesaId}/interesa`, { method: "POST" });
+          const d = await r.json();
+          if (r.ok) {
+            if (d.interested) interestedSet.add(Number(interesaId)); else interestedSet.delete(Number(interesaId));
+            const item = allApproved.find((x) => String(x.id) === String(interesaId));
+            if (item) item.interested = d.count;
+            renderApproved();
+          } else { e.target.disabled = false; }
+        } catch (err) { e.target.disabled = false; }
+      } else if (delId) {
+        if (!confirm("¿Eliminar este evento?")) return;
+        try { await fetch(`/api/eventos/${delId}`, { method: "DELETE" }); loadApproved(); } catch (err) { /* noop */ }
+      }
+    }
+    $("eventsList").addEventListener("click", handleApprovedClick);
+    $("pastList").addEventListener("click", handleApprovedClick);
 
     init();
   </script>
