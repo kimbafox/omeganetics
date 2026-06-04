@@ -124,7 +124,10 @@
       panel.querySelector("#teamDescription").textContent = d.about?.description || "";
       const grid = panel.querySelector("#teamCardsGrid");
       if (grid && Array.isArray(d.members)) {
-        grid.innerHTML = d.members.map((m) => `<a class="team-dropdown-card" href="/integrante.html?slug=${encodeURIComponent(m.slug || "")}"><div class="team-dropdown-avatar-wrap"><img class="team-dropdown-avatar" src="${esc(m.image)}" alt="${esc(m.name)}" loading="lazy"></div><div class="team-dropdown-card-copy"><span class="member-tier">${esc(m.tier || "Integrante")}</span><h4>${esc(m.name)}</h4><p>${esc(m.shortBio || m.summary || "")}</p></div></a>`).join("");
+        grid.innerHTML = d.members.map((m) => {
+          const img = /^(https?:|\/)/.test(m.image || "") ? m.image : "/" + (m.image || ""); // ruta absoluta (funciona en wiki/realm)
+          return `<a class="team-dropdown-card" href="/integrante.html?slug=${encodeURIComponent(m.slug || "")}"><div class="team-dropdown-avatar-wrap"><img class="team-dropdown-avatar" src="${esc(img)}" alt="${esc(m.name)}" loading="lazy"></div><div class="team-dropdown-card-copy"><span class="member-tier">${esc(m.tier || "Integrante")}</span><h4>${esc(m.name)}</h4><p>${esc(m.shortBio || m.summary || "")}</p></div></a>`;
+        }).join("");
       }
     } catch (e) { /* noop */ }
   })();
