@@ -4,6 +4,8 @@
 const API_BASE = "/api";
 const UPLOADS_BASE = "/uploads";
 const STOREFRONT_THEME_KEY = "tienditaTheme";
+const MAX_IMAGENES_EXTRA = 6;
+const MAX_TAMANIO_IMAGEN_MB = 1.5;
 let googleLoginConfig = null;
 
 function login() {
@@ -163,7 +165,39 @@ function obtenerTokenValido() {
 // ===============================
 // ⬆️ SUBIR PROYECTO (REAL)
 // ===============================
+async function validarArchivosSubida() {
+  const portada = document.getElementById("portada")?.files?.[0];
+  const imagenes = Array.from(document.getElementById("imagenes")?.files || []);
+  const archivo = document.getElementById("archivo")?.files?.[0];
+  const limiteBytes = MAX_TAMANIO_IMAGEN_MB * 1024 * 1024;
+
+  if (portada && portada.size > limiteBytes) {
+    alert(`La portada excede ${MAX_TAMANIO_IMAGEN_MB} MB. Optimiza la imagen para mantener el catálogo ligero.`);
+    return false;
+  }
+
+  if (imagenes.length > MAX_IMAGENES_EXTRA) {
+    alert(`Solo puedes subir hasta ${MAX_IMAGENES_EXTRA} imágenes adicionales.`);
+    return false;
+  }
+
+  const imagenExcesiva = imagenes.find(file => file.size > limiteBytes);
+  if (imagenExcesiva) {
+    alert(`La imagen “${imagenExcesiva.name}” excede ${MAX_TAMANIO_IMAGEN_MB} MB. Reduce su tamaño antes de subirla.`);
+    return false;
+  }
+
+  if (archivo && archivo.size > 20 * 1024 * 1024) {
+    alert("El archivo adjunto supera 20 MB. Usa una versión más ligera para evitar saturar el espacio de almacenamiento.");
+    return false;
+  }
+
+  return true;
+}
+
 async function subirProyecto() {
+  if (!validarArchivosSubida()) return;
+
   const nombre = document.getElementById("nombre").value;
   const categoria = document.getElementById("categoria").value;
   const descripcion = document.getElementById("descripcion")?.value || "";
@@ -176,8 +210,8 @@ async function subirProyecto() {
     return;
   }
 
-  if (imagenes.length > 6) {
-    alert("Solo puedes subir hasta 6 imágenes adicionales");
+  if (imagenes.length > MAX_IMAGENES_EXTRA) {
+    alert(`Solo puedes subir hasta ${MAX_IMAGENES_EXTRA} imágenes adicionales`);
     return;
   }
 
@@ -229,6 +263,7 @@ function buildUploadUrl(fileName) {
 }
 
 let proyectosCache = [];
+let filtroActual = { categoria: "todos", texto: "" };
 
 function obtenerImagenesProyecto(proyecto) {
   return [proyecto?.portada, ...(Array.isArray(proyecto?.imagenes) ? proyecto.imagenes : [])]
@@ -255,6 +290,8 @@ function formatearCategoria(categoria) {
 function tarjetaProyectoHTML(p) {
   const imagenes = obtenerImagenesProyecto(p);
   const resumen = resumenTexto(p.descripcion, 180);
+  const badge = p.archivo ? "Descargable" : "Galería";
+  const badge2 = p.categoria === "arte y diseno" ? "Arte premium" : "Nuevo";
   const imagenesSlides = imagenes
     .map((imagen, index) => `
       <figure class="card-slide ${index === 0 ? "active" : ""}" data-slide-index="${index}">
@@ -294,6 +331,10 @@ function tarjetaProyectoHTML(p) {
         <div class="card-cabecera">
           <p class="card-categoria">${formatearCategoria(p.categoria)}</p>
           <small class="card-fecha">${new Date(p.fecha).toLocaleDateString()}</small>
+        </div>
+        <div class="card-badges">
+          <span class="mini-badge mini-badge--new">${badge2}</span>
+          <span class="mini-badge mini-badge--download">${badge}</span>
         </div>
         <h3 class="card-titulo">${p.nombre}</h3>
         <p class="card-descripcion">${resumen}</p>
@@ -476,6 +517,27 @@ function actualizarBotonesFiltro(cat) {
   });
 }
 
+function normalizarTexto(texto) {
+  return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function aplicarFiltro(cat = filtroActual.categoria, texto = filtroActual.texto) {
+  filtroActual = { categoria: cat, texto: texto.trim() };
+  actualizarBotonesFiltro(cat);
+
+  const base = Array.isArray(proyectosCache) ? proyectosCache : [];
+  const filtrados = base.filter((p) => {
+    const coincideCategoria = cat === "todos" || p.categoria === cat;
+    const hayTexto = filtroActual.texto.length === 0;
+    const textoCoincide = hayTexto || [p.nombre, p.categoria, formatearCategoria(p.categoria), p.descripcion].some(valor =>
+      normalizarTexto(valor).includes(normalizarTexto(filtroActual.texto))
+    );
+    return coincideCategoria && textoCoincide;
+  });
+
+  pintarProyectos(filtrados);
+}
+
 // ===============================
 // 📦 CARGAR PROYECTOS DESDE DB
 // ===============================
@@ -498,8 +560,9 @@ async function cargar() {
       ? [...data].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
       : [];
 
+    filtroActual = { categoria: "todos", texto: "" };
     actualizarBotonesFiltro("todos");
-    pintarProyectos(proyectosCache);
+    aplicarFiltro("todos", "");
 
   } catch (err) {
     cont.innerHTML = `
@@ -515,8 +578,6 @@ async function cargar() {
 // 🔍 FILTRAR (FRONTEND)
 // ===============================
 async function filtrar(cat) {
-  actualizarBotonesFiltro(cat);
-
   if (!proyectosCache.length) {
     try {
       const res = await fetch(`${API_BASE}/proyectos/listar`);
@@ -528,11 +589,7 @@ async function filtrar(cat) {
     }
   }
 
-  const filtrados = cat === "todos"
-    ? proyectosCache
-    : proyectosCache.filter(p => p.categoria === cat);
-
-  pintarProyectos(filtrados);
+  aplicarFiltro(cat, filtroActual.texto);
 }
 
 function actualizarNavAdmin() {
@@ -750,6 +807,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (descripcionInput) {
     descripcionInput.addEventListener("input", previewPortada);
+  }
+
+  const buscarInput = document.getElementById("buscar");
+  if (buscarInput) {
+    buscarInput.addEventListener("input", (e) => {
+      aplicarFiltro(filtroActual.categoria, e.target.value);
+    });
   }
 
   cargar();
