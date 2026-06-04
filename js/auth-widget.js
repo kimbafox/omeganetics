@@ -102,6 +102,33 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeTeam(); });
 
+  // En páginas normales (no inicio, no sub-apps) inyectamos y rellenamos el panel del equipo,
+  // así "¿Quiénes somos?" se despliega en cualquier página.
+  (async function ensureTeamPanel() {
+    if (prepend) return; // wiki/realm: el botón lleva al inicio
+    if (document.getElementById("teamDropdown")) return; // el inicio ya lo tiene (lo llena team-home.js)
+    const panel = document.createElement("section");
+    panel.id = "teamDropdown";
+    panel.className = "team-dropdown";
+    panel.setAttribute("aria-hidden", "true");
+    panel.innerHTML = `<div class="team-dropdown-inner">
+      <div class="team-dropdown-header"><div><span class="team-eyebrow">¿Quiénes somos?</span><h2 id="teamTitle">Equipo Omeganetics</h2></div><button id="teamClose" class="team-close-button" type="button">Cerrar</button></div>
+      <p id="teamDescription" class="team-dropdown-copy"></p>
+      <div id="teamCardsGrid" class="team-dropdown-grid"></div>
+    </div>`;
+    document.body.appendChild(panel);
+    panel.querySelector("#teamClose").addEventListener("click", closeTeam);
+    try {
+      const d = await (await fetch("/api/team/content")).json();
+      if (d.about?.title) panel.querySelector("#teamTitle").textContent = d.about.title;
+      panel.querySelector("#teamDescription").textContent = d.about?.description || "";
+      const grid = panel.querySelector("#teamCardsGrid");
+      if (grid && Array.isArray(d.members)) {
+        grid.innerHTML = d.members.map((m) => `<a class="team-dropdown-card" href="/integrante.html?slug=${encodeURIComponent(m.slug || "")}"><div class="team-dropdown-avatar-wrap"><img class="team-dropdown-avatar" src="${esc(m.image)}" alt="${esc(m.name)}" loading="lazy"></div><div class="team-dropdown-card-copy"><span class="member-tier">${esc(m.tier || "Integrante")}</span><h4>${esc(m.name)}</h4><p>${esc(m.shortBio || m.summary || "")}</p></div></a>`).join("");
+      }
+    } catch (e) { /* noop */ }
+  })();
+
   // Cuenta / login (a la derecha).
   (async function () {
     let me = null;
