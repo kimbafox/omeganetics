@@ -1,123 +1,146 @@
-// Menú hamburguesa para móvil: inyecta el botón y abre/cierra la navegación.
+// Encabezado unificado de Omeganetics — se inyecta en CADA página (incluidas wiki/realm).
+// 2 desplegables neutros (Actividad, Comunidad) + cuenta/login. Reemplaza el <header> existente.
 (function () {
-  const header = document.querySelector("header.header");
-  if (!header) return;
-  const nav = header.querySelector("nav");
-  if (!nav || header.querySelector(".nav-toggle-btn")) return;
+  if (document.querySelector(".omega-header")) return; // evitar doble inyección
 
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.className = "nav-toggle-btn";
-  btn.setAttribute("aria-label", "Abrir menú");
-  btn.innerHTML = "<span></span><span></span><span></span>";
-  header.insertBefore(btn, nav);
+  const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    header.classList.toggle("nav-open");
-  });
-  document.addEventListener("click", (e) => {
-    if (!header.contains(e.target)) header.classList.remove("nav-open");
-  });
-})();
+  const NAV = [
+    { label: "Actividad", items: [
+      { href: "/actividad.html", icon: "📊", text: "Actividad del servidor" },
+      { href: "/eventos.html", icon: "🎯", text: "Eventos" },
+      { href: "/torneos.html", icon: "🏆", text: "Torneos" },
+    ] },
+    { label: "Comunidad", items: [
+      { href: "/wiki/", icon: "📚", text: "Wiki", dot: "#3ba55c" },
+      { href: "/tiendita/indextienda.html", icon: "🏰", text: "Realm", dot: "#c0392b" },
+      { href: "/creadores.html", icon: "🎬", text: "Creadores", dot: "#ff6fae" },
+      { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
+      { href: "https://discord.gg/bCWjyns8U5", icon: "💬", text: "Discord", ext: true, dot: "#5865F2" },
+      { href: "/", icon: "👑", text: "¿Quiénes somos?", team: true },
+    ] },
+  ];
 
-// Convierte el botón "Login" (#navLogin) en un menú de usuario cuando hay sesión.
-(async function () {
-  const slot = document.getElementById("navLogin");
-  if (!slot) return;
+  const dot = (it) => (it.dot ? `<span class="oh-dot" style="background:${it.dot}"></span>` : '<span class="oh-dot oh-dot-none"></span>');
+  const itemHtml = (it) => `<a role="menuitem" href="${esc(it.href)}"${it.ext ? ' target="_blank" rel="noopener"' : ""}${it.team ? ' data-team="1"' : ""}>${dot(it)}<span class="oh-ic">${it.icon}</span> ${esc(it.text)}</a>`;
+  const ddHtml = (g) => `<div class="oh-dd"><button class="oh-trigger" type="button" aria-haspopup="true" aria-expanded="false">${esc(g.label)} <span class="oh-caret">▾</span></button><div class="oh-menu" hidden>${g.items.map(itemHtml).join("")}</div></div>`;
 
-  let me = null;
-  try {
-    const res = await fetch("/api/auth/me");
-    if (res.ok) me = await res.json();
-  } catch (e) {
-    return;
-  }
-  if (!me) return; // sin sesión: se queda el botón "Login"
+  const header = document.createElement("header");
+  header.className = "header omega-header";
+  header.innerHTML = `
+    <a class="omega-logo" href="/"><img src="/assets/logo.png" width="34" height="34" alt=""><span>Omeganetics</span></a>
+    <button class="oh-burger" type="button" aria-label="Menú"><span></span><span></span><span></span></button>
+    <nav class="omega-nav">
+      ${NAV.map(ddHtml).join("")}
+      <div class="oh-account" id="ohAccount"><a href="/login.html" id="navLogin" class="oh-login">Entrar</a></div>
+    </nav>`;
 
-  // Estado de creador (para mostrar "Subir contenido" si está aprobado).
-  let creatorStatus = "none";
-  try {
-    const cr = await fetch("/api/creadores/mi-estado");
-    if (cr.ok) creatorStatus = (await cr.json()).status || "none";
-  } catch (e) {
-    /* noop */
-  }
+  const existing = document.querySelector("header.header, header");
+  if (existing) existing.replaceWith(header);
+  else document.body.insertBefore(header, document.body.firstChild);
 
-  const esc = (s) =>
-    String(s == null ? "" : s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-
-  const name = me.globalName || me.username || "Cuenta";
-  const li = slot.closest("li") || slot;
-
-  const wrap = document.createElement("div");
-  wrap.className = "user-menu";
-  wrap.innerHTML = `
-    <button class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
-      ${me.avatar ? `<img src="${esc(me.avatar)}" class="user-menu-avatar" alt="">` : ""}
-      <span class="user-menu-name">${esc(name)}</span>
-      ${me.isAdmin ? '<span class="user-menu-badge">admin</span>' : ""}
-      <span class="user-menu-caret">▾</span>
-    </button>
-    <div class="user-menu-dropdown" role="menu" hidden>
-      <div class="user-menu-head">@${esc(me.username || "")}</div>
-      <a role="menuitem" href="/perfil.html">Ver perfil</a>
-      <a role="menuitem" href="/perfil.html#actividad">Mi actividad</a>
-      <a role="menuitem" href="/tienda.html">🛒 Tienda de canjes</a>
-      <a role="menuitem" href="/creadores.html">${creatorStatus === "aprobado" ? "🎬 Subir contenido" : "🎬 Creadores"}</a>
-      ${me.isAdmin ? '<a role="menuitem" href="/admin.html">Panel de admin</a>' : ""}
-      <div class="user-menu-sep"></div>
-      <button role="menuitem" type="button" class="user-menu-logout">Cerrar sesión</button>
-    </div>`;
-
-  if (slot === li) {
-    slot.replaceWith(wrap);
-  } else {
-    li.innerHTML = "";
-    li.appendChild(wrap);
-  }
-
-  const btn = wrap.querySelector(".user-menu-btn");
-  const dd = wrap.querySelector(".user-menu-dropdown");
-
-  const close = () => { dd.setAttribute("hidden", ""); btn.setAttribute("aria-expanded", "false"); };
-  const open = () => { dd.removeAttribute("hidden"); btn.setAttribute("aria-expanded", "true"); };
-
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    dd.hasAttribute("hidden") ? open() : close();
-  });
-  document.addEventListener("click", close);
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") close(); });
-
-  wrap.querySelector(".user-menu-logout").addEventListener("click", async () => {
-    try { await fetch("/api/auth/logout", { method: "POST" }); } catch (e) {}
-    window.location.reload();
+  // Resaltar la página activa.
+  const path = location.pathname.replace(/\/index\.html$/, "/");
+  header.querySelectorAll(".oh-menu a").forEach((a) => {
+    try {
+      const u = new URL(a.getAttribute("href"), location.origin);
+      if (u.pathname === path || (u.pathname !== "/" && path.startsWith(u.pathname))) {
+        a.classList.add("active");
+        a.closest(".oh-dd")?.querySelector(".oh-trigger")?.classList.add("active");
+      }
+    } catch (e) { /* noop */ }
   });
 
-  // Onboarding: se muestra una sola vez (primer login en este navegador).
-  if (!localStorage.getItem("omg_onboarded")) {
-    const ov = document.createElement("div");
-    ov.id = "omgOnboard";
-    ov.innerHTML = `
-      <div class="omg-ob-card">
-        <div class="omg-ob-emoji">👑</div>
-        <h2>¡Bienvenido a Omeganetics!</h2>
-        <p>Así avanzas en la comunidad:</p>
-        <ul>
-          <li>🎙️ <b>Habla en voz</b> y 💬 <b>chatea</b> para ganar <b>XP</b> y <b>Omegacoins</b>.</li>
-          <li>⭐ Sube de <b>nivel</b> y desbloquea <b>logros</b> (algunos te dan rol en Discord).</li>
-          <li>🎯 Crea o únete a <b>eventos</b> y compite en el <b>ranking semanal</b>.</li>
-          <li>🔗 Invita amigos con tu <b>link de referido</b> y gana un 10% extra.</li>
-        </ul>
-        <button class="btn" id="omgObClose">¡Entendido!</button>
-      </div>`;
-    document.body.appendChild(ov);
-    document.getElementById("omgObClose").addEventListener("click", () => {
-      localStorage.setItem("omg_onboarded", "1");
-      ov.remove();
+  const closeAll = () => header.querySelectorAll(".oh-dd").forEach((dd) => {
+    dd.classList.remove("open");
+    dd.querySelector(".oh-menu")?.setAttribute("hidden", "");
+    dd.querySelector(".oh-trigger")?.setAttribute("aria-expanded", "false");
+  });
+  const wireDd = (dd) => {
+    const t = dd.querySelector(".oh-trigger"); const m = dd.querySelector(".oh-menu");
+    t.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = dd.classList.contains("open");
+      closeAll();
+      if (!open) { dd.classList.add("open"); m.removeAttribute("hidden"); t.setAttribute("aria-expanded", "true"); }
     });
-  }
+  };
+  header.querySelectorAll(".oh-dd").forEach(wireDd);
+  document.addEventListener("click", closeAll);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAll(); });
+
+  header.querySelector(".oh-burger").addEventListener("click", (e) => { e.stopPropagation(); header.classList.toggle("nav-open"); });
+  document.addEventListener("click", (e) => { if (!header.contains(e.target)) header.classList.remove("nav-open"); });
+
+  // "¿Quiénes somos?": en el inicio abre el panel de equipo; en otras páginas va al inicio.
+  header.querySelectorAll("[data-team]").forEach((a) => {
+    a.addEventListener("click", (e) => {
+      const dd = document.getElementById("teamDropdown");
+      if (dd) {
+        e.preventDefault();
+        closeAll();
+        const open = dd.classList.contains("open");
+        dd.classList.toggle("open", !open);
+        dd.setAttribute("aria-hidden", String(open));
+      }
+    });
+  });
+
+  // Cuenta / login (a la derecha).
+  (async function () {
+    let me = null;
+    try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) { return; }
+    if (!me) return;
+    let creator = "none";
+    try { const cr = await fetch("/api/creadores/mi-estado"); if (cr.ok) creator = (await cr.json()).status || "none"; } catch (e) { /* noop */ }
+    const name = me.globalName || me.username || "Cuenta";
+    const acc = header.querySelector("#ohAccount");
+    acc.innerHTML = `
+      <div class="oh-dd oh-user">
+        <button class="oh-trigger oh-userbtn" type="button" aria-haspopup="true" aria-expanded="false">
+          ${me.avatar ? `<img src="${esc(me.avatar)}" class="oh-avatar" alt="">` : ""}
+          <span class="oh-uname">${esc(name)}</span>
+          ${me.isAdmin ? '<span class="oh-badge">admin</span>' : ""}
+          <span class="oh-caret">▾</span>
+        </button>
+        <div class="oh-menu oh-menu-right" hidden>
+          <div class="oh-head">@${esc(me.username || "")}</div>
+          <a role="menuitem" href="/perfil.html"><span class="oh-dot oh-dot-none"></span><span class="oh-ic">👤</span> Ver perfil</a>
+          <a role="menuitem" href="/tienda.html"><span class="oh-dot oh-dot-none"></span><span class="oh-ic">🛒</span> Tienda de canjes</a>
+          <a role="menuitem" href="/creadores.html"><span class="oh-dot oh-dot-none"></span><span class="oh-ic">🎬</span> ${creator === "aprobado" ? "Subir contenido" : "Creadores"}</a>
+          ${me.isAdmin ? '<a role="menuitem" href="/admin.html"><span class="oh-dot oh-dot-none"></span><span class="oh-ic">🛡️</span> Panel admin</a>' : ""}
+          <button role="menuitem" type="button" class="oh-logout">Cerrar sesión</button>
+        </div>
+      </div>`;
+    const dd = acc.querySelector(".oh-dd");
+    wireDd(dd);
+    acc.querySelector(".oh-logout").addEventListener("click", async () => {
+      try { await fetch("/api/auth/logout", { method: "POST" }); } catch (e) { /* noop */ }
+      window.location.reload();
+    });
+
+    // Onboarding (una sola vez).
+    if (!localStorage.getItem("omg_onboarded")) {
+      const ov = document.createElement("div");
+      ov.id = "omgOnboard";
+      ov.innerHTML = `
+        <div class="omg-ob-card">
+          <div class="omg-ob-emoji">👑</div>
+          <h2>¡Bienvenido a Omeganetics!</h2>
+          <p>Así avanzas en la comunidad:</p>
+          <ul>
+            <li>🎙️ <b>Habla en voz</b> y 💬 <b>chatea</b> para ganar <b>XP</b> y <b>Omegacoins</b>.</li>
+            <li>⭐ Sube de <b>nivel</b> y desbloquea <b>logros</b> (algunos te dan rol en Discord).</li>
+            <li>🎯 Crea o únete a <b>eventos</b> y compite en el <b>ranking semanal</b>.</li>
+            <li>🔗 Invita amigos con tu <b>link de referido</b> y gana un 10% extra.</li>
+          </ul>
+          <button class="btn" id="omgObClose">¡Entendido!</button>
+        </div>`;
+      document.body.appendChild(ov);
+      document.getElementById("omgObClose").addEventListener("click", () => {
+        localStorage.setItem("omg_onboarded", "1");
+        ov.remove();
+      });
+    }
+  })();
 })();
