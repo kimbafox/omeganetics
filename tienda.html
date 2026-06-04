@@ -39,9 +39,31 @@
     .muted { color: var(--text-soft); } .muted a { color:#aab2ff; font-weight:700; text-decoration:none; }
     #msg { text-align:center; margin:14px 0; font-weight:700; }
     .ok { color:#7be0a3; } .err { color:#ff9b9b; }
+    /* --- Decoración de monedas + estilo dorado --- */
+    body { position: relative; }
+    .coin-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .coin-bg img { position: absolute; border-radius: 50%; object-fit: cover; opacity: .06; filter: grayscale(.3); }
+    .sh-wrap { position: relative; z-index: 1; }
+    .sh-head h1 { background: linear-gradient(135deg, #ffd35c, #ff9f43); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .coin-mini { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; vertical-align: -4px; }
+    .balance-bar { gap: 14px; background: linear-gradient(135deg, rgba(255,211,92,.18), rgba(255,159,67,.06)); border: 1px solid rgba(255,211,92,.45); box-shadow: 0 0 30px rgba(255,211,92,.12); }
+    .balance-bar .coin-ic { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,211,92,.55); box-shadow: 0 0 16px rgba(255,211,92,.5); }
+    .card { position: relative; overflow: hidden; border-color: rgba(255,211,92,.16); transition: transform .2s, border-color .2s, box-shadow .2s; }
+    .card::after { content: ""; position: absolute; right: -22px; bottom: -22px; width: 96px; height: 96px; background: url(/assets/omegacoin-actual.png) center/cover; border-radius: 50%; opacity: .06; pointer-events: none; }
+    .card:hover { transform: translateY(-4px); border-color: rgba(255,211,92,.45); box-shadow: 0 14px 34px rgba(0,0,0,.45), 0 0 22px rgba(255,211,92,.12); }
+    .card .ic { filter: drop-shadow(0 0 8px rgba(255,211,92,.25)); }
+    .card .price { display: flex; align-items: center; gap: 6px; }
+    .buy { background: linear-gradient(135deg, #5865F2, #7c5cff); }
   </style>
 </head>
 <body>
+  <div class="coin-bg" aria-hidden="true">
+    <img src="/assets/omegacoin-actual.png" style="width:170px;height:170px;top:8%;left:3%;transform:rotate(-15deg)">
+    <img src="/assets/omegacoin.png" style="width:110px;height:110px;top:26%;right:5%;transform:rotate(18deg)">
+    <img src="/assets/omegacoin-actual.png" style="width:90px;height:90px;bottom:14%;left:9%;transform:rotate(10deg)">
+    <img src="/assets/omegacoin.png" style="width:150px;height:150px;bottom:5%;right:12%;transform:rotate(-25deg)">
+    <img src="/assets/omegacoin-actual.png" style="width:70px;height:70px;top:58%;left:46%;transform:rotate(8deg)">
+  </div>
   <header class="header">
     <div class="logo-container">
       <a href="/" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;">
@@ -64,7 +86,7 @@
       <p>Gasta tus Omegacoins en roles, colores y perks. Se ganan jugando, en voz, con logros, el top semanal y los bumps.</p>
     </div>
 
-    <div class="balance-bar" id="balanceBar" style="display:none">🪙 <span class="amt" id="bal">0</span> <span class="muted">Omegacoins disponibles</span></div>
+    <div class="balance-bar" id="balanceBar" style="display:none"><img class="coin-ic" src="/assets/omegacoin-actual.png" alt="Omegacoin"> <span class="amt" id="bal">0</span> <span class="muted">Omegacoins disponibles</span></div>
     <div id="loginCta" class="balance-bar" style="display:none"><span class="muted"><a href="/login.html">Inicia sesión</a> para ver tu saldo y canjear.</span></div>
 
     <div id="msg"></div>
@@ -108,7 +130,7 @@
           <h3>${esc(i.name)}</h3>
           <div class="d">${esc(i.desc)}</div>
           <span class="tag ${i.type === "order" ? "tag-order" : "tag-role"}">${i.type === "order" ? "Lo prepara un admin" : "Entrega automática"}</span>
-          <div class="price">🪙 ${fmt(i.price)}</div>
+          <div class="price"><img class="coin-mini" src="/assets/omegacoin-actual.png" alt=""> ${fmt(i.price)}</div>
           <button class="buy" data-key="${i.key}" ${me && can && !has ? "" : "disabled"}>${label}</button>
         </div>`;
       }).join("");
