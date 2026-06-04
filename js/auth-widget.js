@@ -35,7 +35,10 @@
       <div class="oh-account" id="ohAccount"><a href="/login.html" id="navLogin" class="oh-login">Entrar</a></div>
     </nav>`;
 
-  const existing = document.querySelector("header.header, header");
+  // En sub-apps (wiki/realm) con <meta name="omega-header" content="prepend"> se antepone
+  // (conserva su header propio). En las demás páginas reemplaza el header existente.
+  const prepend = document.querySelector('meta[name="omega-header"]')?.content === "prepend";
+  const existing = prepend ? null : document.querySelector("header.header, header");
   if (existing) existing.replaceWith(header);
   else document.body.insertBefore(header, document.body.firstChild);
 
