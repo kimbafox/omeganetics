@@ -102,12 +102,12 @@ router.post("/api/me/minijuego/resultado", requireUser, async (req, res) => {
   try {
     const claim = await pool.query(
       `INSERT INTO minigame_runs (discord_id, last_played_at, last_earned, total_runs, total_earned)
-       VALUES ($1, NOW(), $2, 1, $2)
+       VALUES ($1, NOW(), $2::int, 1, $2::int)
        ON CONFLICT (discord_id) DO UPDATE
          SET last_played_at = NOW(),
-             last_earned = $2,
+             last_earned = $2::int,
              total_runs = minigame_runs.total_runs + 1,
-             total_earned = minigame_runs.total_earned + $2
+             total_earned = minigame_runs.total_earned + $2::int
        WHERE minigame_runs.last_played_at IS NULL
           OR minigame_runs.last_played_at < NOW() - ($3 || ' hours')::interval
        RETURNING last_played_at`,
