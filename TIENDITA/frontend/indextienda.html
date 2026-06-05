@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omeganetics Realm</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="tienda-theme.css">
+<link rel="stylesheet" href="/css/site-extra.css">
+<meta name="omega-header" content="prepend">
+</head>
+<body class="storefront-page">
+<div class="page-glow" aria-hidden="true"></div>
+<div class="page-ink page-ink-left" aria-hidden="true"></div>
+<div class="page-ink page-ink-right" aria-hidden="true"></div>
+
+<header class="header">
+  <div class="brand-shell">
+    <div class="logo-hint" aria-hidden="true">
+      <span class="logo-hint-text">Toca el emblema para cambiar el estilo visual</span>
+    </div>
+    <button class="logo-container logo-toggle" id="logoThemeToggle" type="button" aria-label="Cambiar tema visual de la tienda" title="Cambiar tema visual de la tienda">
+      <img src="assets/logo.png" class="logo" alt="Logo de Omeganetics Realm">
+      <div class="brand-copy">
+        <h1>Omeganetics Realm</h1>
+      </div>
+    </button>
+  </div>
+
+  <nav>
+    <a href="../../index.html" class="btn btn-secondary">Volver a pagina principal</a>
+    <a href="login.html" id="btnEntrar" class="btn btn-secondary">Entrar</a>
+    <a href="admin.html" id="btnAdmin" class="btn" style="display:none;">Panel Admin</a>
+    <button id="btnLogout" class="btn btn-secondary" style="display:none;" onclick="cerrarSesion()">Cerrar sesión</button>
+  </nav>
+</header>
+
+<main class="landing">
+  
+
+  <section class="carousel-shell">
+    <div class="section-minihead">Destacados de la semana</div>
+    <section class="carousel">
+      <div class="slide active">
+        <img src="assets/slide2.png" alt="Nuevas reliquias" loading="eager" decoding="async" fetchpriority="high">
+        <div class="texto">Nuevas reliquias</div>
+      </div>
+
+      <div class="slide">
+        <img src="assets/slide1.png" alt="Herramientas legendarias" loading="lazy" decoding="async" fetchpriority="low">
+        <div class="texto">Herramientas legendarias</div>
+      </div>
+
+      <div class="slide">
+        <img src="assets/slide3.png" alt="Juegos del reino" loading="lazy" decoding="async" fetchpriority="low">
+        <div class="texto">Juegos del reino</div>
+      </div>
+    </section>
+  </section>
+
+  <section id="catalogo" class="catalogo-shell">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">Catálogo</span>
+        <h2>Contenido curado, fácil de explorar</h2>
+        <p>Busca, filtra y abre lo que necesites sin ruido visual.</p>
+      </div>
+    </div>
+
+    <section class="catalog-toolbar">
+      <label class="search-box" for="buscar">
+        <span class="search-label">Buscar en el catálogo</span>
+        <input id="buscar" type="search" placeholder="Nombre, categoría o tipo de recurso" autocomplete="off">
+      </label>
+      <div class="toolbar-actions">
+        <a class="btn btn-secondary" href="login.html">Subir proyecto</a>
+        <span id="catalogCount" class="catalog-count">0 elementos</span>
+      </div>
+      <div class="badge-pills" aria-label="Etiquetas del catálogo">
+        <span class="mini-badge mini-badge--new">Nuevo</span>
+        <span class="mini-badge mini-badge--download">Descargable</span>
+        <span class="mini-badge mini-badge--gallery">Galería premium</span>
+      </div>
+    </section>
+
+    <section class="categorias">
+      <button class="filtro-btn active" data-cat="todos" onclick="filtrar('todos')">Todos</button>
+      <button class="filtro-btn" data-cat="omegacraft" onclick="filtrar('omegacraft')">Omegacraft</button>
+      <button class="filtro-btn" data-cat="herramientas" onclick="filtrar('herramientas')">Herramientas</button>
+      <button class="filtro-btn" data-cat="juegos" onclick="filtrar('juegos')">Juegos</button>
+      <button class="filtro-btn" data-cat="libros" onclick="filtrar('libros')">Libros</button>
+      <button class="filtro-btn" data-cat="arte y diseno" onclick="filtrar('arte y diseno')">Arte y diseno</button>
+      <button class="btn btn-secondary limpiar-filtros" type="button" onclick="limpiarFiltros()">Ver todo</button>
+    </section>
+
+    <section id="proyectos" class="grid"></section>
+
+  </section>
+</main>
+
+<script src="app.js"></script>
+<script src="/js/auth-widget.js"></script>
+</body>
+</html>
