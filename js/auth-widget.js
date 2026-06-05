@@ -17,6 +17,7 @@
       { href: "/wiki/", icon: "📚", text: "Wiki (lore)", dot: "#3ba55c" },
       { href: "/tiendita/indextienda.html", icon: "🏰", text: "Realm", dot: "#c0392b" },
       { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
+      { href: "/sorteos.html", icon: "🎟️", text: "Sorteos", dot: "#ff6fae" },
       { href: "https://discord.gg/bCWjyns8U5", icon: "💬", text: "Discord", ext: true, dot: "#5865F2" },
     ] },
     { label: "Únete a nosotros", tour: "unete", items: [

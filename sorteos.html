@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sorteos — Omeganetics</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .sor-wrap { max-width: 1000px; margin: 0 auto; padding: 40px 20px 80px; }
+    .sor-head { text-align: center; margin-bottom: 26px; }
+    .sor-head h1 { font-size: 2rem; font-weight: 900; margin: 0 0 6px; }
+    .sor-head p { color: var(--text-soft); margin: 0; }
+
+    .sor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+    .sor-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow);
+    }
+    .sor-card.drawn { opacity: .92; }
+    .sor-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #14141f; }
+    .sor-noimg { width: 100%; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: linear-gradient(135deg, rgba(168,120,255,.18), rgba(255,211,92,.12)); }
+    .sor-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .sor-title { font-size: 1.15rem; font-weight: 800; }
+    .sor-prize { color: var(--text-soft); font-size: 14px; flex: 1; }
+    .sor-prize b { color: #ffd35c; }
+    .sor-meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--text-faint); }
+    .sor-cost { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; color: #ffd35c; }
+    .sor-cost img { width: 18px; height: 18px; border-radius: 50%; }
+    .sor-btn { width: 100%; margin-top: 6px; }
+    .sor-joined { text-align: center; color: #3ba55c; font-weight: 800; padding: 9px; }
+    .sor-winner { text-align: center; background: rgba(255,211,92,.12); border-radius: 10px; padding: 10px; font-weight: 800; color: #ffd35c; }
+    .sor-status { font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .05em; }
+    .st-open { background: rgba(59,165,92,.18); color: #5ee08a; }
+    .st-drawn { background: rgba(255,211,92,.18); color: #ffd35c; }
+    .sor-admin { display: flex; gap: 6px; margin-top: 8px; }
+    .sor-admin button { flex: 1; font-size: 12px; padding: 7px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text-soft); cursor: pointer; }
+    .sor-admin button:hover { color: var(--text); border-color: var(--accent); }
+    .sor-admin .danger:hover { color: #ff6b6b; border-color: #ff6b6b; }
+
+    .admin-create { background: var(--surface); border: 1px dashed var(--accent); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 24px; display: none; }
+    .admin-create.show { display: block; }
+    .admin-create h3 { margin: 0 0 12px; }
+    .admin-create .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .admin-create input, .admin-create textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-family: inherit; box-sizing: border-box; }
+    .admin-create textarea { grid-column: 1 / -1; min-height: 60px; resize: vertical; }
+    .msg { font-size: 13px; margin-left: 10px; }
+    .msg.ok { color: #3ba55c; } .msg.err { color: #ff6b6b; }
+    .sor-empty { text-align: center; color: var(--text-soft); padding: 50px 0; grid-column: 1 / -1; }
+    .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main class="sor-wrap">
+    <div class="sor-head">
+      <h1>🎟️ Sorteos</h1>
+      <p>Participa con tus Omegacoins y gana premios. ¡1 entrada por persona!</p>
+    </div>
+
+    <div class="admin-create" id="adminCreate">
+      <h3>➕ Crear sorteo (admin)</h3>
+      <div class="row">
+        <input id="acTitle" placeholder="Título (ej: Nitro de Discord)" maxlength="120" />
+        <input id="acCost" type="number" placeholder="Costo en Omegacoins (1000)" value="1000" min="0" />
+      </div>
+      <div class="row">
+        <input id="acImage" placeholder="URL de imagen (opcional)" />
+        <input id="acEnds" type="datetime-local" />
+      </div>
+      <textarea id="acPrize" placeholder="Descripción del premio (opcional)" maxlength="300"></textarea>
+      <button class="btn" id="acBtn" type="button">Crear sorteo</button>
+      <span id="acMsg" class="msg"></span>
+    </div>
+
+    <div class="sor-grid" id="sorGrid"><div class="sor-empty">Cargando sorteos…</div></div>
+
+    <a class="back-link" href="/">← Volver al inicio</a>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const COIN = '<img src="/assets/omegacoin-actual.png" alt="">';
+    const fmt = (n) => Number(n || 0).toLocaleString("es");
+    let isAdmin = false;
+
+    async function load() {
+      try {
+        const r = await fetch("/api/sorteos");
+        const d = await r.json();
+        isAdmin = d.isAdmin;
+        $("adminCreate").classList.toggle("show", isAdmin);
+        render(d.sorteos || []);
+      } catch (e) {
+        $("sorGrid").innerHTML = `<div class="sor-empty">No se pudieron cargar los sorteos.</div>`;
+      }
+    }
+
+    function render(list) {
+      if (!list.length) {
+        $("sorGrid").innerHTML = `<div class="sor-empty">Aún no hay sorteos activos. ¡Vuelve pronto! 🎉</div>`;
+        return;
+      }
+      $("sorGrid").innerHTML = list.map((s) => {
+        const img = s.imageUrl
+          ? `<img class="sor-img" src="${esc(s.imageUrl)}" alt="" onerror="this.outerHTML='<div class=\\'sor-noimg\\'>🎁</div>'">`
+          : `<div class="sor-noimg">🎁</div>`;
+        const statusChip = s.status === "open"
+          ? `<span class="sor-status st-open">Abierto</span>`
+          : `<span class="sor-status st-drawn">Sorteado</span>`;
+
+        let action = "";
+        if (s.status === "drawn") {
+          action = `<div class="sor-winner">🏆 Ganador: ${esc(s.winnerName || "—")}</div>`;
+        } else if (s.joined) {
+          action = `<div class="sor-joined">✅ Ya participas</div>`;
+        } else {
+          action = `<button class="btn sor-btn" data-join="${s.id}">Participar · ${fmt(s.cost)} 🪙</button>`;
+        }
+
+        const admin = isAdmin ? `<div class="sor-admin">
+          ${s.status === "open" ? `<button data-draw="${s.id}">🎲 Sortear</button>` : ""}
+          <button class="danger" data-del="${s.id}">🗑️ Eliminar</button>
+        </div>` : "";
+
+        return `<div class="sor-card ${s.status === "drawn" ? "drawn" : ""}">
+          ${img}
+          <div class="sor-body">
+            <div class="sor-meta">${statusChip}<span>👥 ${s.entries} participan</span></div>
+            <div class="sor-title">${esc(s.title)}</div>
+            <div class="sor-prize">${s.prize ? "🎁 " + esc(s.prize) : ""}</div>
+            ${action}
+            ${admin}
+          </div>
+        </div>`;
+      }).join("");
+
+      $("sorGrid").querySelectorAll("[data-join]").forEach((b) => b.addEventListener("click", () => participar(b)));
+      $("sorGrid").querySelectorAll("[data-draw]").forEach((b) => b.addEventListener("click", () => sortear(b.dataset.draw)));
+      $("sorGrid").querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => eliminar(b.dataset.del)));
+    }
+
+    async function participar(btn) {
+      const id = btn.dataset.join;
+      btn.disabled = true; btn.textContent = "Participando…";
+      try {
+        const r = await fetch(`/api/sorteos/${id}/participar`, { method: "POST" });
+        const d = await r.json();
+        if (!r.ok) {
+          if (r.status === 401) { location.href = "/login.html"; return; }
+          throw new Error(d.error || "Error");
+        }
+        load();
+      } catch (e) {
+        btn.disabled = false; btn.textContent = "❌ " + e.message;
+        setTimeout(load, 1800);
+      }
+    }
+
+    async function sortear(id) {
+      if (!confirm("¿Sortear un ganador al azar? No se puede deshacer.")) return;
+      try {
+        const r = await fetch(`/api/sorteos/${id}/sortear`, { method: "POST" });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        alert("🏆 Ganador: " + (d.winnerName || d.winnerId));
+        load();
+      } catch (e) { alert("❌ " + e.message); }
+    }
+
+    async function eliminar(id) {
+      if (!confirm("¿Eliminar este sorteo y sus participantes?")) return;
+      try {
+        const r = await fetch(`/api/sorteos/${id}`, { method: "DELETE" });
+        if (!r.ok) { const d = await r.json(); throw new Error(d.error || "Error"); }
+        load();
+      } catch (e) { alert("❌ " + e.message); }
+    }
+
+    $("acBtn").addEventListener("click", async () => {
+      const title = $("acTitle").value.trim();
+      const msg = $("acMsg");
+      if (!title) { msg.textContent = "Falta el título."; msg.className = "msg err"; return; }
+      msg.textContent = "Creando…"; msg.className = "msg";
+      try {
+        const r = await fetch("/api/sorteos", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            prize: $("acPrize").value.trim(),
+            cost: parseInt($("acCost").value, 10) || 1000,
+            imageUrl: $("acImage").value.trim(),
+            endsAt: $("acEnds").value || null,
+          }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        msg.textContent = "✅ Creado."; msg.className = "msg ok";
+        $("acTitle").value = ""; $("acPrize").value = ""; $("acImage").value = "";
+        load();
+      } catch (e) { msg.textContent = "❌ " + e.message; msg.className = "msg err"; }
+    });
+
+    load();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>

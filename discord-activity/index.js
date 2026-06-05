@@ -1005,4 +1005,51 @@ async function postShoutout(text, byName) {
   } catch (e) { return false; }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration, notifyAdmins, getVoiceChannels, renameVoiceChannel, postShoutout };
+// === Emojis exclusivos: restringir emojis del servidor a ciertos roles ===
+// Lista los emojis personalizados del servidor con sus roles permitidos (si los hay).
+function listGuildEmojis() {
+  if (!client) return [];
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return [];
+    return guild.emojis.cache.map((e) => ({
+      id: e.id,
+      name: e.name,
+      animated: !!e.animated,
+      url: e.imageURL ? e.imageURL({ size: 64 }) : e.url,
+      roles: e.roles?.cache ? e.roles.cache.map((r) => r.name) : [],
+    }));
+  } catch (e) { return []; }
+}
+
+// Lista los roles asignables (sin @everyone ni roles gestionados por integraciones).
+function listGuildRoles() {
+  if (!client) return [];
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return [];
+    return guild.roles.cache
+      .filter((r) => r.id !== guild.id && !r.managed)
+      .sort((a, b) => b.position - a.position)
+      .map((r) => ({ id: r.id, name: r.name }));
+  } catch (e) { return []; }
+}
+
+// Restringe un emoji a una lista de roles (por nombre). Lista vacía = disponible para todos.
+async function setEmojiRoles(emojiId, roleNames) {
+  if (!client) return false;
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return false;
+    const emoji = guild.emojis.cache.get(emojiId);
+    if (!emoji) return false;
+    const names = Array.isArray(roleNames) ? roleNames : [];
+    const roleIds = names
+      .map((n) => guild.roles.cache.find((r) => r.name === n)?.id)
+      .filter(Boolean);
+    await emoji.edit({ roles: roleIds }); // requiere permiso "Gestionar Emojis y Stickers"
+    return true;
+  } catch (e) { console.warn("[emojis]", e.message); return false; }
+}
+
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration, notifyAdmins, getVoiceChannels, renameVoiceChannel, postShoutout, listGuildEmojis, listGuildRoles, setEmojiRoles };

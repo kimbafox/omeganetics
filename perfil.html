@@ -94,6 +94,23 @@
     .soon-desc { color: var(--text-faint); font-size: 13px; }
     .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
     .back-link:hover { color: var(--text); }
+
+    /* Misiones diarias */
+    .ms-pending { background: #ff6b6b; color: #fff; font-size: 11px; font-weight: 800; padding: 3px 9px; border-radius: 999px; vertical-align: middle; margin-left: 6px; }
+    .ms-list { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+    .ms-item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.02); }
+    .ms-item.is-done { border-color: rgba(255,211,92,.5); }
+    .ms-ic { font-size: 1.5rem; flex: none; }
+    .ms-body { flex: 1; min-width: 0; }
+    .ms-title { font-weight: 700; }
+    .ms-desc { color: var(--text-faint); font-size: 13px; margin-bottom: 6px; }
+    .ms-bar { height: 7px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; }
+    .ms-bar span { display: block; height: 100%; background: linear-gradient(90deg, #a878ff, #ffd35c); transition: width .4s ease; }
+    .ms-prog { font-size: 12px; color: var(--text-soft); margin-top: 4px; }
+    .ms-action { flex: none; }
+    .ms-claim { white-space: nowrap; }
+    .ms-claimed { color: #3ba55c; font-weight: 800; font-size: 14px; }
+    .ms-reward { color: var(--text-faint); font-weight: 800; font-size: 14px; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -162,6 +179,12 @@
         </div>
       </section>
 
+      <section class="panel" id="misiones">
+        <h2>🎯 Misiones diarias <span id="msPending" class="ms-pending" style="display:none"></span></h2>
+        <p class="sub">Completa metas cada día y reclama Omegacoins. Se renuevan a medianoche.</p>
+        <div id="msList" class="ms-list"></div>
+      </section>
+
       <section class="panel" id="logros">
         <h2>🏅 Mis logros</h2>
         <p class="sub">Insignias que has ganado en la comunidad.</p>
@@ -228,6 +251,7 @@
       loadCoins();
       loadReferidos();
       loadMinijuego();
+      loadMisiones();
 
       // Actividad
       try {
@@ -284,6 +308,55 @@
         const d = await r.json();
         $("refCount").textContent = d.count || 0;
       } catch (e) { /* noop */ }
+    }
+
+    async function loadMisiones() {
+      try {
+        const r = await fetch("/api/me/misiones");
+        const d = await r.json();
+        renderMisiones(d.missions || [], d.pending || 0);
+      } catch (e) { /* noop */ }
+    }
+
+    function renderMisiones(missions, pending) {
+      const pillEl = $("msPending");
+      if (pending > 0) { pillEl.style.display = "inline-block"; pillEl.textContent = `${pending} por reclamar`; }
+      else { pillEl.style.display = "none"; }
+      const unit = (m) => m.unit ? " " + m.unit : "";
+      $("msList").innerHTML = missions.map((m) => {
+        const pct = m.target ? Math.min(100, Math.round((m.progress / m.target) * 100)) : 0;
+        let action;
+        if (m.claimed) action = `<span class="ms-claimed">✅ Reclamada</span>`;
+        else if (m.done) action = `<button class="btn ms-claim" data-key="${m.key}">Reclamar +${m.reward} 🪙</button>`;
+        else action = `<span class="ms-reward">+${m.reward} 🪙</span>`;
+        return `<div class="ms-item ${m.done ? "is-done" : ""}">
+          <div class="ms-ic">${m.icon}</div>
+          <div class="ms-body">
+            <div class="ms-title">${m.title}</div>
+            <div class="ms-desc">${m.desc}</div>
+            <div class="ms-bar"><span style="width:${pct}%"></span></div>
+            <div class="ms-prog">${m.progress}${unit(m)} / ${m.target}${unit(m)}</div>
+          </div>
+          <div class="ms-action">${action}</div>
+        </div>`;
+      }).join("");
+      $("msList").querySelectorAll(".ms-claim").forEach((b) => b.addEventListener("click", () => claimMision(b)));
+    }
+
+    async function claimMision(btn) {
+      const key = btn.dataset.key;
+      btn.disabled = true; btn.textContent = "Reclamando…";
+      try {
+        const r = await fetch("/api/me/misiones/reclamar", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Error");
+        loadMisiones();   // refresca estado
+        loadCoins();      // refresca saldo mostrado
+      } catch (e) {
+        btn.disabled = false; btn.textContent = "Reintentar";
+      }
     }
 
     async function loadMinijuego() {

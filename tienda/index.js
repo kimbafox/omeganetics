@@ -22,6 +22,10 @@ const pool = databaseUrl
 const CATALOG = [
   { key: "nombre_aqua", name: "Nombre Aqua", icon: "🌊", desc: "Color de nombre aqua llamativo (permanente).", price: 6000, type: "role", roleName: "🌊 Aqua", color: 0x00d9ff, hoist: false },
   { key: "nombre_rosa", name: "Nombre Rosa", icon: "🌸", desc: "Color de nombre rosa (permanente).", price: 6000, type: "role", roleName: "🌸 Rosa", color: 0xff6fae, hoist: false },
+  { key: "nombre_rojo", name: "Nombre Rojo", icon: "🔴", desc: "Color de nombre rojo intenso (permanente).", price: 6000, type: "role", roleName: "🔴 Rojo", color: 0xff3b3b, hoist: false },
+  { key: "nombre_verde", name: "Nombre Verde Neón", icon: "💚", desc: "Color de nombre verde neón (permanente).", price: 6000, type: "role", roleName: "💚 Verde", color: 0x57f287, hoist: false },
+  { key: "nombre_dorado", name: "Nombre Dorado", icon: "🟡", desc: "Color de nombre dorado brillante (permanente).", price: 7000, type: "role", roleName: "🟡 Dorado", color: 0xffd35c, hoist: false },
+  { key: "emojis_vip", name: "Emojis VIP ✨", icon: "✨", desc: "Desbloquea los emojis exclusivos del servidor, reservados solo para quienes tienen este rol.", price: 9000, type: "role", roleName: "✨ Emojis VIP", color: 0xa878ff, hoist: false },
   { key: "vc_rename", name: "Renombrar canal de voz 24h", icon: "🎤", desc: "Le pones el nombre que quieras a un canal de voz por 24h (automático, con filtro).", price: 5000, type: "auto", pickChannel: true },
   { key: "shoutout", name: "Shoutout en anuncios", icon: "📢", desc: "Publicamos tu mensaje en anuncios al instante (automático, con filtro).", price: 8000, type: "auto", needsNote: "¿Qué quieres que anunciemos? (link/texto)" },
   { key: "color_custom", name: "Color personalizado", icon: "🎨", desc: "Eliges el color EXACTO de tu nombre (permanente).", price: 9000, type: "order", needsNote: "Pon el color (ej: #ff3b3b)" },
@@ -180,6 +184,33 @@ router.post("/api/tienda/pedido/:id/completar", requireAdmin, async (req, res) =
     if (r.rows[0]) { try { require("../discord-activity").dmUser?.(r.rows[0].discord_id, `✅ ¡Tu pedido "${r.rows[0].item_name}" ya está listo!`); } catch (e) {} }
     return res.json({ ok: true });
   } catch (e) { return res.status(500).json({ error: "No se pudo." }); }
+});
+
+// === Gestión de emojis exclusivos (admin) ===
+// Lista los emojis del servidor + roles disponibles, para decidir cuáles bloquear.
+router.get("/api/admin/emojis", requireAdmin, (req, res) => {
+  try {
+    const da = require("../discord-activity");
+    return res.json({
+      emojis: da.listGuildEmojis ? da.listGuildEmojis() : [],
+      roles: da.listGuildRoles ? da.listGuildRoles() : [],
+    });
+  } catch (e) {
+    return res.json({ emojis: [], roles: [] });
+  }
+});
+
+// Restringe un emoji a una lista de roles (por nombre). Lista vacía = para todos.
+router.post("/api/admin/emojis/:id/roles", requireAdmin, async (req, res) => {
+  const roleNames = Array.isArray(req.body?.roleNames) ? req.body.roleNames.map((x) => String(x)).slice(0, 20) : [];
+  try {
+    const da = require("../discord-activity");
+    const ok = da.setEmojiRoles ? await da.setEmojiRoles(req.params.id, roleNames) : false;
+    if (!ok) return res.status(500).json({ error: "No se pudo cambiar el emoji (¿el bot tiene permiso 'Gestionar Emojis'?)." });
+    return res.json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: "No se pudo cambiar el emoji." });
+  }
 });
 
 module.exports = { router, initTienda };

@@ -1164,6 +1164,18 @@ app.use(minijuegoRouter);
 const { router: leaderboardRouter, initLeaderboard } = require("./leaderboard");
 app.use(leaderboardRouter);
 
+// Misiones diarias.
+const { router: misionesRouter, initMisiones } = require("./misiones");
+app.use(misionesRouter);
+
+// Sorteos.
+const { router: sorteosRouter, initSorteos } = require("./sorteos");
+app.use(sorteosRouter);
+
+// Estadísticas del panel de administración.
+const { router: adminStatsRouter, initAdminStats } = require("./admin-stats");
+app.use(adminStatsRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1518,6 +1530,9 @@ async function start() {
     await initCreadores();
     await initMinijuego();
     await initLeaderboard();
+    await initMisiones();
+    await initSorteos();
+    await initAdminStats();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });

@@ -3,34 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel admin — Omeganetics</title>
+  <title>Centro de mando — Omeganetics</title>
   <meta name="robots" content="noindex" />
   <link rel="icon" type="image/png" href="assets/logo.png" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="/css/site-extra.css" />
   <link rel="stylesheet" href="/css/theme.css" />
   <style>
-    .adm-wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 80px; }
-    .adm-head { text-align: center; margin-bottom: 32px; }
-    .adm-head h1 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 8px 0; }
-    .adm-head p { color: var(--text-soft); }
-    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); margin-bottom: 22px; }
-    .panel h2 { font-size: 1.15rem; margin-bottom: 4px; }
+    .adm-wrap { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
+
+    /* Cabecera tipo "centro de mando" */
+    .adm-hero {
+      position: relative; overflow: hidden; border: 1px solid var(--border);
+      border-radius: 20px; padding: 26px 28px; margin-bottom: 26px;
+      background:
+        radial-gradient(700px 200px at 100% 0%, rgba(255,59,59,.12), transparent 60%),
+        radial-gradient(500px 200px at 0% 100%, rgba(255,211,92,.10), transparent 60%),
+        linear-gradient(180deg, rgba(20,20,30,.9), rgba(12,12,18,.95));
+    }
+    .adm-hero::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, #ff3b3b, #ffd35c); }
+    .adm-hero .kick { letter-spacing: .22em; text-transform: uppercase; font-size: 12px; font-weight: 800; color: #ff8a8a; }
+    .adm-hero h1 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 6px 0 4px; font-weight: 900; }
+    .adm-hero p { color: var(--text-soft); margin: 0; }
+    .adm-hero .who { margin-top: 12px; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,.05); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
+    .adm-hero .who img { width: 28px; height: 28px; border-radius: 50%; }
+    .adm-hero .who b { font-weight: 800; }
+    .adm-hero .who .badge { background: linear-gradient(135deg,#ff3b3b,#ff9f43); color:#fff; font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; letter-spacing:.05em; }
+
+    /* KPIs */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 26px; }
+    .kpi {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 18px;
+      position: relative; overflow: hidden;
+    }
+    .kpi .kpi-ic { font-size: 1.3rem; }
+    .kpi .kpi-num { font-size: 1.75rem; font-weight: 900; margin: 4px 0 2px; }
+    .kpi .kpi-lbl { color: var(--text-faint); font-size: 12.5px; }
+    .kpi.alert { border-color: rgba(255,107,107,.5); }
+    .kpi.gold .kpi-num { color: #ffd35c; }
+
+    /* Charts */
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 26px; }
+    @media (max-width: 820px) { .charts { grid-template-columns: 1fr; } }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+    .chart-card h3 { margin: 0 0 4px; font-size: 1rem; }
+    .chart-card .legend { display: flex; gap: 14px; font-size: 12px; color: var(--text-soft); margin: 4px 0 10px; }
+    .chart-card .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+    .chart-card svg { width: 100%; height: 180px; display: block; }
+    .chart-empty { color: var(--text-faint); font-size: 13px; padding: 40px 0; text-align: center; }
+
+    /* Secciones de gestión */
+    .sec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 820px) { .sec-grid { grid-template-columns: 1fr; } }
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; box-shadow: var(--shadow); margin-bottom: 18px; }
+    .panel.full { grid-column: 1 / -1; }
+    .panel h2 { font-size: 1.1rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+    .panel .count-chip { background: rgba(255,107,107,.18); color: #ff8a8a; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; }
     .panel .sub { color: var(--text-faint); font-size: 13px; margin-bottom: 16px; }
     .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .row input, .row select { background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; }
-    .row input { flex: 1; min-width: 160px; }
+    .row input { flex: 1; min-width: 140px; }
     .msg { font-size: 14px; } .msg.ok { color: #7be0a3; } .msg.err { color: #ff9b9b; }
     .item { background: var(--surface-muted); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
     .item h3 { margin-bottom: 4px; }
     .item .meta { color: var(--text-faint); font-size: 13px; margin-bottom: 4px; }
-    .reason { margin-top: 8px; padding: 10px 12px; background: var(--accent-soft, rgba(88,101,242,.12)); border: 1px solid rgba(115,138,255,.25); border-radius: 10px; font-size: 14px; color: var(--text-soft); }
+    .reason { margin-top: 8px; padding: 10px 12px; background: rgba(88,101,242,.12); border: 1px solid rgba(115,138,255,.25); border-radius: 10px; font-size: 14px; color: var(--text-soft); }
     .item a.vid-link { color: #aab2ff; }
     .actions { display: flex; gap: 10px; margin-top: 10px; }
     .btn-approve { background: #3ba55c; color: #fff; border: 0; border-radius: 10px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
     .btn-reject { background: transparent; color: #ff9b9b; border: 1px solid rgba(255,107,107,.4); border-radius: 10px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
     .empty { color: var(--text-soft); padding: 12px 0; }
-    .chip { display:inline-block; background: var(--accent-soft); border:1px solid rgba(115,138,255,.3); color:#aab2ff; border-radius:999px; padding:2px 10px; font-size:12px; margin:2px; }
+    .chip { display:inline-block; background: rgba(88,101,242,.18); border:1px solid rgba(115,138,255,.3); color:#aab2ff; border-radius:999px; padding:2px 10px; font-size:12px; margin:2px; }
     .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 12px; }
     .quick a { display:block; text-decoration:none; color:inherit; background:var(--surface-muted); border:1px solid var(--border); border-radius:14px; padding:18px; transition:transform .2s, border-color .2s; }
     .quick a:hover { transform:translateY(-3px); border-color:var(--border-strong); }
@@ -38,6 +81,16 @@
     .quick .d { color:var(--text-faint); font-size:13px; }
     .center { text-align:center; }
     .hidden { display:none; }
+
+    /* Emojis exclusivos */
+    .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .emoji-card { display: flex; align-items: center; gap: 12px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .emoji-card img { width: 38px; height: 38px; flex: none; object-fit: contain; }
+    .emoji-card .e-body { flex: 1; min-width: 0; }
+    .emoji-card .e-name { font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .emoji-card .e-roles { font-size: 11px; color: var(--text-faint); }
+    .emoji-card .e-roles.locked { color: #ffd35c; }
+    .emoji-card select { width: 100%; margin-top: 5px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 5px; font: inherit; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -52,67 +105,105 @@
       <ul>
         <li><a href="/" class="nav-badge nav-badge-team">Inicio</a></li>
         <li><a href="/actividad.html" class="nav-badge nav-badge-wiki">Actividad</a></li>
-        <li><a href="/eventos.html" class="nav-badge nav-badge-team">Eventos</a></li>
+        <li><a href="/perfil.html" class="nav-badge nav-badge-team">Mi perfil</a></li>
         <li><a href="/login.html" id="navLogin" class="nav-badge nav-badge-discord">Login</a></li>
       </ul>
     </nav>
   </header>
 
   <main class="adm-wrap">
-    <div class="adm-head">
-      <span class="section-kicker">Administración</span>
-      <h1>🛡️ Panel admin</h1>
-      <p>Todo en un solo lugar: aprobar eventos y creadores, dar insignias y Omegacoins.</p>
-    </div>
-
     <div id="loading" class="panel"><p class="empty">Cargando…</p></div>
     <div id="denied" class="panel center hidden"><h2>Acceso restringido</h2><p class="empty">Solo administradores. <a href="/login.html" style="color:#aab2ff">Inicia sesión</a> con una cuenta admin.</p></div>
 
     <div id="content" class="hidden">
-      <section class="panel">
-        <h2>📅 Eventos pendientes</h2>
-        <p class="sub">Revisa y aprueba o rechaza eventos enviados por la comunidad.</p>
-        <div id="pendingEvents"></div>
+      <section class="adm-hero">
+        <span class="kick">Administración</span>
+        <h1>🛡️ Centro de mando</h1>
+        <p>Panel de control de Omeganetics: economía, comunidad y aprobaciones, todo en un lugar.</p>
+        <div class="who" id="whoAmI"></div>
       </section>
 
-      <section class="panel">
-        <h2>🎬 Creadores pendientes</h2>
-        <p class="sub">Solicitudes de creadores de contenido.</p>
-        <div id="pendingCreators"></div>
-      </section>
+      <!-- KPIs -->
+      <div class="kpi-grid" id="kpiGrid"></div>
 
-      <section class="panel">
-        <h2>📹 Videos pendientes</h2>
-        <p class="sub">Contenido enviado por creadores aprobados. Al aprobar se publica en Discord.</p>
-        <div id="pendingVideos"></div>
-      </section>
-
-      <section class="panel">
-        <h2>🏅 Otorgar insignia</h2>
-        <p class="sub">Da una insignia manual (Campeón, Streamer, etc.). Por @usuario o ID de Discord.</p>
-        <div class="row">
-          <input id="badgeUser" placeholder="@usuario o ID" />
-          <select id="badgeKey"></select>
-          <button class="btn" id="badgeBtn" type="button">Otorgar</button>
-          <span id="badgeMsg" class="msg"></span>
+      <!-- Gráficas -->
+      <div class="charts">
+        <div class="chart-card">
+          <h3>🪙 Flujo de Omegacoins (14 días)</h3>
+          <div class="legend"><span><i style="background:#3ba55c"></i>Ganadas</span><span><i style="background:#ff6b6b"></i>Gastadas</span></div>
+          <div id="coinsChart"></div>
         </div>
-      </section>
-
-      <section class="panel">
-        <h2>🪙 Dar Omegacoins</h2>
-        <p class="sub">Otorga monedas (ej. premio semanal del leaderboard: 1000).</p>
-        <div class="row">
-          <input id="coinUser" placeholder="@usuario o ID" />
-          <input id="coinAmount" type="number" placeholder="Cantidad" style="max-width:130px;flex:none" />
-          <input id="coinReason" placeholder="Motivo (opcional)" />
-          <button class="btn" id="coinBtn" type="button">Dar</button>
-          <span id="coinMsg" class="msg"></span>
+        <div class="chart-card">
+          <h3>📊 Actividad (14 días)</h3>
+          <div class="legend"><span><i style="background:#a878ff"></i>Min. en voz</span><span><i style="background:#43d1ff"></i>Mensajes</span></div>
+          <div id="activityChart"></div>
         </div>
+      </div>
+
+      <!-- Aprobaciones -->
+      <div class="sec-grid">
+        <section class="panel">
+          <h2>📅 Eventos pendientes <span class="count-chip hidden" id="cEvents"></span></h2>
+          <p class="sub">Aprueba o rechaza eventos de la comunidad.</p>
+          <div id="pendingEvents"></div>
+        </section>
+
+        <section class="panel">
+          <h2>🎬 Creadores pendientes <span class="count-chip hidden" id="cCreators"></span></h2>
+          <p class="sub">Solicitudes de creadores de contenido.</p>
+          <div id="pendingCreators"></div>
+        </section>
+
+        <section class="panel">
+          <h2>📹 Videos pendientes <span class="count-chip hidden" id="cVideos"></span></h2>
+          <p class="sub">Contenido de creadores aprobados. Al aprobar se publica en Discord.</p>
+          <div id="pendingVideos"></div>
+        </section>
+
+        <section class="panel">
+          <h2>🛒 Pedidos de tienda <span class="count-chip hidden" id="cOrders"></span></h2>
+          <p class="sub">Canjes que requieren acción manual.</p>
+          <div id="storeOrders"></div>
+        </section>
+      </div>
+
+      <!-- Herramientas de economía -->
+      <div class="sec-grid">
+        <section class="panel">
+          <h2>🏅 Otorgar insignia</h2>
+          <p class="sub">Da una insignia manual. Por @usuario o ID de Discord.</p>
+          <div class="row">
+            <input id="badgeUser" placeholder="@usuario o ID" />
+            <select id="badgeKey"></select>
+            <button class="btn" id="badgeBtn" type="button">Otorgar</button>
+            <span id="badgeMsg" class="msg"></span>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>🪙 Dar Omegacoins</h2>
+          <p class="sub">Otorga monedas (ej. premio semanal del ranking: 1000).</p>
+          <div class="row">
+            <input id="coinUser" placeholder="@usuario o ID" />
+            <input id="coinAmount" type="number" placeholder="Cantidad" style="max-width:120px;flex:none" />
+            <input id="coinReason" placeholder="Motivo (opcional)" />
+            <button class="btn" id="coinBtn" type="button">Dar</button>
+            <span id="coinMsg" class="msg"></span>
+          </div>
+        </section>
+      </div>
+
+      <!-- Emojis exclusivos -->
+      <section class="panel full">
+        <h2>✨ Emojis exclusivos</h2>
+        <p class="sub">Restringe qué emojis del servidor puede usar cada rol. Quien compre el rol <b>"✨ Emojis VIP"</b> en la tienda podrá usar los que bloquees a ese rol. (El bot necesita el permiso "Gestionar Emojis".)</p>
+        <div id="emojiList"><div class="empty">Cargando emojis…</div></div>
       </section>
 
-      <section class="panel">
+      <!-- Streamers -->
+      <section class="panel full">
         <h2>🔴 Streamers (Twitch) <span style="color:#ffd35c;font-size:13px;font-weight:700">🚧 En construcción</span></h2>
-        <p class="sub">Aún no está conectado a Twitch — lo activaremos más adelante. Mientras tanto puedes ir registrando streamers; los avisos empezarán cuando lo encendamos.</p>
+        <p class="sub">Aún no conectado a Twitch. Puedes ir registrando streamers; los avisos empezarán cuando lo activemos.</p>
         <div class="row">
           <input id="streamLogin" placeholder="usuario de Twitch o twitch.tv/usuario" />
           <input id="streamDiscord" placeholder="ID de Discord (opcional)" style="max-width:190px;flex:none" />
@@ -122,20 +213,16 @@
         <div id="streamList" style="margin-top:14px"></div>
       </section>
 
-      <section class="panel">
-        <h2>🛒 Pedidos de tienda</h2>
-        <p class="sub">Canjes que requieren acción manual (color personalizado, shoutout, emoji, renombrar canal…).</p>
-        <div id="storeOrders"></div>
-      </section>
-
-      <section class="panel">
+      <!-- Accesos rápidos -->
+      <section class="panel full">
         <h2>🔧 Accesos rápidos</h2>
         <div class="quick">
-          <a href="/admin-equipo.html"><div class="t">🛠️ Panel de equipo</div><div class="d">Editar integrantes y perfiles (login Google).</div></a>
-          <a href="/eventos.html"><div class="t">📅 Eventos</div><div class="d">Ver/gestionar todos los eventos.</div></a>
+          <a href="/sorteos.html"><div class="t">🎟️ Sorteos</div><div class="d">Crear y sortear premios.</div></a>
+          <a href="/admin-equipo.html"><div class="t">🛠️ Panel de equipo</div><div class="d">Editar integrantes (login Google).</div></a>
+          <a href="/ranking.html"><div class="t">🥇 Ranking</div><div class="d">Clasificación de la comunidad.</div></a>
+          <a href="/eventos.html"><div class="t">📅 Eventos</div><div class="d">Ver/gestionar eventos.</div></a>
           <a href="/creadores.html"><div class="t">🎬 Creadores</div><div class="d">Ver/gestionar creadores.</div></a>
-          <a href="/actividad.html"><div class="t">📊 Actividad</div><div class="d">Rankings y actividad del servidor.</div></a>
-          <a href="/metrics.html"><div class="t">📈 Métricas</div><div class="d">Gráficas de crecimiento y actividad.</div></a>
+          <a href="/metrics.html"><div class="t">📈 Métricas</div><div class="d">Más gráficas del servidor.</div></a>
         </div>
       </section>
     </div>
@@ -144,13 +231,118 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const fmt = (n) => Number(n || 0).toLocaleString("es");
     const fmtDate = (iso) => { if (!iso) return "—"; try { return new Date(iso).toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" }); } catch (e) { return "—"; } };
+
+    /* ============ Dashboard: KPIs + gráficas ============ */
+    async function loadStats() {
+      try {
+        const r = await fetch("/api/admin/stats");
+        if (!r.ok) return;
+        const d = await r.json();
+        renderKpis(d.kpis || {});
+        renderGrouped("coinsChart", d.coinsFlow || [], [{ key: "earned", color: "#3ba55c" }, { key: "spent", color: "#ff6b6b" }]);
+        renderGrouped("activityChart", d.activity || [], [{ key: "voiceMinutes", color: "#a878ff" }, { key: "messages", color: "#43d1ff" }]);
+      } catch (e) {}
+    }
+
+    function renderKpis(k) {
+      const cards = [
+        { ic: "👥", num: fmt(k.members), lbl: "Miembros registrados" },
+        { ic: "🪙", num: fmt(k.coinsCirculating), lbl: "Omegacoins en circulación", cls: "gold" },
+        { ic: "📈", num: "+" + fmt(k.coinsEarned7d), lbl: "Ganadas (7 días)" },
+        { ic: "📉", num: "-" + fmt(k.coinsSpent7d), lbl: "Gastadas (7 días)" },
+        { ic: "🟢", num: fmt(k.activeToday), lbl: "Activos hoy" },
+        { ic: "🗓️", num: fmt(k.active7d), lbl: "Activos (7 días)" },
+        { ic: "🚀", num: fmt(k.minigamePlaysToday), lbl: "Partidas minijuego hoy" },
+        { ic: "🎯", num: fmt(k.missionsClaimedToday), lbl: "Misiones reclamadas hoy" },
+        { ic: "🎟️", num: fmt(k.openRaffles), lbl: "Sorteos abiertos" },
+        { ic: "🛒", num: fmt(k.storePending), lbl: "Pedidos pendientes", cls: k.storePending > 0 ? "alert" : "" },
+      ];
+      $("kpiGrid").innerHTML = cards.map((c) => `
+        <div class="kpi ${c.cls || ""}">
+          <div class="kpi-ic">${c.ic}</div>
+          <div class="kpi-num">${c.num}</div>
+          <div class="kpi-lbl">${c.lbl}</div>
+        </div>`).join("");
+    }
+
+    // Gráfica de barras agrupadas (SVG, sin dependencias).
+    function renderGrouped(elId, rows, series) {
+      const el = $(elId);
+      if (!rows.length) { el.innerHTML = `<div class="chart-empty">Sin datos todavía.</div>`; return; }
+      const W = 520, H = 180, padL = 8, padB = 22, padT = 8;
+      const max = Math.max(1, ...rows.flatMap((r) => series.map((s) => Number(r[s.key] || 0))));
+      const groupW = (W - padL * 2) / rows.length;
+      const barW = Math.max(2, (groupW * 0.7) / series.length);
+      let bars = "";
+      rows.forEach((r, i) => {
+        const gx = padL + i * groupW + groupW * 0.15;
+        series.forEach((s, j) => {
+          const v = Number(r[s.key] || 0);
+          const h = (v / max) * (H - padB - padT);
+          const x = gx + j * barW;
+          const y = H - padB - h;
+          bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW - 1).toFixed(1)}" height="${Math.max(0, h).toFixed(1)}" rx="2" fill="${s.color}"><title>${esc(r.day)}: ${fmt(v)}</title></rect>`;
+        });
+        if (i % Math.ceil(rows.length / 7) === 0) {
+          const lbl = r.day.slice(5); // MM-DD
+          bars += `<text x="${(gx).toFixed(1)}" y="${H - 6}" fill="#7a7a8c" font-size="9">${lbl}</text>`;
+        }
+      });
+      el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
+    }
+
+    /* ============ Emojis exclusivos ============ */
+    let EMOJI_ROLES = [];
+    async function loadEmojis() {
+      try {
+        const r = await fetch("/api/admin/emojis");
+        const d = await r.json();
+        EMOJI_ROLES = d.roles || [];
+        renderEmojis(d.emojis || []);
+      } catch (e) {
+        $("emojiList").innerHTML = `<div class="empty">No se pudieron cargar los emojis (¿bot conectado?).</div>`;
+      }
+    }
+    function renderEmojis(emojis) {
+      if (!emojis.length) { $("emojiList").innerHTML = `<div class="empty">El servidor no tiene emojis personalizados, o el bot no tiene acceso.</div>`; return; }
+      const opts = (sel) => `<option value="">— Todos (sin restricción) —</option>` +
+        EMOJI_ROLES.map((r) => `<option value="${esc(r.name)}" ${sel.includes(r.name) ? "selected" : ""}>${esc(r.name)}</option>`).join("");
+      $("emojiList").innerHTML = `<div class="emoji-grid">` + emojis.map((e) => {
+        const locked = (e.roles || []).length > 0;
+        return `<div class="emoji-card">
+          <img src="${esc(e.url)}" alt="${esc(e.name)}" loading="lazy">
+          <div class="e-body">
+            <div class="e-name">:${esc(e.name)}:</div>
+            <div class="e-roles ${locked ? "locked" : ""}">${locked ? "🔒 " + e.roles.map(esc).join(", ") : "Disponible para todos"}</div>
+            <select data-emoji="${esc(e.id)}">${opts(e.roles || [])}</select>
+          </div>
+        </div>`;
+      }).join("") + `</div>`;
+      $("emojiList").querySelectorAll("select[data-emoji]").forEach((sel) => {
+        sel.addEventListener("change", async () => {
+          const id = sel.dataset.emoji;
+          const roleNames = sel.value ? [sel.value] : [];
+          sel.disabled = true;
+          try {
+            const r = await fetch(`/api/admin/emojis/${id}/roles`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ roleNames }) });
+            if (!r.ok) { const d = await r.json(); throw new Error(d.error || "Error"); }
+            loadEmojis();
+          } catch (e) { alert("❌ " + e.message); sel.disabled = false; }
+        });
+      });
+    }
+
+    /* ============ Aprobaciones (lógica original) ============ */
+    function setCount(id, n) { const el = $(id); if (n > 0) { el.textContent = n; el.classList.remove("hidden"); } else { el.classList.add("hidden"); } }
 
     async function loadEvents() {
       try {
         const r = await fetch("/api/eventos/pendientes");
         if (!r.ok) return;
         const list = await r.json();
+        setCount("cEvents", list.length);
         $("pendingEvents").innerHTML = list.length ? list.map((e) => `
           <div class="item">
             <h3>${esc(e.name)} <span class="chip">${esc(e.game)}</span></h3>
@@ -167,6 +359,7 @@
         const r = await fetch("/api/creadores/pendientes");
         if (!r.ok) return;
         const list = await r.json();
+        setCount("cCreators", list.length);
         $("pendingCreators").innerHTML = list.length ? list.map((c) => `
           <div class="item">
             <h3>${esc(c.channelName)} <span style="color:var(--text-faint);font-size:13px">(${esc(c.nickname)})</span></h3>
@@ -184,6 +377,7 @@
         const r = await fetch("/api/creadores/videos/pendientes");
         if (!r.ok) return;
         const list = await r.json();
+        setCount("cVideos", list.length);
         $("pendingVideos").innerHTML = list.length ? list.map((v) => `
           <div class="item">
             <h3>${esc(v.title)}</h3>
@@ -197,6 +391,7 @@
     async function loadStoreOrders() {
       try {
         const list = await (await fetch("/api/tienda/pedidos")).json();
+        setCount("cOrders", list.length);
         $("storeOrders").innerHTML = list.length
           ? list.map((o) => `<div class="item"><h3>${esc(o.item)} <span class="meta" style="display:inline">· ${esc(o.buyer)}</span></h3>${o.note ? `<div class="reason">📝 ${esc(o.note)}</div>` : ""}<div class="actions"><button class="btn-approve" data-order-done="${o.id}">Marcar como hecho</button></div></div>`).join("")
           : '<div class="empty">No hay pedidos pendientes. 🎉</div>';
@@ -285,6 +480,7 @@
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Error");
         $("coinMsg").textContent = "✅ Entregados."; $("coinMsg").className = "msg ok"; $("coinUser").value = ""; $("coinAmount").value = "";
+        loadStats();
       } catch (e) { $("coinMsg").textContent = "❌ " + e.message; $("coinMsg").className = "msg err"; }
     });
 
@@ -294,6 +490,8 @@
       $("loading").style.display = "none";
       if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
       $("content").classList.remove("hidden");
+      $("whoAmI").innerHTML = `${me.avatar ? `<img src="${esc(me.avatar)}" alt="">` : ""}<b>${esc(me.globalName || me.username)}</b><span class="badge">ADMIN</span>`;
+      loadStats(); loadEmojis();
       loadEvents(); loadCreators(); loadVideos(); loadStoreOrders(); loadStreams(); loadBadges();
     }
     init();
