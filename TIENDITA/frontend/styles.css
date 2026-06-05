@@ -702,7 +702,7 @@ button:hover {
 }
 
 .storefront-page .catalogo-shell {
-  padding: 26px;
+  padding: 22px;
 }
 
 .section-heading {
@@ -774,7 +774,7 @@ button:hover {
 
 .trust-card {
   padding: 16px;
-  border-radius: 18px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -827,7 +827,7 @@ button:hover {
 
 .insight-pill {
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 0;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
   color: var(--text);

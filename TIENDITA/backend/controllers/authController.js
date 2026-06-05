@@ -5,7 +5,6 @@ const https = require("https");
 
 const JWT_SECRET = process.env.JWT_SECRET || "secreto";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const ALLOWED_GOOGLE_EMAIL = (process.env.ALLOWED_GOOGLE_EMAIL || "juegocrisger@gmail.com").toLowerCase();
 
 function emitirToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
@@ -119,8 +118,7 @@ exports.login = async (req, res) => {
 exports.googleConfig = async (req, res) => {
   res.json({
     enabled: Boolean(GOOGLE_CLIENT_ID),
-    clientId: GOOGLE_CLIENT_ID || null,
-    allowedEmail: ALLOWED_GOOGLE_EMAIL
+    clientId: GOOGLE_CLIENT_ID || null
   });
 };
 
@@ -137,10 +135,6 @@ exports.googleLogin = async (req, res) => {
     }
 
     const googleUser = await validarCredencialGoogle(credential);
-
-    if (googleUser.email !== ALLOWED_GOOGLE_EMAIL) {
-      return res.status(403).json({ error: "Solo se admite la cuenta autorizada" });
-    }
 
     const token = emitirToken({
       id: googleUser.sub,

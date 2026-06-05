@@ -98,11 +98,6 @@ async function iniciarLoginGoogle() {
     return;
   }
 
-  const allowedEmail = document.querySelector(".login-allowed-email");
-  if (allowedEmail && googleLoginConfig.allowedEmail) {
-    allowedEmail.textContent = `Cuenta permitida: ${googleLoginConfig.allowedEmail}`;
-  }
-
   if (!window.google?.accounts?.id) {
     setGoogleLoginStatus("La librería de Google no cargó correctamente", true);
     return;
@@ -122,7 +117,7 @@ async function iniciarLoginGoogle() {
     width: 320
   });
 
-  setGoogleLoginStatus("Usa la cuenta de Google autorizada para continuar.");
+  setGoogleLoginStatus("Usa tu cuenta de Google para continuar.");
 }
 
 function cerrarSesion() {
