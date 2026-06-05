@@ -140,7 +140,7 @@
       try {
         const list = await (await fetch("/api/tienda/mis-compras")).json();
         $("mine").innerHTML = list.length
-          ? list.map((m) => `<div class="mine"><span>${esc(m.name)}</span><span><span class="muted">🪙 ${fmt(m.price)}</span> · <span class="st-${m.status}">${m.status === "pendiente" ? "en preparación" : "listo"}</span></span></div>`).join("")
+          ? list.map((m) => `<div class="mine"><span>${esc(m.name)}</span><span><span class="muted"><img src="/assets/omegacoin-actual.png" alt="" style="width:1.05em;height:1.05em;border-radius:50%;object-fit:cover;vertical-align:-0.18em"> ${fmt(m.price)}</span> · <span class="st-${m.status}">${m.status === "pendiente" ? "en preparación" : "listo"}</span></span></div>`).join("")
           : '<div class="muted">Aún no has canjeado nada.</div>';
       } catch (e) {}
     }

@@ -81,6 +81,7 @@
     .quick .d { color:var(--text-faint); font-size:13px; }
     .center { text-align:center; }
     .hidden { display:none; }
+    .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
 
     /* Emojis exclusivos */
     .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
@@ -129,7 +130,7 @@
       <!-- Gráficas -->
       <div class="charts">
         <div class="chart-card">
-          <h3>🪙 Flujo de Omegacoins (14 días)</h3>
+          <h3><img class="coin-ic" src="/assets/omegacoin-actual.png" alt=""> Flujo de Omegacoins (14 días)</h3>
           <div class="legend"><span><i style="background:#3ba55c"></i>Ganadas</span><span><i style="background:#ff6b6b"></i>Gastadas</span></div>
           <div id="coinsChart"></div>
         </div>
@@ -181,7 +182,7 @@
         </section>
 
         <section class="panel">
-          <h2>🪙 Dar Omegacoins</h2>
+          <h2><img class="coin-ic" src="/assets/omegacoin-actual.png" alt=""> Dar Omegacoins</h2>
           <p class="sub">Otorga monedas (ej. premio semanal del ranking: 1000).</p>
           <div class="row">
             <input id="coinUser" placeholder="@usuario o ID" />
@@ -249,7 +250,7 @@
     function renderKpis(k) {
       const cards = [
         { ic: "👥", num: fmt(k.members), lbl: "Miembros registrados" },
-        { ic: "🪙", num: fmt(k.coinsCirculating), lbl: "Omegacoins en circulación", cls: "gold" },
+        { ic: `<img class="coin-ic" src="/assets/omegacoin-actual.png" alt="">`, num: fmt(k.coinsCirculating), lbl: "Omegacoins en circulación", cls: "gold" },
         { ic: "📈", num: "+" + fmt(k.coinsEarned7d), lbl: "Ganadas (7 días)" },
         { ic: "📉", num: "-" + fmt(k.coinsSpent7d), lbl: "Gastadas (7 días)" },
         { ic: "🟢", num: fmt(k.activeToday), lbl: "Activos hoy" },

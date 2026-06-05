@@ -50,6 +50,7 @@
     .rank-val { font-weight: 900; color: #ffd35c; display: flex; align-items: center; gap: 6px; flex: none; }
     .rank-val img { width: 22px; height: 22px; border-radius: 50%; }
     .rank-empty, .rank-loading { text-align: center; color: var(--text-soft); padding: 40px 0; }
+    .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
     .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
     .back-link:hover { color: var(--text); }
   </style>
@@ -62,7 +63,7 @@
     </div>
 
     <div class="rank-tabs">
-      <button class="rank-tab active" data-tab="coins">🪙 Omegacoins</button>
+      <button class="rank-tab active" data-tab="coins"><img class="coin-ic" src="/assets/omegacoin-actual.png" alt=""> Omegacoins</button>
       <button class="rank-tab" data-tab="level">⭐ Nivel</button>
       <button class="rank-tab" data-tab="voice">🎙️ Tiempo en voz</button>
     </div>

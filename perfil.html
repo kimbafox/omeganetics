@@ -111,6 +111,7 @@
     .ms-claim { white-space: nowrap; }
     .ms-claimed { color: #3ba55c; font-weight: 800; font-size: 14px; }
     .ms-reward { color: var(--text-faint); font-weight: 800; font-size: 14px; white-space: nowrap; }
+    .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
   </style>
 </head>
 <body>
@@ -327,8 +328,8 @@
         const pct = m.target ? Math.min(100, Math.round((m.progress / m.target) * 100)) : 0;
         let action;
         if (m.claimed) action = `<span class="ms-claimed">✅ Reclamada</span>`;
-        else if (m.done) action = `<button class="btn ms-claim" data-key="${m.key}">Reclamar +${m.reward} 🪙</button>`;
-        else action = `<span class="ms-reward">+${m.reward} 🪙</span>`;
+        else if (m.done) action = `<button class="btn ms-claim" data-key="${m.key}">Reclamar +${m.reward} <img class="coin-ic" src="/assets/omegacoin-actual.png" alt="Omegacoins"></button>`;
+        else action = `<span class="ms-reward">+${m.reward} <img class="coin-ic" src="/assets/omegacoin-actual.png" alt="Omegacoins"></span>`;
         return `<div class="ms-item ${m.done ? "is-done" : ""}">
           <div class="ms-ic">${m.icon}</div>
           <div class="ms-body">

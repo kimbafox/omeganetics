@@ -185,7 +185,7 @@
       { title: "Actividad", body: "Aquí ves la actividad del servidor: juegos más jugados, personas más activas y eventos actuales.", sel: '[data-tour="actividad"]' },
       { title: "Comunidad", body: "Descubre la info de nuestro Discord: reglas, lore y nuestra tienda de canjes.", sel: '[data-tour="comunidad"]' },
       { title: "Únete a nosotros", body: "¿Eres creador de contenido o tienes ideas de eventos increíbles? ¡Muéstranos! Apoyamos a creadores e ideas innovadoras.", sel: '[data-tour="unete"]' },
-      { title: "Tu perfil", body: "Aquí ves tus datos. Tu presencia se recompensa: gana logros, sé de los más activos y consigue OMEGACOINS 🪙 para canjear cosméticos, cosas exclusivas y tarjetas de regalo.", sel: '[data-tour="cuenta"]' },
+      { title: "Tu perfil", body: "Aquí ves tus datos. Tu presencia se recompensa: gana logros, sé de los más activos y consigue OMEGACOINS para canjear cosméticos, cosas exclusivas y tarjetas de regalo.", sel: '[data-tour="cuenta"]' },
     ];
     let i = 0;
     const prevZ = header.style.zIndex;

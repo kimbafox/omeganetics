@@ -49,6 +49,7 @@
     .msg { font-size: 13px; margin-left: 10px; }
     .msg.ok { color: #3ba55c; } .msg.err { color: #ff6b6b; }
     .sor-empty { text-align: center; color: var(--text-soft); padding: 50px 0; grid-column: 1 / -1; }
+    .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
     .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
     .back-link:hover { color: var(--text); }
   </style>
@@ -118,7 +119,7 @@
         } else if (s.joined) {
           action = `<div class="sor-joined">✅ Ya participas</div>`;
         } else {
-          action = `<button class="btn sor-btn" data-join="${s.id}">Participar · ${fmt(s.cost)} 🪙</button>`;
+          action = `<button class="btn sor-btn" data-join="${s.id}">Participar · ${fmt(s.cost)} <img class="coin-ic" src="/assets/omegacoin-actual.png" alt="Omegacoins"></button>`;
         }
 
         const admin = isAdmin ? `<div class="sor-admin">
