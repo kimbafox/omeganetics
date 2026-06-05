@@ -1624,6 +1624,60 @@ label {
   color: var(--muted);
 }
 
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.catalog-count {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quick-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(247, 212, 124, 0.18);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.mini-steps {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.mini-step {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(247, 212, 124, 0.18);
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+.mini-steps--compact {
+  margin-top: 6px;
+}
+
+.login-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
 .upload-preview {
   text-align: center;
 }
@@ -2045,6 +2099,10 @@ label {
 
 /* RESPONSIVE */
 @media (max-width: 900px) {
+  .quick-grid,
+  .quick-grid--admin {
+    grid-template-columns: 1fr;
+  }
   .admin-intro {
     grid-template-columns: 1fr;
     display: grid;

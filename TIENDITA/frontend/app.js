@@ -266,6 +266,11 @@ function buildUploadUrl(fileName) {
 
 let proyectosCache = [];
 let filtroActual = { categoria: "todos", texto: "" };
+let filtroDebounceTimer = null;
+
+function ordenarProyectos(data) {
+  return [...(Array.isArray(data) ? data : [])].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
 
 function obtenerImagenesProyecto(proyecto) {
   return [proyecto?.portada, ...(Array.isArray(proyecto?.imagenes) ? proyecto.imagenes : [])]
@@ -526,23 +531,38 @@ function cerrarDetalleProyecto() {
   modal.classList.remove("visible");
 }
 
+function actualizarContadorCatalogo(lista) {
+  const count = document.getElementById("catalogCount");
+  if (!count) return;
+  const total = Array.isArray(lista) ? lista.length : 0;
+  count.textContent = `${total} elemento${total === 1 ? "" : "s"}`;
+}
+
 function pintarProyectos(data) {
   const cont = document.getElementById("proyectos");
   if (!cont) return;
 
-  const lista = Array.isArray(data) ? data : [];
+  const lista = ordenarProyectos(data);
 
   if (lista.length === 0) {
+    actualizarContadorCatalogo([]);
     cont.innerHTML = `
       <div class="empty-state">
-        <h3>No hay reliquias disponibles</h3>
-        <p>Pronto aparecerán nuevos proyectos en este reino.</p>
+        <h3>No hay resultados</h3>
+        <p>Prueba otra categoría o usa “Ver todo” para mostrar el catálogo completo.</p>
+        <button class="btn" type="button" id="btnVerTodo">Ver todo</button>
       </div>
     `;
+
+    const btnVerTodo = document.getElementById("btnVerTodo");
+    if (btnVerTodo) {
+      btnVerTodo.addEventListener("click", () => limpiarFiltros());
+    }
     return;
   }
 
   cont.innerHTML = lista.map(tarjetaProyectoHTML).join("");
+  actualizarContadorCatalogo(lista);
   prefetchVisibleImages(lista);
 }
 
@@ -550,6 +570,14 @@ function actualizarBotonesFiltro(cat) {
   document.querySelectorAll(".filtro-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.cat === cat);
   });
+}
+
+function limpiarFiltros() {
+  filtroActual = { categoria: "todos", texto: "" };
+  const buscarInput = document.getElementById("buscar");
+  if (buscarInput) buscarInput.value = "";
+  actualizarBotonesFiltro("todos");
+  aplicarFiltro("todos", "");
 }
 
 function leerCacheCatalogo() {
@@ -603,7 +631,7 @@ async function cargar() {
 
   const cache = leerCacheCatalogo();
   if (cache?.length) {
-    proyectosCache = [...cache].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    proyectosCache = ordenarProyectos(cache);
     filtroActual = { categoria: "todos", texto: "" };
     actualizarBotonesFiltro("todos");
     aplicarFiltro("todos", "");
@@ -615,9 +643,7 @@ async function cargar() {
     const res = await fetch(`${API_BASE}/proyectos/listar`, { cache: "force-cache" });
     const data = await res.json();
 
-    proyectosCache = Array.isArray(data)
-      ? [...data].sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-      : [];
+    proyectosCache = ordenarProyectos(data);
 
     guardarCacheCatalogo(proyectosCache);
     filtroActual = { categoria: "todos", texto: "" };
@@ -642,9 +668,10 @@ async function cargar() {
 async function filtrar(cat) {
   if (!proyectosCache.length) {
     try {
-      const res = await fetch(`${API_BASE}/proyectos/listar`);
+      const res = await fetch(`${API_BASE}/proyectos/listar`, { cache: "force-cache" });
       const data = await res.json();
-      proyectosCache = Array.isArray(data) ? data : [];
+      proyectosCache = ordenarProyectos(data);
+      guardarCacheCatalogo(proyectosCache);
     } catch {
       pintarProyectos([]);
       return;
@@ -897,10 +924,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const buscarInput = document.getElementById("buscar");
   if (buscarInput) {
     buscarInput.addEventListener("input", (e) => {
-      aplicarFiltro(filtroActual.categoria, e.target.value);
-    });
-  }
-
+      clearTimeout(filtroDebounceTimer);
+      filtroDebounceTimer = setTimeout(() => {
+        aplicarFiltro(filtroActual.categoria, e.target.value);
+      }, 180);
   cargar();
   iniciarCarrusel();
   actualizarNavAdmin();
