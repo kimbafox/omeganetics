@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Casino — Omeganetics</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .cas-wrap { max-width: 860px; margin: 0 auto; padding: 36px 18px 80px; }
+    .cas-head { text-align: center; margin-bottom: 18px; }
+    .cas-head h1 { font-size: 2rem; font-weight: 900; margin: 0 0 4px; }
+    .cas-head p { color: var(--text-soft); margin: 0; }
+
+    .cas-balance {
+      display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 auto 22px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 10px 22px; width: max-content;
+      box-shadow: 0 0 22px rgba(87,242,135,.12);
+    }
+    .cas-balance img { width: 28px; height: 28px; border-radius: 50%; }
+    .cas-balance b { font-size: 1.4rem; color: #ffd35c; }
+
+    .cas-tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+    .cas-tab { border: 1px solid var(--border); background: var(--surface); color: var(--text-soft); padding: 11px 20px; border-radius: 12px; font-weight: 800; cursor: pointer; transition: .15s; }
+    .cas-tab:hover { color: var(--text); }
+    .cas-tab.active { background: linear-gradient(135deg, #1e7d46, #57f287); color: #06140b; border-color: transparent; }
+
+    .game { display: none; }
+    .game.show { display: block; }
+    .felt {
+      background:
+        radial-gradient(120% 100% at 50% 0%, rgba(87,242,135,.10), transparent 60%),
+        linear-gradient(180deg, #0e2a1b, #0a1f14);
+      border: 1px solid #1c5236; border-radius: 18px; padding: 26px 22px; min-height: 230px;
+      box-shadow: inset 0 0 60px rgba(0,0,0,.5);
+    }
+
+    /* Apuesta */
+    .bet-row { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+    .bet-row label { color: var(--text-soft); font-weight: 700; }
+    .bet-input { width: 150px; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); font: inherit; font-weight: 800; text-align: center; }
+    .chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    .chip-btn { border: 1px solid var(--border); background: rgba(255,255,255,.04); color: var(--text-soft); border-radius: 999px; padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .chip-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    .btn-cas { border: none; cursor: pointer; font-weight: 800; font-size: 15px; padding: 12px 26px; border-radius: 12px; color: #06140b; background: linear-gradient(135deg, #ffd35c, #ff9f43); box-shadow: 0 6px 18px rgba(255,160,60,.3); transition: transform .12s; }
+    .btn-cas:hover { transform: translateY(-2px); }
+    .btn-cas:disabled { filter: grayscale(.5) brightness(.7); cursor: not-allowed; transform: none; }
+    .btn-ghost { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--border-strong); }
+    .actions-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+
+    .result { text-align: center; font-weight: 900; font-size: 1.2rem; margin-top: 16px; min-height: 28px; }
+    .result.win { color: #57f287; } .result.lose { color: #ff6b6b; } .result.push { color: #ffd35c; }
+    .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
+
+    /* Cartas */
+    .hand { margin: 10px 0; }
+    .hand-label { color: #bfeacd; font-size: 13px; font-weight: 700; margin-bottom: 6px; text-align: center; }
+    .cards { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; min-height: 86px; }
+    .pcard { width: 58px; height: 82px; border-radius: 8px; background: #fdfdfd; color: #1a1a1a; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,.4); font-weight: 800; }
+    .pcard .r { position: absolute; top: 5px; left: 7px; font-size: 16px; }
+    .pcard .s { position: absolute; bottom: 5px; right: 7px; font-size: 20px; }
+    .pcard.red { color: #e23b3b; }
+    .pcard.back { background: repeating-linear-gradient(45deg, #5a2ea6, #5a2ea6 6px, #7b46c9 6px, #7b46c9 12px); border: 2px solid #c9b3f0; }
+    .hand-val { text-align: center; font-weight: 800; color: #fff; margin-top: 6px; }
+
+    /* Coinflip */
+    .flip-faces { display: flex; gap: 14px; justify-content: center; margin-top: 8px; }
+    .flip-face { width: 96px; height: 96px; border-radius: 50%; border: 3px solid var(--border-strong); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; cursor: pointer; transition: .15s; font-weight: 900; color: var(--text); }
+    .flip-face:hover { border-color: #ffd35c; }
+    .flip-face.sel { border-color: #ffd35c; box-shadow: 0 0 18px rgba(255,211,92,.4); }
+    .flip-coin { font-size: 4rem; text-align: center; margin: 8px 0; }
+
+    /* Dados */
+    .dice-pick { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    .die-btn { width: 52px; height: 52px; border-radius: 12px; border: 2px solid var(--border-strong); background: var(--surface); color: var(--text); font-size: 1.3rem; font-weight: 900; cursor: pointer; }
+    .die-btn:hover { border-color: #ffd35c; }
+    .die-btn.sel { border-color: #ffd35c; background: rgba(255,211,92,.15); }
+    .die-face { font-size: 4.5rem; text-align: center; margin: 6px 0; }
+    .muted-center { text-align: center; color: var(--text-soft); font-size: 13px; margin-top: 8px; }
+    .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main class="cas-wrap">
+    <div class="cas-head">
+      <h1>🎰 Casino Omega</h1>
+      <p>Apuesta tus Omegacoins. Juega con responsabilidad — la casa siempre tiene una pequeña ventaja. 😉</p>
+    </div>
+
+    <div class="cas-balance">
+      <img src="/assets/omegacoin-actual.png" alt="">
+      <span>Saldo: <b id="balance">—</b></span>
+    </div>
+
+    <div class="cas-tabs">
+      <button class="cas-tab active" data-game="blackjack">🃏 Blackjack</button>
+      <button class="cas-tab" data-game="coinflip">🪙 Cara o Cruz</button>
+      <button class="cas-tab" data-game="dados">🎲 Dados</button>
+    </div>
+
+    <!-- BLACKJACK -->
+    <section class="game show" id="g-blackjack">
+      <div class="felt">
+        <div id="bjTable">
+          <div class="muted-center">Haz tu apuesta y reparte para empezar.</div>
+        </div>
+        <div class="result" id="bjResult"></div>
+      </div>
+      <div id="bjBetArea">
+        <div class="bet-row">
+          <label>Apuesta</label>
+          <input class="bet-input" id="bjBet" type="number" min="10" value="100">
+          <button class="btn-cas" id="bjDeal">Repartir</button>
+        </div>
+        <div class="chips" id="bjChips"></div>
+      </div>
+      <div class="actions-row" id="bjActions" style="display:none">
+        <button class="btn-cas" id="bjHit">Pedir carta</button>
+        <button class="btn-cas btn-ghost" id="bjStand">Plantarse</button>
+        <button class="btn-cas btn-ghost" id="bjDouble">Doblar</button>
+      </div>
+    </section>
+
+    <!-- COINFLIP -->
+    <section class="game" id="g-coinflip">
+      <div class="felt">
+        <div class="flip-coin" id="flipAnim">🪙</div>
+        <div class="hand-label">Elige tu lado</div>
+        <div class="flip-faces">
+          <div class="flip-face sel" data-side="cara">CARA</div>
+          <div class="flip-face" data-side="cruz">CRUZ</div>
+        </div>
+        <div class="result" id="flipResult"></div>
+      </div>
+      <div class="bet-row">
+        <label>Apuesta</label>
+        <input class="bet-input" id="flipBet" type="number" min="10" value="100">
+        <button class="btn-cas" id="flipGo">Lanzar (x1.95)</button>
+      </div>
+      <div class="chips" id="flipChips"></div>
+    </section>
+
+    <!-- DADOS -->
+    <section class="game" id="g-dados">
+      <div class="felt">
+        <div class="die-face" id="diceAnim">🎲</div>
+        <div class="hand-label">Predice el número (paga x5.7)</div>
+        <div class="dice-pick" id="dicePick"></div>
+        <div class="result" id="diceResult"></div>
+      </div>
+      <div class="bet-row">
+        <label>Apuesta</label>
+        <input class="bet-input" id="diceBet" type="number" min="10" value="100">
+        <button class="btn-cas" id="diceGo">Tirar</button>
+      </div>
+      <div class="chips" id="diceChips"></div>
+    </section>
+
+    <div style="text-align:center"><a class="back-link" href="/">← Volver al inicio</a></div>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => Number(n || 0).toLocaleString("es");
+    const RED = new Set(["♥", "♦"]);
+    let balance = 0;
+
+    function setBalance(b) { if (typeof b === "number") { balance = b; $("balance").textContent = fmt(b); } }
+
+    async function api(path, body) {
+      const r = await fetch(path, { method: body ? "POST" : "GET", headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
+      if (r.status === 401) { location.href = "/login.html"; throw new Error("login"); }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || "Error");
+      return d;
+    }
+
+    // Fichas rápidas para cada input de apuesta.
+    function buildChips(containerId, inputId) {
+      const amounts = [50, 100, 500, 1000, 5000];
+      $(containerId).innerHTML = amounts.map((a) => `<button class="chip-btn" data-amt="${a}">+${fmt(a)}</button>`).join("") + `<button class="chip-btn" data-amt="max">MAX</button><button class="chip-btn" data-amt="clear">C</button>`;
+      $(containerId).querySelectorAll(".chip-btn").forEach((b) => b.addEventListener("click", () => {
+        const inp = $(inputId);
+        if (b.dataset.amt === "clear") inp.value = 0;
+        else if (b.dataset.amt === "max") inp.value = balance;
+        else inp.value = (parseInt(inp.value, 10) || 0) + parseInt(b.dataset.amt, 10);
+      }));
+    }
+
+    /* ===== Tabs ===== */
+    document.querySelectorAll(".cas-tab").forEach((t) => t.addEventListener("click", () => {
+      document.querySelectorAll(".cas-tab").forEach((x) => x.classList.remove("active"));
+      t.classList.add("active");
+      document.querySelectorAll(".game").forEach((g) => g.classList.remove("show"));
+      $("g-" + t.dataset.game).classList.add("show");
+    }));
+
+    /* ===== Cartas ===== */
+    function cardHtml(c) {
+      if (!c || c.hidden) return `<div class="pcard back"></div>`;
+      return `<div class="pcard ${RED.has(c.s) ? "red" : ""}"><span class="r">${c.r}</span><span class="s">${c.s}</span></div>`;
+    }
+    function renderBlackjack(s) {
+      const inProg = s.inProgress;
+      $("bjTable").innerHTML = `
+        <div class="hand">
+          <div class="hand-label">Dealer ${inProg ? "" : "· " + s.dealerValue}</div>
+          <div class="cards">${(s.dealer || []).map(cardHtml).join("")}</div>
+        </div>
+        <div class="hand">
+          <div class="hand-label">Tú · ${s.playerValue}</div>
+          <div class="cards">${(s.player || []).map(cardHtml).join("")}</div>
+        </div>`;
+      $("bjActions").style.display = inProg ? "flex" : "none";
+      $("bjBetArea").style.display = inProg ? "none" : "block";
+      $("bjDouble").style.display = (inProg && (s.player || []).length === 2) ? "inline-block" : "none";
+      if (typeof s.balance === "number") setBalance(s.balance);
+      const res = $("bjResult");
+      if (!inProg && s.outcome) {
+        const map = {
+          win: ["win", `🎉 ¡Ganaste! +${fmt(s.net)}`],
+          blackjack: ["win", `🃏 ¡BLACKJACK! +${fmt(s.net)}`],
+          push: ["push", "🤝 Empate · te devolvemos la apuesta"],
+          lose: ["lose", `💀 Perdiste ${fmt(-s.net)}`],
+        };
+        const [cls, txt] = map[s.outcome] || ["", ""];
+        res.className = "result " + cls; res.innerHTML = txt;
+      } else { res.textContent = ""; }
+    }
+
+    async function bjDeal() {
+      const bet = parseInt($("bjBet").value, 10) || 0;
+      $("bjDeal").disabled = true; $("bjResult").textContent = "";
+      try { renderBlackjack(await api("/api/casino/blackjack/deal", { bet })); }
+      catch (e) { if (e.message !== "login") $("bjResult").className = "result lose", $("bjResult").textContent = "❌ " + e.message; }
+      $("bjDeal").disabled = false;
+    }
+    async function bjAction(path) {
+      $("bjHit").disabled = $("bjStand").disabled = $("bjDouble").disabled = true;
+      try { renderBlackjack(await api(path)); } catch (e) { if (e.message !== "login") alert("❌ " + e.message); }
+      $("bjHit").disabled = $("bjStand").disabled = $("bjDouble").disabled = false;
+    }
+    $("bjDeal").addEventListener("click", bjDeal);
+    $("bjHit").addEventListener("click", () => bjAction("/api/casino/blackjack/hit"));
+    $("bjStand").addEventListener("click", () => bjAction("/api/casino/blackjack/stand"));
+    $("bjDouble").addEventListener("click", () => bjAction("/api/casino/blackjack/double"));
+
+    /* ===== Coinflip ===== */
+    let flipSide = "cara";
+    document.querySelectorAll("#g-coinflip .flip-face").forEach((f) => f.addEventListener("click", () => {
+      document.querySelectorAll("#g-coinflip .flip-face").forEach((x) => x.classList.remove("sel"));
+      f.classList.add("sel"); flipSide = f.dataset.side;
+    }));
+    $("flipGo").addEventListener("click", async () => {
+      const bet = parseInt($("flipBet").value, 10) || 0;
+      $("flipGo").disabled = true; $("flipResult").textContent = ""; $("flipAnim").textContent = "🌀";
+      try {
+        const d = await api("/api/casino/coinflip", { bet, side: flipSide });
+        $("flipAnim").textContent = d.result === "cara" ? "👑" : "🪙";
+        setBalance(d.balance);
+        const res = $("flipResult");
+        res.className = "result " + (d.won ? "win" : "lose");
+        res.innerHTML = `Salió <b>${d.result.toUpperCase()}</b> · ` + (d.won ? `🎉 +${fmt(d.net)}` : `💀 -${fmt(d.bet)}`);
+      } catch (e) { if (e.message !== "login") { $("flipResult").className = "result lose"; $("flipResult").textContent = "❌ " + e.message; } }
+      $("flipGo").disabled = false;
+    });
+
+    /* ===== Dados ===== */
+    const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+    let diceGuess = 1;
+    $("dicePick").innerHTML = [1, 2, 3, 4, 5, 6].map((n) => `<button class="die-btn ${n === 1 ? "sel" : ""}" data-n="${n}">${n}</button>`).join("");
+    $("dicePick").querySelectorAll(".die-btn").forEach((b) => b.addEventListener("click", () => {
+      $("dicePick").querySelectorAll(".die-btn").forEach((x) => x.classList.remove("sel"));
+      b.classList.add("sel"); diceGuess = parseInt(b.dataset.n, 10);
+    }));
+    $("diceGo").addEventListener("click", async () => {
+      const bet = parseInt($("diceBet").value, 10) || 0;
+      $("diceGo").disabled = true; $("diceResult").textContent = ""; $("diceAnim").textContent = "🎲";
+      try {
+        const d = await api("/api/casino/dados", { bet, guess: diceGuess });
+        $("diceAnim").textContent = DICE_FACES[d.roll - 1];
+        setBalance(d.balance);
+        const res = $("diceResult");
+        res.className = "result " + (d.won ? "win" : "lose");
+        res.innerHTML = `Salió el <b>${d.roll}</b> · ` + (d.won ? `🎉 +${fmt(d.net)}` : `💀 -${fmt(d.bet)}`);
+      } catch (e) { if (e.message !== "login") { $("diceResult").className = "result lose"; $("diceResult").textContent = "❌ " + e.message; } }
+      $("diceGo").disabled = false;
+    });
+
+    /* ===== Init ===== */
+    async function init() {
+      buildChips("bjChips", "bjBet"); buildChips("flipChips", "flipBet"); buildChips("diceChips", "diceBet");
+      try {
+        const d = await api("/api/casino");
+        setBalance(d.balance);
+        if (d.blackjack) renderBlackjack(d.blackjack); // reanudar mano en curso
+      } catch (e) { /* login redirect ya manejado */ }
+    }
+    init();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>

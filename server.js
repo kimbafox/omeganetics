@@ -1176,6 +1176,10 @@ app.use(sorteosRouter);
 const { router: adminStatsRouter, initAdminStats } = require("./admin-stats");
 app.use(adminStatsRouter);
 
+// Casino de Omegacoins (Blackjack, Coinflip, Dados).
+const { router: casinoRouter, initCasino } = require("./casino");
+app.use(casinoRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1533,6 +1537,7 @@ async function start() {
     await initMisiones();
     await initSorteos();
     await initAdminStats();
+    await initCasino();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });
