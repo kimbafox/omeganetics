@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ranking — Omeganetics</title>
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/site-extra.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    .rank-wrap { max-width: 860px; margin: 0 auto; padding: 40px 20px 80px; }
+    .rank-head { text-align: center; margin-bottom: 26px; }
+    .rank-head h1 { font-size: 2rem; font-weight: 900; margin: 0 0 6px; }
+    .rank-head p { color: var(--text-soft); margin: 0; }
+
+    .rank-tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; }
+    .rank-tab {
+      border: 1px solid var(--border); background: var(--surface); color: var(--text-soft);
+      padding: 10px 18px; border-radius: 999px; font-weight: 800; cursor: pointer; font-size: 14px; transition: .15s;
+    }
+    .rank-tab:hover { color: var(--text); }
+    .rank-tab.active { background: linear-gradient(135deg, #ffd35c, #ff9f43); color: #2a1a00; border-color: transparent; }
+
+    .me-card {
+      display: none; align-items: center; gap: 12px; background: var(--surface);
+      border: 1px solid var(--accent); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 18px;
+    }
+    .me-card.show { display: flex; }
+    .me-card .me-rank { font-size: 1.5rem; font-weight: 900; color: var(--accent); }
+    .me-card .me-text { color: var(--text-soft); }
+    .me-card .me-text b { color: var(--text); }
+
+    .rank-list { display: flex; flex-direction: column; gap: 8px; }
+    .rank-row {
+      display: flex; align-items: center; gap: 14px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; transition: .15s;
+    }
+    .rank-row:hover { border-color: var(--accent); transform: translateX(2px); }
+    .rank-row.is-me { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .rank-pos { width: 38px; text-align: center; font-weight: 900; font-size: 1.1rem; color: var(--text-soft); flex: none; }
+    .rank-row.top1 .rank-pos, .rank-row.top2 .rank-pos, .rank-row.top3 .rank-pos { font-size: 1.5rem; }
+    .rank-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid var(--border); background: #222; }
+    .rank-row.top1 .rank-avatar { border-color: #ffd35c; }
+    .rank-row.top2 .rank-avatar { border-color: #c0c6d4; }
+    .rank-row.top3 .rank-avatar { border-color: #cd7f32; }
+    .rank-name { flex: 1; font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-name a { color: inherit; text-decoration: none; }
+    .rank-name a:hover { color: var(--accent); }
+    .rank-val { font-weight: 900; color: #ffd35c; display: flex; align-items: center; gap: 6px; flex: none; }
+    .rank-val img { width: 22px; height: 22px; border-radius: 50%; }
+    .rank-empty, .rank-loading { text-align: center; color: var(--text-soft); padding: 40px 0; }
+    .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main class="rank-wrap">
+    <div class="rank-head">
+      <h1>🏆 Ranking de la comunidad</h1>
+      <p>Los más destacados del Imperio. ¡Sube de puesto siendo activo!</p>
+    </div>
+
+    <div class="rank-tabs">
+      <button class="rank-tab active" data-tab="coins">🪙 Omegacoins</button>
+      <button class="rank-tab" data-tab="level">⭐ Nivel</button>
+      <button class="rank-tab" data-tab="voice">🎙️ Tiempo en voz</button>
+    </div>
+
+    <div class="me-card" id="meCard">
+      <div class="me-rank" id="meRank">#—</div>
+      <div class="me-text" id="meText">Tu posición</div>
+    </div>
+
+    <div class="rank-list" id="rankList"><div class="rank-loading">Cargando ranking…</div></div>
+
+    <a class="back-link" href="/">← Volver al inicio</a>
+  </main>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let DATA = null, current = "coins", myId = null;
+
+    const COIN_IMG = '<img src="/assets/omegacoin-actual.png" alt="">';
+    const fmt = (n) => Number(n || 0).toLocaleString("es");
+    function fmtMinutes(m) {
+      m = Number(m || 0); const h = Math.floor(m / 60), min = m % 60;
+      if (h && min) return `${h} h ${min} min`;
+      if (h) return `${h} h`;
+      return `${min} min`;
+    }
+    const META = {
+      coins: { label: "Omegacoins", render: (v) => `${COIN_IMG} ${fmt(v)}` },
+      level: { label: "Nivel", render: (v) => `⭐ ${fmt(v)}` },
+      voice: { label: "tiempo en voz", render: (v) => `🎙️ ${fmtMinutes(v)}` },
+    };
+
+    async function load() {
+      try {
+        const me = await fetch("/api/auth/me").then((r) => r.ok ? r.json() : null).catch(() => null);
+        myId = me?.discordId || null;
+        const r = await fetch("/api/leaderboard");
+        DATA = await r.json();
+      } catch (e) { DATA = { coins: [], level: [], voice: [], me: {} }; }
+      render();
+    }
+
+    function render() {
+      const rows = (DATA && DATA[current]) || [];
+      const meta = META[current];
+      const medal = (i) => i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
+      const list = $("rankList");
+
+      if (!rows.length) {
+        list.innerHTML = `<div class="rank-empty">Aún no hay datos en este ranking. ¡Sé el primero!</div>`;
+      } else {
+        list.innerHTML = rows.map((row, i) => {
+          const isMe = myId && row.discordId === myId;
+          const topClass = i < 3 ? ` top${i + 1}` : "";
+          const av = row.avatar ? `<img class="rank-avatar" src="${esc(row.avatar)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="rank-avatar"></div>`;
+          return `<div class="rank-row${topClass}${isMe ? " is-me" : ""}">
+            <div class="rank-pos">${medal(i)}</div>
+            ${av}
+            <div class="rank-name"><a href="/u/${esc(row.discordId)}">${esc(row.name)}</a></div>
+            <div class="rank-val">${meta.render(row.value)}</div>
+          </div>`;
+        }).join("");
+      }
+
+      // Mi posición
+      const myRank = DATA?.me?.[current];
+      const mc = $("meCard");
+      if (myRank) {
+        mc.classList.add("show");
+        $("meRank").textContent = "#" + myRank;
+        $("meText").innerHTML = `Tu posición en <b>${meta.label}</b>`;
+      } else {
+        mc.classList.remove("show");
+      }
+    }
+
+    document.querySelectorAll(".rank-tab").forEach((t) => {
+      t.addEventListener("click", () => {
+        document.querySelectorAll(".rank-tab").forEach((x) => x.classList.remove("active"));
+        t.classList.add("active");
+        current = t.dataset.tab;
+        render();
+      });
+    });
+
+    load();
+  </script>
+  <script src="/js/auth-widget.js"></script>
+</body>
+</html>

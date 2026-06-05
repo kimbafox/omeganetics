@@ -8,6 +8,7 @@
   const NAV = [
     { label: "Actividad", tour: "actividad", items: [
       { href: "/actividad.html", icon: "📊", text: "Actividad del servidor" },
+      { href: "/ranking.html", icon: "🥇", text: "Ranking", dot: "#ffd35c" },
       { href: "/eventos.html", icon: "🎯", text: "Eventos" },
       { href: "/torneos.html", icon: "🏆", text: "Torneos" },
     ] },
