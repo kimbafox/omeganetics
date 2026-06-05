@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Omega Invaders — Farmear Omegacoins</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/assets/logo.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
+  <style>
+    :root { --gw: 480px; --gh: 720px; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 16px; box-sizing: border-box;
+      background: radial-gradient(1200px 600px at 50% -10%, rgba(168,120,255,.10), transparent 60%), var(--bg, #0b0b12);
+    }
+    .stage {
+      position: relative; width: min(var(--gw), 96vw);
+      aspect-ratio: 480 / 720; max-height: 94vh;
+      border: 1px solid var(--border, #26263a); border-radius: 18px; overflow: hidden;
+      box-shadow: 0 0 40px rgba(120,80,220,.25); background: #06060d;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+    /* HUD */
+    .hud {
+      position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between;
+      align-items: center; padding: 10px 14px; font-weight: 800; pointer-events: none;
+      text-shadow: 0 2px 6px rgba(0,0,0,.7); font-size: 15px; color: #fff;
+    }
+    .hud .coins { display: flex; align-items: center; gap: 6px; color: #ffd35c; }
+    .hud .coins img { width: 22px; height: 22px; border-radius: 50%; }
+    .hud .lives { letter-spacing: 2px; }
+
+    /* Pantallas (intro / fin / cooldown) */
+    .screen {
+      position: absolute; inset: 0; display: none; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; gap: 14px; padding: 26px;
+      background: rgba(6,6,13,.86); backdrop-filter: blur(3px); color: #fff;
+    }
+    .screen.show { display: flex; }
+    .screen h1 { font-size: 1.7rem; margin: 0; }
+    .screen h2 { font-size: 1.4rem; margin: 0; }
+    .screen p { color: #b9b9cf; margin: 0; max-width: 360px; font-size: 14px; line-height: 1.5; }
+    .reward-line { display: flex; gap: 18px; justify-content: center; font-size: 14px; color: #dcdcef; }
+    .reward-line b { color: #ffd35c; }
+    .btn-play {
+      margin-top: 4px; border: none; cursor: pointer; font-weight: 800; font-size: 16px;
+      padding: 13px 30px; border-radius: 12px; color: #1a1030;
+      background: linear-gradient(135deg, #ffd35c, #ff9f43);
+      box-shadow: 0 8px 24px rgba(255,160,60,.35); transition: transform .12s ease;
+    }
+    .btn-play:hover { transform: translateY(-2px); }
+    .btn-play:disabled { filter: grayscale(.6) brightness(.7); cursor: not-allowed; transform: none; }
+    .earned-big { font-size: 2.6rem; font-weight: 900; color: #ffd35c; display: flex; align-items: center; gap: 10px; }
+    .earned-big img { width: 40px; height: 40px; border-radius: 50%; }
+    .link-back { color: #b9b9cf; text-decoration: none; font-size: 14px; margin-top: 6px; }
+    .link-back:hover { color: #fff; }
+    .hint { font-size: 12px; color: #8a8aa3; }
+    .cooldown-timer { font-size: 1.8rem; font-weight: 900; color: #ff6b6b; }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <canvas id="game" width="480" height="720"></canvas>
+
+    <div class="hud" id="hud" style="display:none">
+      <div class="coins"><img src="/assets/omegacoin-actual.png" alt="" /><span id="hudCoins">0</span></div>
+      <div class="lives" id="hudLives">❤️❤️❤️</div>
+    </div>
+
+    <!-- Intro -->
+    <div class="screen show" id="introScreen">
+      <h1>🚀 Omega Invaders</h1>
+      <p>Tu avatar es la nave. Destruye <b>asteroides</b> y <b>naves enemigas</b> para farmear Omegacoins. ¡Esquiva o pierdes vidas!</p>
+      <div class="reward-line">
+        <span>☄️ Asteroide = <b id="rwAst">1</b></span>
+        <span>🛸 Nave = <b id="rwShip">5</b></span>
+      </div>
+      <button class="btn-play" id="playBtn" type="button">JUGAR</button>
+      <p class="hint">Mover: flechas / A-D o arrastra · Dispara solo</p>
+      <a class="link-back" href="/perfil.html">← Volver al perfil</a>
+    </div>
+
+    <!-- Cooldown -->
+    <div class="screen" id="cooldownScreen">
+      <h2>⏳ Ya farmeaste hoy</h2>
+      <p>Solo puedes farmear una vez cada 24 horas. Vuelve en:</p>
+      <div class="cooldown-timer" id="cdTimer">--:--:--</div>
+      <a class="link-back" href="/perfil.html">← Volver al perfil</a>
+    </div>
+
+    <!-- Fin de partida -->
+    <div class="screen" id="overScreen">
+      <h2 id="overTitle">Partida terminada</h2>
+      <p>Ganaste:</p>
+      <div class="earned-big"><img src="/assets/omegacoin-actual.png" alt="" /><span id="earnedAmt">0</span></div>
+      <p id="overDetail"></p>
+      <a class="link-back" href="/perfil.html">← Volver al perfil</a>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const W = canvas.width, H = canvas.height;
+    const $ = (id) => document.getElementById(id);
+
+    let RULES = { rewards: { asteroid: 1, ship: 5 }, cooldownHours: 24, maxPerRun: 500 };
+    let avatarImg = null;
+
+    // ---- Carga inicial: perfil (avatar) + estado del minijuego ----
+    async function boot() {
+      let me = null;
+      try {
+        const r = await fetch("/api/me/profile");
+        if (!r.ok) { location.href = "/login.html"; return; }
+        me = await r.json();
+      } catch (e) { location.href = "/login.html"; return; }
+
+      if (me.avatar) {
+        const img = new Image();
+        img.onload = () => { avatarImg = img; };
+        img.src = me.avatar; // sin crossOrigin: solo se dibuja, no se leen píxeles
+      }
+
+      try {
+        const r = await fetch("/api/me/minijuego");
+        const d = await r.json();
+        RULES = { rewards: d.rewards || RULES.rewards, cooldownHours: d.cooldownHours || 24, maxPerRun: d.maxPerRun || 500 };
+        $("rwAst").textContent = RULES.rewards.asteroid;
+        $("rwShip").textContent = RULES.rewards.ship;
+        if (!d.canPlay && d.nextAvailableAt) {
+          showCooldown(new Date(d.nextAvailableAt).getTime());
+        }
+      } catch (e) { /* si falla, dejamos jugar; el server validará */ }
+    }
+
+    function showScreen(id) {
+      ["introScreen", "cooldownScreen", "overScreen"].forEach((s) => $(s).classList.toggle("show", s === id));
+    }
+
+    function showCooldown(nextTs) {
+      showScreen("cooldownScreen");
+      $("playBtn").disabled = true;
+      const tick = () => {
+        const ms = nextTs - Date.now();
+        if (ms <= 0) { $("cdTimer").textContent = "¡Ya puedes jugar!"; location.reload(); return; }
+        const s = Math.floor(ms / 1000);
+        const hh = String(Math.floor(s / 3600)).padStart(2, "0");
+        const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+        const ss = String(s % 60).padStart(2, "0");
+        $("cdTimer").textContent = `${hh}:${mm}:${ss}`;
+      };
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    // ================= ESTADO DEL JUEGO =================
+    let game = null;
+
+    function newGame() {
+      return {
+        running: true,
+        startTime: performance.now(),
+        last: performance.now(),
+        elapsed: 0,
+        player: { x: W / 2, y: H - 80, r: 26, speed: 360 },
+        bullets: [], asteroids: [], enemies: [], enemyBullets: [], particles: [],
+        keys: {}, pointer: null,
+        lives: 3,
+        coins: 0,
+        astKilled: 0, shipKilled: 0,
+        fireTimer: 0, fireInterval: 0.28,
+        astTimer: 0, shipTimer: 4.5,
+        stars: Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: Math.random() * 1.6 + 0.4 })),
+        invuln: 0,
+      };
+    }
+
+    function start() {
+      game = newGame();
+      showScreen(null);
+      $("hud").style.display = "flex";
+      updateHud();
+      requestAnimationFrame(loop);
+    }
+
+    function updateHud() {
+      $("hudCoins").textContent = game.coins;
+      $("hudLives").textContent = game.lives > 0 ? "❤️".repeat(game.lives) : "💀";
+    }
+
+    // ---- Entrada ----
+    window.addEventListener("keydown", (e) => { if (game) game.keys[e.key.toLowerCase()] = true; });
+    window.addEventListener("keyup", (e) => { if (game) game.keys[e.key.toLowerCase()] = false; });
+    function pointerMove(clientX) {
+      if (!game) return;
+      const rect = canvas.getBoundingClientRect();
+      game.pointer = ((clientX - rect.left) / rect.width) * W;
+    }
+    canvas.addEventListener("pointerdown", (e) => { pointerMove(e.clientX); });
+    canvas.addEventListener("pointermove", (e) => { if (e.buttons || e.pointerType === "touch") pointerMove(e.clientX); });
+    canvas.addEventListener("pointerup", () => { if (game) game.pointer = null; });
+    canvas.addEventListener("pointerleave", () => { if (game) game.pointer = null; });
+
+    // ---- Dificultad: escala suave con el tiempo (más rápido y más spawns) ----
+    function diff(g) { return 1 + Math.min(g.elapsed / 45, 2.2); } // 1.0 -> 3.2
+
+    function spawnAsteroid(g) {
+      const r = 14 + Math.random() * 18;
+      g.asteroids.push({
+        x: r + Math.random() * (W - 2 * r), y: -r,
+        r, vy: (60 + Math.random() * 60) * diff(g), vx: (Math.random() - 0.5) * 60,
+        rot: Math.random() * 6.28, rotSpeed: (Math.random() - 0.5) * 3,
+      });
+    }
+    function spawnEnemy(g) {
+      g.enemies.push({
+        x: 30 + Math.random() * (W - 60), y: -24, r: 20,
+        vy: (55 + Math.random() * 35) * diff(g), vx: (Math.random() - 0.5) * 80,
+        fire: 1 + Math.random() * 1.5,
+      });
+    }
+    function burst(g, x, y, color, n) {
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * 6.28, sp = 40 + Math.random() * 140;
+        g.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.5, color });
+      }
+    }
+
+    function hit(ax, ay, ar, bx, by, br) {
+      const dx = ax - bx, dy = ay - by, rr = ar + br;
+      return dx * dx + dy * dy <= rr * rr;
+    }
+
+    // ================= LOOP =================
+    function loop(now) {
+      if (!game || !game.running) return;
+      let dt = (now - game.last) / 1000;
+      game.last = now;
+      if (dt > 0.05) dt = 0.05; // evita saltos si la pestaña pierde foco
+      game.elapsed = (now - game.startTime) / 1000;
+      update(dt);
+      draw();
+      requestAnimationFrame(loop);
+    }
+
+    function update(dt) {
+      const g = game, p = g.player;
+      if (g.invuln > 0) g.invuln -= dt;
+
+      // Movimiento jugador
+      let dir = 0;
+      if (g.keys["arrowleft"] || g.keys["a"]) dir -= 1;
+      if (g.keys["arrowright"] || g.keys["d"]) dir += 1;
+      let dy = 0;
+      if (g.keys["arrowup"] || g.keys["w"]) dy -= 1;
+      if (g.keys["arrowdown"] || g.keys["s"]) dy += 1;
+      if (g.pointer != null) {
+        const d = g.pointer - p.x;
+        p.x += Math.max(-p.speed * dt, Math.min(p.speed * dt, d));
+      } else {
+        p.x += dir * p.speed * dt;
+      }
+      p.y += dy * p.speed * 0.7 * dt;
+      p.x = Math.max(p.r, Math.min(W - p.r, p.x));
+      p.y = Math.max(H * 0.45, Math.min(H - p.r - 6, p.y));
+
+      // Disparo automático
+      g.fireTimer -= dt;
+      if (g.fireTimer <= 0) { g.fireTimer = g.fireInterval; g.bullets.push({ x: p.x, y: p.y - p.r, vy: -560 }); }
+
+      // Spawns
+      g.astTimer -= dt;
+      const astEvery = Math.max(0.35, 1.1 / diff(g));
+      if (g.astTimer <= 0) { g.astTimer = astEvery; spawnAsteroid(g); if (Math.random() < 0.3) spawnAsteroid(g); }
+      g.shipTimer -= dt;
+      if (g.shipTimer <= 0) { g.shipTimer = 6 + Math.random() * 6; spawnEnemy(g); } // naves: raras
+
+      // Balas jugador
+      for (const b of g.bullets) b.y += b.vy * dt;
+      // Asteroides
+      for (const a of g.asteroids) { a.y += a.vy * dt; a.x += a.vx * dt; a.rot += a.rotSpeed * dt; if (a.x < a.r || a.x > W - a.r) a.vx *= -1; }
+      // Enemigos
+      for (const e of g.enemies) {
+        e.y += e.vy * dt; e.x += e.vx * dt;
+        if (e.x < e.r || e.x > W - e.r) e.vx *= -1;
+        e.fire -= dt;
+        if (e.fire <= 0 && e.y > 0 && e.y < H * 0.7) { e.fire = 1.4 + Math.random(); g.enemyBullets.push({ x: e.x, y: e.y + e.r, vy: 240 }); }
+      }
+      for (const eb of g.enemyBullets) eb.y += eb.vy * dt;
+      for (const pt of g.particles) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; }
+
+      // Colisiones bala -> asteroide
+      for (const b of g.bullets) {
+        for (const a of g.asteroids) {
+          if (!a.dead && hit(b.x, b.y, 3, a.x, a.y, a.r)) {
+            a.dead = b.dead = true; g.coins += RULES.rewards.asteroid; g.astKilled++;
+            burst(g, a.x, a.y, "#9aa6b2", 8); updateHud();
+          }
+        }
+        for (const e of g.enemies) {
+          if (!e.dead && hit(b.x, b.y, 3, e.x, e.y, e.r)) {
+            e.dead = b.dead = true; g.coins += RULES.rewards.ship; g.shipKilled++;
+            burst(g, e.x, e.y, "#ff8bd0", 16); updateHud();
+          }
+        }
+      }
+
+      // Colisiones contra el jugador
+      const damage = () => {
+        if (g.invuln > 0) return;
+        g.lives--; g.invuln = 1.4; burst(g, p.x, p.y, "#ffd35c", 20); updateHud();
+        if (g.lives <= 0) endGame();
+      };
+      for (const a of g.asteroids) if (!a.dead && hit(p.x, p.y, p.r * 0.8, a.x, a.y, a.r)) { a.dead = true; burst(g, a.x, a.y, "#9aa6b2", 8); damage(); }
+      for (const e of g.enemies) if (!e.dead && hit(p.x, p.y, p.r * 0.8, e.x, e.y, e.r)) { e.dead = true; burst(g, e.x, e.y, "#ff8bd0", 12); damage(); }
+      for (const eb of g.enemyBullets) if (!eb.dead && hit(p.x, p.y, p.r * 0.7, eb.x, eb.y, 4)) { eb.dead = true; damage(); }
+
+      // Limpieza
+      g.bullets = g.bullets.filter((b) => !b.dead && b.y > -10);
+      g.asteroids = g.asteroids.filter((a) => !a.dead && a.y < H + 40);
+      g.enemies = g.enemies.filter((e) => !e.dead && e.y < H + 40);
+      g.enemyBullets = g.enemyBullets.filter((eb) => !eb.dead && eb.y < H + 10);
+      g.particles = g.particles.filter((pt) => pt.life > 0);
+    }
+
+    // ================= DIBUJO =================
+    function draw() {
+      const g = game, p = g.player;
+      ctx.clearRect(0, 0, W, H);
+      // fondo + estrellas
+      ctx.fillStyle = "#06060d"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255,255,255,.5)";
+      for (const st of g.stars) { st.y += (20 + st.s * 20) / 60; if (st.y > H) { st.y = 0; st.x = Math.random() * W; } ctx.fillRect(st.x, st.y, st.s, st.s); }
+
+      // partículas
+      for (const pt of g.particles) { ctx.globalAlpha = Math.max(0, pt.life * 2); ctx.fillStyle = pt.color; ctx.fillRect(pt.x - 2, pt.y - 2, 4, 4); }
+      ctx.globalAlpha = 1;
+
+      // balas
+      ctx.fillStyle = "#7cf6ff";
+      for (const b of g.bullets) { ctx.fillRect(b.x - 2, b.y - 9, 4, 12); }
+      ctx.fillStyle = "#ff6b6b";
+      for (const eb of g.enemyBullets) { ctx.fillRect(eb.x - 2, eb.y - 4, 4, 10); }
+
+      // asteroides
+      for (const a of g.asteroids) drawAsteroid(a);
+      // enemigos
+      for (const e of g.enemies) drawEnemy(e);
+
+      // jugador (avatar en círculo)
+      const blink = g.invuln > 0 && Math.floor(g.invuln * 12) % 2 === 0;
+      if (!blink) drawPlayer(p);
+    }
+
+    function drawPlayer(p) {
+      ctx.save();
+      // glow / aura
+      ctx.shadowColor = "rgba(168,120,255,.8)"; ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 2, 0, 6.2832); ctx.fillStyle = "#a878ff"; ctx.fill();
+      ctx.shadowBlur = 0;
+      // recorte circular para el avatar
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832); ctx.closePath(); ctx.clip();
+      if (avatarImg) {
+        ctx.drawImage(avatarImg, p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+      } else {
+        ctx.fillStyle = "#5865f2"; ctx.fillRect(p.x - p.r, p.y - p.r, p.r * 2, p.r * 2);
+      }
+      ctx.restore();
+      // toberas
+      ctx.fillStyle = "#ffb15c";
+      ctx.beginPath(); ctx.moveTo(p.x - 8, p.y + p.r - 2); ctx.lineTo(p.x, p.y + p.r + 10 + Math.random() * 6); ctx.lineTo(p.x + 8, p.y + p.r - 2); ctx.fill();
+    }
+
+    function drawAsteroid(a) {
+      ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.rot);
+      ctx.fillStyle = "#6b6b78"; ctx.strokeStyle = "#3a3a44"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      const n = 8;
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * 6.2832; const rr = a.r * (0.78 + ((i * 53) % 10) / 25);
+        const x = Math.cos(ang) * rr, y = Math.sin(ang) * rr;
+        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+      }
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#55555f";
+      ctx.beginPath(); ctx.arc(-a.r * 0.2, -a.r * 0.1, a.r * 0.22, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawEnemy(e) {
+      ctx.save(); ctx.translate(e.x, e.y);
+      ctx.shadowColor = "rgba(255,90,180,.7)"; ctx.shadowBlur = 12;
+      ctx.fillStyle = "#ff5ab4";
+      ctx.beginPath(); ctx.ellipse(0, 0, e.r, e.r * 0.55, 0, 0, 6.2832); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#ffd3f0";
+      ctx.beginPath(); ctx.ellipse(0, -e.r * 0.25, e.r * 0.5, e.r * 0.4, 0, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = "#7cf6ff";
+      ctx.beginPath(); ctx.arc(0, -e.r * 0.3, e.r * 0.18, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+
+    // ================= FIN =================
+    let submitted = false;
+    async function endGame() {
+      const g = game; g.running = false;
+      if (submitted) return; submitted = true;
+      const durationMs = Math.round(performance.now() - g.startTime);
+      $("hud").style.display = "none";
+
+      $("overTitle").textContent = "💥 ¡Nave destruida!";
+      $("earnedAmt").textContent = "…";
+      $("overDetail").textContent = "Guardando tu botín…";
+      showScreen("overScreen");
+
+      try {
+        const r = await fetch("/api/me/minijuego/resultado", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ asteroids: g.astKilled, ships: g.shipKilled, durationMs }),
+        });
+        const d = await r.json();
+        if (!r.ok) {
+          $("earnedAmt").textContent = "0";
+          $("overDetail").textContent = d.error || "No se pudo guardar la partida.";
+          return;
+        }
+        $("earnedAmt").textContent = (d.earned || 0).toLocaleString("es");
+        $("overDetail").textContent = `☄️ ${g.astKilled} asteroides · 🛸 ${g.shipKilled} naves · Saldo: ${(d.balance || 0).toLocaleString("es")} Ω · Vuelve en 24h`;
+      } catch (e) {
+        $("earnedAmt").textContent = "0";
+        $("overDetail").textContent = "Error de conexión al guardar.";
+      }
+    }
+
+    $("playBtn").addEventListener("click", start);
+    boot();
+  })();
+  </script>
+</body>
+</html>

@@ -1156,6 +1156,10 @@ app.use(logrosRouter);
 const { router: creadoresRouter, initCreadores } = require("./creadores");
 app.use(creadoresRouter);
 
+// Minijuego "Omega Invaders" — farmeo diario de Omegacoins.
+const { router: minijuegoRouter, initMinijuego } = require("./minijuego");
+app.use(minijuegoRouter);
+
 // Juegos activos del servidor (lo que el bot guarda en la base de datos).
 app.get("/api/active-games", async (req, res) => {
   if (!teamPool) {
@@ -1508,6 +1512,7 @@ async function start() {
     await initTienda();
     await initLogros();
     await initCreadores();
+    await initMinijuego();
     app.listen(PORT, "0.0.0.0", () => {
       console.log("Servidor corriendo en puerto", PORT, "| storage equipo:", teamStorageMode);
     });

@@ -153,6 +153,15 @@
         </section>
       </div>
 
+      <section class="panel" id="minijuego">
+        <h2>🚀 Farmear Omegacoins</h2>
+        <p class="sub">Juega <b>Omega Invaders</b> con tu avatar de nave: destruye asteroides (+<span id="mjAst">1</span>) y naves enemigas (+<span id="mjShip">5</span>). Disponible <b>1 vez cada 24h</b>.</p>
+        <div class="grant-row" style="align-items:center">
+          <a id="mjPlay" class="btn" href="/minijuego/jugar.html">🎮 Jugar y farmear</a>
+          <span id="mjStatus" class="sub" style="margin:0"></span>
+        </div>
+      </section>
+
       <section class="panel" id="logros">
         <h2>🏅 Mis logros</h2>
         <p class="sub">Insignias que has ganado en la comunidad.</p>
@@ -218,6 +227,7 @@
       $("content").style.display = "block";
       loadCoins();
       loadReferidos();
+      loadMinijuego();
 
       // Actividad
       try {
@@ -273,6 +283,31 @@
         const r = await fetch("/api/me/referidos");
         const d = await r.json();
         $("refCount").textContent = d.count || 0;
+      } catch (e) { /* noop */ }
+    }
+
+    async function loadMinijuego() {
+      try {
+        const r = await fetch("/api/me/minijuego");
+        const d = await r.json();
+        if (d.rewards) { $("mjAst").textContent = d.rewards.asteroid; $("mjShip").textContent = d.rewards.ship; }
+        const btn = $("mjPlay"), st = $("mjStatus");
+        if (d.canPlay) {
+          btn.classList.remove("disabled"); btn.style.pointerEvents = ""; btn.style.opacity = "";
+          st.textContent = "✅ ¡Disponible ahora!";
+        } else if (d.nextAvailableAt) {
+          btn.style.pointerEvents = "none"; btn.style.opacity = ".5";
+          const tick = () => {
+            const ms = new Date(d.nextAvailableAt).getTime() - Date.now();
+            if (ms <= 0) { st.textContent = "✅ ¡Disponible ahora!"; btn.style.pointerEvents = ""; btn.style.opacity = ""; return; }
+            const s = Math.floor(ms / 1000);
+            const hh = String(Math.floor(s / 3600)).padStart(2, "0");
+            const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+            const ss = String(s % 60).padStart(2, "0");
+            st.textContent = `⏳ Vuelve en ${hh}:${mm}:${ss}`;
+          };
+          tick(); setInterval(tick, 1000);
+        }
       } catch (e) { /* noop */ }
     }
 
