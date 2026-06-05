@@ -281,6 +281,7 @@
 
     const buildTienditaImage = (fileName) => {
       if (!fileName) return 'assets/previa.png';
+      if (/^https?:\/\//i.test(fileName)) return fileName; // URL permanente (Cloudinary)
       return `/uploads/${encodeURIComponent(fileName)}`;
     };
 

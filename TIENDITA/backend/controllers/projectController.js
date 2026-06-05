@@ -8,14 +8,50 @@ const CATEGORIAS_VALIDAS = new Set([
   "arte y diseno"
 ]);
 
+// Cloudinary (almacenamiento permanente). Si no está configurado, se usa el disco local.
+const CLOUD_ON = !!(process.env.CLOUDINARY_URL || (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET));
+let cloudinary = null;
+if (CLOUD_ON) {
+  cloudinary = require("cloudinary").v2;
+  if (!process.env.CLOUDINARY_URL) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
+}
+
+// Sube un buffer a Cloudinary y devuelve la URL segura (https permanente).
+function subirACloud(buffer, resourceType) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: "realms", resource_type: resourceType || "auto" },
+      (err, result) => (err ? reject(err) : resolve(result.secure_url)),
+    );
+    stream.end(buffer);
+  });
+}
+
 // SUBIR
 exports.subirProyecto = async (req, res) => {
   try {
     const { nombre, categoria, descripcion } = req.body;
     const categoriaNormalizada = String(categoria || "").trim().toLowerCase();
-    const portada = req.files?.portada?.[0]?.filename;
-    const imagenes = (req.files?.imagenes || []).map(file => file.filename);
-    const archivo = req.files?.archivo?.[0]?.filename || null;
+
+    // En modo nube cada archivo es un buffer -> URL; en disco es un filename (compat).
+    let portada, imagenes, archivo;
+    if (CLOUD_ON) {
+      const fp = req.files?.portada?.[0];
+      portada = fp ? await subirACloud(fp.buffer, "image") : null;
+      imagenes = await Promise.all((req.files?.imagenes || []).map((f) => subirACloud(f.buffer, "image")));
+      const fa = req.files?.archivo?.[0];
+      archivo = fa ? await subirACloud(fa.buffer, "raw") : null;
+    } else {
+      portada = req.files?.portada?.[0]?.filename;
+      imagenes = (req.files?.imagenes || []).map((file) => file.filename);
+      archivo = req.files?.archivo?.[0]?.filename || null;
+    }
 
     if (!nombre || !categoriaNormalizada) {
       return res.status(400).json({ error: "Nombre y categoria son obligatorios" });

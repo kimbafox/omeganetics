@@ -8,14 +8,14 @@
   const NAV = [
     { label: "Actividad", tour: "actividad", items: [
       { href: "/actividad.html", icon: "📊", text: "Actividad del servidor" },
-      { href: "/ranking.html", icon: "🥇", text: "Ranking", dot: "#ffd35c" },
+      { href: "/ranking.html", icon: "🥇", text: "Ranking" },
       { href: "/eventos.html", icon: "🎯", text: "Eventos" },
       { href: "/torneos.html", icon: "🏆", text: "Torneos" },
     ] },
     { label: "Comunidad", tour: "comunidad", items: [
       { href: "/reglas.html", icon: "📜", text: "Reglas de la comunidad", dot: "#ffd35c" },
       { href: "/wiki/", icon: "📚", text: "Wiki (lore)", dot: "#3ba55c" },
-      { href: "/tiendita/indextienda.html", icon: "🏰", text: "Realm", dot: "#c0392b" },
+      { href: "/tiendita/indextienda.html", icon: "🏰", text: "Realm", dot: "#c0392b", admin: true },
       { href: "/tienda.html", icon: "🛒", text: "Tienda de canjes", dot: "#ffd35c" },
       { href: "/sorteos.html", icon: "🎟️", text: "Sorteos", dot: "#ff6fae" },
       { href: "/casino.html", icon: "🎰", text: "Casino", dot: "#57f287" },
@@ -28,7 +28,7 @@
   ];
 
   const dot = (it) => (it.dot ? `<span class="oh-dot" style="background:${it.dot}"></span>` : '<span class="oh-dot oh-dot-none"></span>');
-  const itemHtml = (it) => `<a role="menuitem" href="${esc(it.href)}"${it.ext ? ' target="_blank" rel="noopener"' : ""}${it.team ? ' data-team="1"' : ""}>${dot(it)}<span class="oh-ic">${it.icon}</span> ${esc(it.text)}</a>`;
+  const itemHtml = (it) => `<a role="menuitem" href="${esc(it.href)}"${it.ext ? ' target="_blank" rel="noopener"' : ""}${it.team ? ' data-team="1"' : ""}${it.admin ? ' class="oh-admin-only" style="display:none"' : ""}>${dot(it)}<span class="oh-ic">${it.icon}</span> ${esc(it.text)}</a>`;
   const ddHtml = (g) => `<div class="oh-dd"><button class="oh-trigger" type="button" data-tour="${g.tour || ""}" aria-haspopup="true" aria-expanded="false">${esc(g.label)} <span class="oh-caret">▾</span></button><div class="oh-menu" hidden>${g.items.map(itemHtml).join("")}</div></div>`;
 
   const header = document.createElement("header");
@@ -145,6 +145,8 @@
     let me = null;
     try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) { return; }
     if (!me) return;
+    // Revela los items del menú reservados a admins (ej. Realm).
+    if (me.isAdmin) header.querySelectorAll(".oh-admin-only").forEach((el) => { el.style.display = ""; });
     let creator = "none";
     try { const cr = await fetch("/api/creadores/mi-estado"); if (cr.ok) creator = (await cr.json()).status || "none"; } catch (e) { /* noop */ }
     const name = me.globalName || me.username || "Cuenta";

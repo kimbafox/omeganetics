@@ -5,7 +5,7 @@ const API_BASE = "/api";
 const UPLOADS_BASE = "/uploads";
 const STOREFRONT_THEME_KEY = "tienditaTheme";
 const MAX_IMAGENES_EXTRA = 6;
-const MAX_TAMANIO_IMAGEN_MB = 1.5;
+const MAX_TAMANIO_IMAGEN_MB = 5;
 const CATALOG_CACHE_KEY = "tienditaCatalogCache";
 const CATALOG_CACHE_TTL_MS = 60 * 1000;
 let googleLoginConfig = null;
@@ -184,8 +184,8 @@ async function validarArchivosSubida() {
     return false;
   }
 
-  if (archivo && archivo.size > 20 * 1024 * 1024) {
-    alert("El archivo adjunto supera 20 MB. Usa una versión más ligera para evitar saturar el espacio de almacenamiento.");
+  if (archivo && archivo.size > 100 * 1024 * 1024) {
+    alert("El archivo adjunto supera 100 MB. Usa una versión más ligera.");
     return false;
   }
 
@@ -223,22 +223,15 @@ async function subirProyecto() {
   }
 
   try {
-    const token = obtenerTokenValido();
-
-    if (!token) {
-      alert("Debes iniciar sesión");
-      window.location.href = "login.html";
-      return;
-    }
-
+    // Auth por sesión de Discord (cookie same-origin); solo admins pueden subir.
     const res = await fetch(`${API_BASE}/proyectos/subir`, {
       method: "POST",
-      headers: { "Authorization": token },
       body: formData
     });
 
     if (res.status === 401 || res.status === 403) {
-      manejarSesionExpirada("Sesión inválida para subir proyecto");
+      alert("Necesitas una sesión de administrador de Discord para subir.");
+      window.location.href = "/login.html";
       return;
     }
 
@@ -256,6 +249,8 @@ async function subirProyecto() {
 }
 
 function buildUploadUrl(fileName) {
+  if (!fileName) return "";
+  if (/^https?:\/\//i.test(fileName)) return fileName; // URL permanente (Cloudinary)
   return `${UPLOADS_BASE}/${encodeURIComponent(fileName)}`;
 }
 
@@ -696,18 +691,8 @@ function actualizarNavAdmin() {
 }
 
 function protegerVistaSubir() {
-  const path = window.location.pathname.toLowerCase();
-  const esVistaSubir = path.endsWith("/subir.html") || path.endsWith("subir.html");
-
-  if (!esVistaSubir) return;
-
-  const token = obtenerTokenValido();
-  const rol = localStorage.getItem("rol");
-
-  if (!token || rol !== "admin") {
-    alert("Solo admin puede entrar a subir proyectos");
-    window.location.href = "login.html";
-  }
+  // El acceso ya lo protege el servidor (sesión de Discord admin); no hace falta
+  // el chequeo local antiguo basado en el login propio de Realms.
 }
 
 function actualizarEstadoLoginPage() {
@@ -922,6 +907,9 @@ document.addEventListener("DOMContentLoaded", () => {
       filtroDebounceTimer = setTimeout(() => {
         aplicarFiltro(filtroActual.categoria, e.target.value);
       }, 180);
+    });
+  }
+
   cargar();
   iniciarCarrusel();
   actualizarNavAdmin();

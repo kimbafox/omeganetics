@@ -1122,8 +1122,17 @@ const { app: wikiApp } = require("./mi-wiki-hacker/server");
 app.use("/wiki", wikiApp);
 
 // Login con Discord (OAuth2) — solo miembros del servidor.
-const { router: discordAuthRouter, initAuthDiscord } = require("./auth-discord");
+const { router: discordAuthRouter, initAuthDiscord, requireUser: requireDiscordUser } = require("./auth-discord");
 app.use(discordAuthRouter);
+
+// Guard de PÁGINA solo-admin (usa la sesión de Discord; redirige si no es admin).
+// Usamos requireUser de auth-discord (mismo secreto que firma las sesiones).
+function requireAdminPage(req, res, next) {
+  requireDiscordUser(req, { status: () => ({ json: () => res.redirect("/login.html") }) }, () => {
+    if (!req.user || !req.user.isAdmin) return res.redirect("/login.html");
+    next();
+  });
+}
 
 // Lector de actividad de Discord (juegos activos) integrado al sitio.
 const { initDiscordActivity } = require("./discord-activity");
@@ -1365,10 +1374,10 @@ if (resolvedDatabaseUrl) {
   tienditaEnabled = true;
   initDatabase = tienditaInit;
 
-  // Frontend de TIENDITA bajo el mismo dominio
-  app.use("/tiendita", express.static(path.join(__dirname, "TIENDITA", "frontend")));
+  // Frontend de TIENDITA (Realms) — SOLO ADMINS (sesión de Discord).
+  app.use("/tiendita", requireAdminPage, express.static(path.join(__dirname, "TIENDITA", "frontend")));
 
-  // API + uploads de TIENDITA bajo el mismo servidor
+  // API + uploads de TIENDITA bajo el mismo servidor (la subida/borrado exige admin; el listado es público).
   app.use(tienditaApp);
 } else {
   console.warn("TIENDITA deshabilitada: falta configuracion de base de datos (DATABASE_URL/PG*). ");
@@ -1494,14 +1503,14 @@ app.get("/u/:id/og.png", async (req, res) => {
   }
 });
 
-app.get("/tiendita", (req, res) => {
+app.get("/tiendita", requireAdminPage, (req, res) => {
   if (!tienditaEnabled) {
     return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
   }
   res.sendFile(path.join(__dirname, "TIENDITA", "frontend", "indextienda.html"));
 });
 
-app.get("/tiendita/", (req, res) => {
+app.get("/tiendita/", requireAdminPage, (req, res) => {
   if (!tienditaEnabled) {
     return res.status(503).send("TIENDITA deshabilitada: configura DATABASE_URL.");
   }
