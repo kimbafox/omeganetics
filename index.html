@@ -201,7 +201,7 @@
     <div class="desarrollo-imagen anim">
       <section id="storeShowcase" class="showcase-carousel showcase-carousel-store" data-carousel-auto="5600" aria-label="Carrusel de productos de Tiendita">
         <div class="showcase-topbar">
-          <span class="showcase-tag">Tiendita</span>
+          <span class="showcase-tag">Tiendita <span style="color:#ffd35c;font-weight:700">🚧 en construcción</span></span>
           <a href="/tiendita/indextienda.html" class="showcase-link">Abrir tienda</a>
         </div>
         <div class="showcase-viewport">
@@ -221,18 +221,6 @@
         </div>
       </section>
       </div>
-  </section>
-
-  <!-- PREVIEWS EN VIVO -->
-  <section class="home-previews anim">
-    <div class="preview-col">
-      <div class="preview-head"><h3>🏆 Top jugadores de la semana</h3><a href="/actividad.html">Ver ranking →</a></div>
-      <div id="homeTop" class="preview-list"><div class="muted">Cargando…</div></div>
-    </div>
-    <div class="preview-col">
-      <div class="preview-head"><h3>🎯 Próximos eventos</h3><a href="/eventos.html">Ver eventos →</a></div>
-      <div id="homeEvents" class="preview-list"><div class="muted">Cargando…</div></div>
-    </div>
   </section>
 
   <footer class="site-footer">
@@ -477,13 +465,13 @@
         }));
 
         renderShowcase(root, items, {
-          title: 'Tiendita no disponible',
-          description: 'No se pudieron cargar productos ahora mismo.'
+          title: 'Tiendita en construcción 🚧',
+          description: 'Estamos preparando la tienda. ¡Muy pronto disponible!'
         });
       } catch (error) {
         renderShowcase(root, [], {
-          title: 'Tiendita no disponible',
-          description: 'No se pudieron cargar productos ahora mismo.'
+          title: 'Tiendita en construcción 🚧',
+          description: 'Estamos preparando la tienda. ¡Muy pronto disponible!'
         });
       }
     };
@@ -493,23 +481,6 @@
         const s = await (await fetch('/api/home-stats')).json();
         const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v || 0).toLocaleString('es'); };
         set('hsMembers', s.members); set('hsPlaying', s.playingNow); set('hsGames', s.activeGames); set('hsEvents', s.upcomingEvents);
-      } catch (e) { /* noop */ }
-      try {
-        const r = await (await fetch('/api/rankings?period=week')).json();
-        const top = (r.top || []).slice(0, 5);
-        const el = document.getElementById('homeTop');
-        if (el) el.innerHTML = top.length
-          ? top.map((p) => `<div class="pl-row"><span class="pl-rank">${p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : '#' + p.rank}</span><span class="pl-name">${escapeHtml(p.name)}</span><span class="pl-pts">${p.points} pts</span></div>`).join('')
-          : '<div class="muted">Aún no hay actividad esta semana. ¡Sé el primero!</div>';
-      } catch (e) { /* noop */ }
-      try {
-        const evs = await (await fetch('/api/eventos')).json();
-        const cutoff = Date.now() - 86400000;
-        const up = (Array.isArray(evs) ? evs : []).filter((e) => !e.startDate || new Date(e.startDate).getTime() >= cutoff).slice(0, 5);
-        const el = document.getElementById('homeEvents');
-        if (el) el.innerHTML = up.length
-          ? up.map((e) => `<div class="pl-row"><span class="pl-name">${escapeHtml(e.name)}</span><span class="pl-ev-game">${escapeHtml(e.game || '')}</span></div>`).join('')
-          : '<div class="muted">No hay próximos eventos. ¡Crea uno!</div>';
       } catch (e) { /* noop */ }
     };
 
