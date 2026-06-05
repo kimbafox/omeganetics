@@ -175,7 +175,7 @@
         coins: 0,
         astKilled: 0, shipKilled: 0,
         fireTimer: 0, fireInterval: 0.28,
-        astTimer: 0, shipTimer: 4.5,
+        astTimer: 0, shipTimer: 3.0,
         stars: Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H, s: Math.random() * 1.6 + 0.4 })),
         invuln: 0,
       };
@@ -208,20 +208,20 @@
     canvas.addEventListener("pointerleave", () => { if (game) game.pointer = null; });
 
     // ---- Dificultad: escala suave con el tiempo (más rápido y más spawns) ----
-    function diff(g) { return 1 + Math.min(g.elapsed / 45, 2.2); } // 1.0 -> 3.2
+    function diff(g) { return 1 + Math.min(g.elapsed / 30, 3.5); } // 1.0 -> 4.5 (más rápido y más alto)
 
     function spawnAsteroid(g) {
       const r = 14 + Math.random() * 18;
       g.asteroids.push({
         x: r + Math.random() * (W - 2 * r), y: -r,
-        r, vy: (60 + Math.random() * 60) * diff(g), vx: (Math.random() - 0.5) * 60,
+        r, vy: (75 + Math.random() * 70) * diff(g), vx: (Math.random() - 0.5) * 80,
         rot: Math.random() * 6.28, rotSpeed: (Math.random() - 0.5) * 3,
       });
     }
     function spawnEnemy(g) {
       g.enemies.push({
         x: 30 + Math.random() * (W - 60), y: -24, r: 20,
-        vy: (55 + Math.random() * 35) * diff(g), vx: (Math.random() - 0.5) * 80,
+        vy: (65 + Math.random() * 40) * diff(g), vx: (Math.random() - 0.5) * 100,
         fire: 1 + Math.random() * 1.5,
       });
     }
@@ -276,10 +276,10 @@
 
       // Spawns
       g.astTimer -= dt;
-      const astEvery = Math.max(0.35, 1.1 / diff(g));
-      if (g.astTimer <= 0) { g.astTimer = astEvery; spawnAsteroid(g); if (Math.random() < 0.3) spawnAsteroid(g); }
+      const astEvery = Math.max(0.22, 0.85 / diff(g));
+      if (g.astTimer <= 0) { g.astTimer = astEvery; spawnAsteroid(g); if (Math.random() < 0.5) spawnAsteroid(g); if (Math.random() < 0.2) spawnAsteroid(g); }
       g.shipTimer -= dt;
-      if (g.shipTimer <= 0) { g.shipTimer = 6 + Math.random() * 6; spawnEnemy(g); } // naves: raras
+      if (g.shipTimer <= 0) { g.shipTimer = 4 + Math.random() * 4; spawnEnemy(g); } // naves: más frecuentes
 
       // Balas jugador
       for (const b of g.bullets) b.y += b.vy * dt;
@@ -290,7 +290,7 @@
         e.y += e.vy * dt; e.x += e.vx * dt;
         if (e.x < e.r || e.x > W - e.r) e.vx *= -1;
         e.fire -= dt;
-        if (e.fire <= 0 && e.y > 0 && e.y < H * 0.7) { e.fire = 1.4 + Math.random(); g.enemyBullets.push({ x: e.x, y: e.y + e.r, vy: 240 }); }
+        if (e.fire <= 0 && e.y > 0 && e.y < H * 0.7) { e.fire = 1.0 + Math.random(); g.enemyBullets.push({ x: e.x, y: e.y + e.r, vy: 300 }); }
       }
       for (const eb of g.enemyBullets) eb.y += eb.vy * dt;
       for (const pt of g.particles) { pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt; }
@@ -314,7 +314,7 @@
       // Colisiones contra el jugador
       const damage = () => {
         if (g.invuln > 0) return;
-        g.lives--; g.invuln = 1.4; burst(g, p.x, p.y, "#ffd35c", 20); updateHud();
+        g.lives--; g.invuln = 1.1; burst(g, p.x, p.y, "#ffd35c", 20); updateHud();
         if (g.lives <= 0) endGame();
       };
       for (const a of g.asteroids) if (!a.dead && hit(p.x, p.y, p.r * 0.8, a.x, a.y, a.r)) { a.dead = true; burst(g, a.x, a.y, "#9aa6b2", 8); damage(); }
