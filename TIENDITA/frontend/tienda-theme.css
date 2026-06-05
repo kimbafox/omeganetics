@@ -33,7 +33,7 @@ body.storefront-page.theme-crimson {
   background: rgba(192, 68, 90, 0.10) !important;
   border: 1px solid rgba(192, 68, 90, 0.28) !important;
   color: #f1a8b4 !important;
-  border-radius: 999px !important;
+  border-radius: 0 !important;
   padding: 5px 12px !important;
   display: inline-block;
 }
@@ -44,7 +44,7 @@ body.storefront-page.theme-crimson {
   background: var(--realm) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 12px !important;
+  border-radius: 0 !important;
   font-weight: 700 !important;
   box-shadow: 0 10px 22px rgba(192, 68, 90, 0.20) !important;
   transition: transform 0.18s ease, filter 0.18s ease !important;
@@ -63,7 +63,7 @@ body.storefront-page.theme-crimson {
   background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid var(--rborder) !important;
   color: var(--rsoft) !important;
-  border-radius: 999px !important;
+  border-radius: 0 !important;
 }
 .filtro-btn.active, .filtro-btn:hover {
   background: rgba(192, 68, 90, 0.12) !important;
@@ -75,7 +75,7 @@ body.storefront-page.theme-crimson {
 .card-proyecto {
   background: var(--rsurface) !important;
   border: 1px solid var(--rborder) !important;
-  border-radius: 18px !important;
+  border-radius: 0 !important;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
   transition: transform 0.2s ease, border-color 0.2s ease !important;
 }
@@ -86,7 +86,7 @@ body.storefront-page.theme-crimson {
   background: rgba(192, 68, 90, 0.10) !important;
   border: 1px solid rgba(192, 68, 90, 0.28) !important;
   color: #f1a8b4 !important;
-  border-radius: 999px !important;
+  border-radius: 0 !important;
 }
 .card-carousel-btn {
   background: rgba(0, 0, 0, 0.45) !important;
@@ -98,8 +98,8 @@ body.storefront-page.theme-crimson {
 .catalogo-shell, .carousel-shell {
   background: var(--rsurface) !important;
   border: 1px solid var(--rborder) !important;
-  border-radius: 20px !important;
+  border-radius: 0 !important;
 }
 .section-heading h2 { color: var(--rtext) !important; }
 .section-heading p { color: var(--rsoft) !important; }
-.carousel .texto { background: rgba(0, 0, 0, 0.55) !important; color: #fff !important; border-radius: 10px !important; }
+.carousel .texto { background: rgba(0, 0, 0, 0.55) !important; color: #fff !important; border-radius: 0 !important; }

@@ -244,7 +244,7 @@ p {
   align-items: center;
   gap: 14px;
   padding: 14px 18px;
-  border-radius: 22px;
+  border-radius: 0;
   border: 1px solid rgba(247, 212, 124, 0.18);
   background:
     linear-gradient(135deg, rgba(255, 249, 237, 0.82), rgba(238, 225, 195, 0.9));
@@ -278,7 +278,7 @@ p {
   display: inline-flex;
   align-items: center;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgba(34, 23, 18, 0.9);
   color: #f7efd9;
   font-size: 0.68rem;
@@ -358,7 +358,7 @@ nav {
   gap: 10px;
   flex-wrap: wrap;
   padding: 10px 14px;
-  border-radius: 20px;
+  border-radius: 0;
   background: rgba(255, 248, 235, 0.42);
   border: 1px solid rgba(61, 35, 23, 0.12);
 }
@@ -369,7 +369,7 @@ button {
   appearance: none;
   border: 1px solid rgba(255, 191, 71, 0.35);
   padding: 10px 16px;
-  border-radius: 999px;
+  border-radius: 0;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
@@ -428,7 +428,7 @@ button:hover {
 .modal-contenido {
   background: linear-gradient(180deg, rgba(16, 22, 37, 0.96) 0%, rgba(9, 13, 24, 0.96) 100%);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 0;
   box-shadow: var(--shadow);
 }
 
@@ -441,7 +441,7 @@ button:hover {
     linear-gradient(180deg, rgba(244, 235, 213, 0.98) 0%, rgba(230, 215, 184, 0.98) 100%);
   border: 1px solid rgba(61, 35, 23, 0.16);
   border-radius: 0;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 16px) 100%, 16px 100%, 0 calc(100% - 16px), 0 16px);
+  clip-path: none;
   box-shadow: var(--shadow);
 }
 
