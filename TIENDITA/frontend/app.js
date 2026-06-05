@@ -549,7 +549,6 @@ function pintarProyectos(data) {
     cont.innerHTML = `
       <div class="empty-state">
         <h3>No hay resultados</h3>
-        <p>Prueba otra categoría o usa “Ver todo” para mostrar el catálogo completo.</p>
         <button class="btn" type="button" id="btnVerTodo">Ver todo</button>
       </div>
     `;
