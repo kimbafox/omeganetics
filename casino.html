@@ -241,7 +241,7 @@
     }
     async function bjAction(path) {
       $("bjHit").disabled = $("bjStand").disabled = $("bjDouble").disabled = true;
-      try { renderBlackjack(await api(path)); } catch (e) { if (e.message !== "login") alert("❌ " + e.message); }
+      try { renderBlackjack(await api(path, {})); } catch (e) { if (e.message !== "login") alert("❌ " + e.message); }
       $("bjHit").disabled = $("bjStand").disabled = $("bjDouble").disabled = false;
     }
     $("bjDeal").addEventListener("click", bjDeal);
