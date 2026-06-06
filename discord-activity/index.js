@@ -427,7 +427,7 @@ function initDiscordActivity() {
   });
 
   // === TEST: cuando ANXPO entra a un canal de voz, el bot entra, suena un sonido
-  // del soundboard y se desconecta a los 15 s. ===
+  // del soundboard y se desconecta a los 6 s. ===
   const ANXPO_ID = process.env.ANXPO_USER_ID || "688477815514857479";
   const ANXPO_SOUND_ID = process.env.ANXPO_SOUND_ID || "1512623682747498670";
   let anxpoBusy = false;
@@ -463,8 +463,8 @@ function initDiscordActivity() {
       setTimeout(() => {
         try { conn.destroy(); } catch (e) { /* noop */ }
         anxpoBusy = false;
-        console.log("[anxpo] desconectado tras 15 s.");
-      }, 15000);
+        console.log("[anxpo] desconectado tras 6 s.");
+      }, 6000);
     } catch (e) {
       console.warn("[anxpo] error:", e.message);
       anxpoBusy = false;
