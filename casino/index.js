@@ -30,6 +30,11 @@ const COINFLIP_MULT = 1.95;        // 50/50 -> RTP 97.5%
 const DADOS_MULT = 5.7;            // 1/6   -> RTP 95%
 // Blackjack: gana 2x (1:1), blackjack natural 2.5x (3:2), empate devuelve apuesta.
 
+// Ruleta europea (0-36). 0 = verde. Rojo/Negro pagan x2; Verde (0) paga x36 (~RTP 97.3%).
+const RULETA_ROJO = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+const RULETA_MULT = { rojo: 2, negro: 2, verde: 36 };
+function ruletaColor(n) { return n === 0 ? "verde" : (RULETA_ROJO.has(n) ? "rojo" : "negro"); }
+
 async function initCasino() {
   if (!pool) { console.warn("[casino] sin DATABASE_URL: módulo deshabilitado."); return; }
   await pool.query(`
@@ -115,6 +120,25 @@ router.post("/api/casino/dados", requireUser, async (req, res) => {
   if (won) { payout = Math.floor(pb.bet * DADOS_MULT); await addCoins(req.user.discordId, payout, "Casino: Dados (ganado)"); }
   const balance = await getBalance(req.user.discordId);
   return res.json({ won, roll, guess, bet: pb.bet, payout, net: payout - pb.bet, balance });
+});
+
+router.post("/api/casino/ruleta", requireUser, async (req, res) => {
+  const choice = ["rojo", "negro", "verde"].includes(req.body?.choice) ? req.body.choice : null;
+  if (!choice) return res.status(400).json({ error: "Elige rojo, negro o verde." });
+  const pb = parseBet(req.body?.bet);
+  if (pb.error) return res.status(400).json({ error: pb.error });
+  if (!pool) return res.status(503).json({ error: "BD no configurada." });
+
+  const spend = await spendCoins(req.user.discordId, pb.bet, "Casino: Ruleta");
+  if (!spend.ok) return res.status(400).json({ error: spend.error === "saldo" ? "No te alcanzan las Omegacoins." : "No se pudo apostar." });
+
+  const number = crypto.randomInt(37);
+  const color = ruletaColor(number);
+  const won = color === choice;
+  let payout = 0;
+  if (won) { payout = Math.floor(pb.bet * RULETA_MULT[choice]); await addCoins(req.user.discordId, payout, "Casino: Ruleta (ganado)"); }
+  const balance = await getBalance(req.user.discordId);
+  return res.json({ won, number, color, choice, bet: pb.bet, payout, net: payout - pb.bet, balance });
 });
 
 // ============ BLACKJACK ============

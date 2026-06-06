@@ -79,6 +79,17 @@
     .die-btn:hover { border-color: #ffd35c; }
     .die-btn.sel { border-color: #ffd35c; background: rgba(255,211,92,.15); }
     .die-face { font-size: 4.5rem; text-align: center; margin: 6px 0; }
+
+    /* Ruleta */
+    .ruleta-num { width: 104px; height: 104px; border-radius: 50%; margin: 4px auto 10px; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; font-weight: 900; color: #fff; border: 4px solid var(--border-strong); background: #333; transition: .2s; }
+    .ruleta-num.rojo { background: #e23b3b; border-color: #ff8a8a; }
+    .ruleta-num.negro { background: #23232b; border-color: #777; }
+    .ruleta-num.verde { background: #1e7d46; border-color: #57f287; }
+    .ruleta-pick { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+    .rul-btn { border: 2px solid var(--border-strong); background: var(--surface); color: #fff; border-radius: 12px; padding: 9px 18px; font-weight: 800; cursor: pointer; display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+    .rul-btn small { font-weight: 700; color: var(--text-faint); font-size: 11px; }
+    .rul-btn.sel { box-shadow: 0 0 0 2px #ffd35c inset; }
+    .rul-rojo { border-color: #e23b3b; } .rul-negro { border-color: #888; } .rul-verde { border-color: #1e7d46; }
     .muted-center { text-align: center; color: var(--text-soft); font-size: 13px; margin-top: 8px; }
     .back-link { display: inline-block; margin-top: 26px; color: var(--text-soft); text-decoration: none; }
     .back-link:hover { color: var(--text); }
@@ -100,6 +111,7 @@
       <button class="cas-tab active" data-game="blackjack">🃏 Blackjack</button>
       <button class="cas-tab" data-game="coinflip">🪙 Cara o Cruz</button>
       <button class="cas-tab" data-game="dados">🎲 Dados</button>
+      <button class="cas-tab" data-game="ruleta">🎡 Ruleta</button>
     </div>
 
     <!-- BLACKJACK -->
@@ -158,6 +170,26 @@
         <button class="btn-cas" id="diceGo">Tirar</button>
       </div>
       <div class="chips" id="diceChips"></div>
+    </section>
+
+    <!-- RULETA -->
+    <section class="game" id="g-ruleta">
+      <div class="felt">
+        <div class="ruleta-num" id="ruletaNum">?</div>
+        <div class="hand-label">Apuesta a un color</div>
+        <div class="ruleta-pick" id="ruletaPick">
+          <button class="rul-btn rul-rojo sel" data-c="rojo">Rojo <small>x2</small></button>
+          <button class="rul-btn rul-verde" data-c="verde">Verde <small>x36</small></button>
+          <button class="rul-btn rul-negro" data-c="negro">Negro <small>x2</small></button>
+        </div>
+        <div class="result" id="ruletaResult"></div>
+      </div>
+      <div class="bet-row">
+        <label>Apuesta</label>
+        <input class="bet-input" id="ruletaBet" type="number" min="10" value="100">
+        <button class="btn-cas" id="ruletaGo">Girar 🎡</button>
+      </div>
+      <div class="chips" id="ruletaChips"></div>
     </section>
 
     <div style="text-align:center"><a class="back-link" href="/">← Volver al inicio</a></div>
@@ -291,9 +323,30 @@
       $("diceGo").disabled = false;
     });
 
+    /* ===== Ruleta ===== */
+    let ruletaChoice = "rojo";
+    $("ruletaPick").querySelectorAll(".rul-btn").forEach((b) => b.addEventListener("click", () => {
+      $("ruletaPick").querySelectorAll(".rul-btn").forEach((x) => x.classList.remove("sel"));
+      b.classList.add("sel"); ruletaChoice = b.dataset.c;
+    }));
+    $("ruletaGo").addEventListener("click", async () => {
+      const bet = parseInt($("ruletaBet").value, 10) || 0;
+      $("ruletaGo").disabled = true; $("ruletaResult").textContent = "";
+      const numEl = $("ruletaNum"); numEl.className = "ruleta-num"; numEl.textContent = "🌀";
+      try {
+        const d = await api("/api/casino/ruleta", { bet, choice: ruletaChoice });
+        numEl.className = "ruleta-num " + d.color; numEl.textContent = d.number;
+        setBalance(d.balance);
+        const res = $("ruletaResult");
+        res.className = "result " + (d.won ? "win" : "lose");
+        res.innerHTML = `Salió <b>${d.number} ${d.color.toUpperCase()}</b> · ` + (d.won ? `🎉 +${fmt(d.net)}` : `💀 -${fmt(d.bet)}`);
+      } catch (e) { if (e.message !== "login") { $("ruletaResult").className = "result lose"; $("ruletaResult").textContent = "❌ " + e.message; } }
+      $("ruletaGo").disabled = false;
+    });
+
     /* ===== Init ===== */
     async function init() {
-      buildChips("bjChips", "bjBet"); buildChips("flipChips", "flipBet"); buildChips("diceChips", "diceBet");
+      buildChips("bjChips", "bjBet"); buildChips("flipChips", "flipBet"); buildChips("diceChips", "diceBet"); buildChips("ruletaChips", "ruletaBet");
       try {
         const d = await api("/api/casino");
         setBalance(d.balance);
