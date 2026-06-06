@@ -5,6 +5,8 @@
 <title>Panel Admin</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="tienda-theme.css">
+<link rel="stylesheet" href="/css/site-extra.css">
 </head>
 <body class="admin-page storefront-page">
 
@@ -44,17 +46,14 @@
 const API_BASE = "/api";
 const UPLOADS_BASE = "/uploads";
 
-const token = localStorage.getItem("token");
-
-if (!token || localStorage.getItem("rol") !== "admin") {
-  alert("Debes iniciar sesión como admin");
-  window.location.href = "login.html";
+// El acceso ya lo protege el servidor (sesión de Discord admin). No hay token propio.
+function imgUrl(name) {
+  if (!name) return "";
+  return /^https?:\/\//i.test(name) ? name : `${UPLOADS_BASE}/${encodeURIComponent(name)}`;
 }
 
 function cerrarSesion() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("rol");
-  window.location.href = "login.html";
+  window.location.href = "/";
 }
 
 let proyectos = [];
@@ -78,7 +77,7 @@ function mostrar(data) {
     cont.innerHTML += `
       <article class="card-proyecto admin-card">
         <div class="card-imagen-wrap">
-          <img class="card-portada" src="${UPLOADS_BASE}/${encodeURIComponent(p.portada)}" alt="Portada de ${p.nombre}">
+          <img class="card-portada" src="${imgUrl(p.portada)}" alt="Portada de ${p.nombre}">
         </div>
         <div class="card-contenido">
           <div class="card-cabecera">
@@ -116,13 +115,12 @@ async function eliminar(id) {
   if (!confirm("¿Eliminar proyecto?")) return;
 
   const res = await fetch(`${API_BASE}/proyectos/eliminar/${id}`, {
-    method: "DELETE",
-    headers: { "Authorization": token }
+    method: "DELETE"
   });
 
   if (res.status === 401 || res.status === 403) {
-    alert("Sesión inválida o expirada");
-    cerrarSesion();
+    alert("Necesitas sesión de administrador de Discord.");
+    window.location.href = "/login.html";
     return;
   }
 

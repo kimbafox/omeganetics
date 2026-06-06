@@ -1,105 +1,208 @@
 /* ============================================================
-   Realm/Tienda — tema unificado al estilo de Inicio (acento guindo).
+   Realm (Tiendita) — tema moderno, alineado al estilo del sitio.
    Se carga DESPUÉS de styles.css para sobrescribir el look propio.
+   Acento guindo del imperio + detalles dorados, esquinas redondeadas.
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --realm: #c0445a;          /* guindo */
+  --realm: #c0445a;            /* guindo */
   --realm-2: #e0667a;
+  --gold: #ffd35c;
   --rbg: #0b0c10;
   --rsurface: #15161d;
+  --rsurface-2: #1b1c25;
   --rborder: rgba(255, 255, 255, 0.08);
   --rborder2: rgba(255, 255, 255, 0.16);
   --rtext: #e9eaf0;
   --rsoft: #b4b7c2;
+  --rfaint: #8a8d99;
+  --rrad: 16px;
+  --rrad-sm: 11px;
+  --rshadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 
 * { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
 
 body.storefront-page,
-body.storefront-page.theme-crimson {
+body.storefront-page.theme-crimson,
+body.admin-page,
+body.upload-page {
   background:
-    radial-gradient(1100px 620px at 50% -12%, rgba(192, 68, 90, 0.06), rgba(0, 0, 0, 0) 55%),
+    radial-gradient(1100px 620px at 50% -12%, rgba(192, 68, 90, 0.10), rgba(0, 0, 0, 0) 55%),
+    radial-gradient(800px 400px at 100% 0%, rgba(255, 211, 92, 0.05), transparent 60%),
     var(--rbg) !important;
   color: var(--rtext) !important;
 }
 .storefront-page .page-glow,
-.storefront-page .page-ink { opacity: 0.12 !important; }
+.storefront-page .page-ink { opacity: 0.14 !important; }
 
-/* Header / marca */
-.storefront-page .header { border-bottom: 1px solid var(--rborder) !important; }
-.brand-kicker, .eyebrow, .section-minihead {
-  background: rgba(192, 68, 90, 0.10) !important;
-  border: 1px solid rgba(192, 68, 90, 0.28) !important;
-  color: #f1a8b4 !important;
-  border-radius: 0 !important;
-  padding: 5px 12px !important;
-  display: inline-block;
+/* ===== Header / marca ===== */
+.storefront-page .header,
+.admin-page .header,
+.upload-page .header {
+  border-bottom: 1px solid var(--rborder) !important;
+  background: linear-gradient(180deg, rgba(20,20,30,.7), rgba(11,12,16,.4)) !important;
 }
-.logo-subtitle { color: var(--rsoft) !important; }
+.brand-copy h1, .brand-shell h1 {
+  background: linear-gradient(135deg, #fff, var(--realm-2)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.brand-kicker, .eyebrow, .section-minihead, .logo-hint-chip {
+  background: rgba(192, 68, 90, 0.12) !important;
+  border: 1px solid rgba(192, 68, 90, 0.30) !important;
+  color: #f1a8b4 !important;
+  border-radius: 999px !important;
+  padding: 5px 14px !important;
+  display: inline-block;
+  font-weight: 800 !important; letter-spacing: .04em;
+}
+.logo-subtitle, .logo-hint, .logo-hint-text { color: var(--rsoft) !important; }
 
-/* Botones */
+/* ===== Botones ===== */
 .btn {
-  background: var(--realm) !important;
+  background: linear-gradient(135deg, var(--realm), var(--realm-2)) !important;
   color: #fff !important;
   border: none !important;
-  border-radius: 0 !important;
-  font-weight: 700 !important;
-  box-shadow: 0 10px 22px rgba(192, 68, 90, 0.20) !important;
-  transition: transform 0.18s ease, filter 0.18s ease !important;
+  border-radius: var(--rrad-sm) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 10px 24px rgba(192, 68, 90, 0.28) !important;
+  transition: transform 0.16s ease, filter 0.16s ease, box-shadow .16s ease !important;
 }
 .btn:hover { filter: brightness(1.08); transform: translateY(-2px); }
 .btn-secondary {
-  background: transparent !important;
+  background: rgba(255, 255, 255, 0.05) !important;
   border: 1px solid var(--rborder2) !important;
   color: var(--rsoft) !important;
   box-shadow: none !important;
 }
-.btn-secondary:hover { color: #fff !important; background: rgba(255, 255, 255, 0.06) !important; }
+.btn-secondary:hover { color: #fff !important; background: rgba(255, 255, 255, 0.09) !important; }
+.btn-danger {
+  background: rgba(255, 75, 75, 0.12) !important;
+  border: 1px solid rgba(255, 107, 107, 0.45) !important;
+  color: #ff9b9b !important;
+  box-shadow: none !important;
+}
+.btn-danger:hover { background: rgba(255, 75, 75, 0.22) !important; color: #fff !important; }
 
-/* Filtros de categoría */
+/* ===== Inputs / select / textarea ===== */
+input, select, textarea {
+  background: var(--rsurface-2) !important;
+  border: 1px solid var(--rborder2) !important;
+  color: var(--rtext) !important;
+  border-radius: var(--rrad-sm) !important;
+  transition: border-color .15s ease, box-shadow .15s ease !important;
+}
+input::placeholder, textarea::placeholder { color: var(--rfaint) !important; }
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--realm) !important;
+  box-shadow: 0 0 0 3px rgba(192, 68, 90, 0.18) !important;
+}
+
+/* ===== Filtros / pills ===== */
 .filtro-btn {
   background: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid var(--rborder) !important;
   color: var(--rsoft) !important;
-  border-radius: 0 !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
 }
 .filtro-btn.active, .filtro-btn:hover {
-  background: rgba(192, 68, 90, 0.12) !important;
-  border-color: rgba(192, 68, 90, 0.45) !important;
+  background: rgba(192, 68, 90, 0.16) !important;
+  border-color: rgba(192, 68, 90, 0.5) !important;
   color: #ffd7df !important;
 }
+.search-box, .catalog-toolbar, .admin-toolbar {
+  background: var(--rsurface-2) !important;
+  border: 1px solid var(--rborder) !important;
+  border-radius: var(--rrad) !important;
+}
+.catalog-count { color: var(--rfaint) !important; }
+.mini-badge { border-radius: 999px !important; font-weight: 800 !important; }
+.mini-badge--new { background: rgba(255,211,92,.14) !important; color: var(--gold) !important; }
+.mini-badge--download { background: rgba(192,68,90,.16) !important; color: #f1a8b4 !important; }
+.mini-badge--gallery { background: rgba(124,92,255,.16) !important; color: #c4b5ff !important; }
 
-/* Tarjetas de producto */
+/* ===== Tarjetas de producto ===== */
 .card-proyecto {
   background: var(--rsurface) !important;
   border: 1px solid var(--rborder) !important;
-  border-radius: 0 !important;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
+  border-radius: var(--rrad) !important;
+  box-shadow: var(--rshadow) !important;
+  overflow: hidden !important;
   transition: transform 0.2s ease, border-color 0.2s ease !important;
 }
-.card-proyecto:hover { transform: translateY(-4px); border-color: var(--rborder2) !important; }
+.card-proyecto:hover { transform: translateY(-5px); border-color: rgba(192,68,90,.45) !important; }
+.card-imagen-wrap, .card-slides, .card-slide { border-radius: 0 !important; }
 .card-titulo { color: var(--rtext) !important; }
 .card-descripcion, .card-fecha, .card-resumen-extra { color: var(--rsoft) !important; }
 .card-categoria {
-  background: rgba(192, 68, 90, 0.10) !important;
-  border: 1px solid rgba(192, 68, 90, 0.28) !important;
+  background: rgba(192, 68, 90, 0.12) !important;
+  border: 1px solid rgba(192, 68, 90, 0.30) !important;
   color: #f1a8b4 !important;
-  border-radius: 0 !important;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
 }
 .card-carousel-btn {
-  background: rgba(0, 0, 0, 0.45) !important;
+  background: rgba(0, 0, 0, 0.5) !important;
   border: 1px solid var(--rborder2) !important;
   color: #fff !important;
+  border-radius: 999px !important;
 }
+.card-indicador.active { background: var(--realm) !important; }
 
-/* Contenedores */
-.catalogo-shell, .carousel-shell {
+/* ===== Contenedores / secciones ===== */
+.catalogo-shell, .carousel-shell, .landing > section {
   background: var(--rsurface) !important;
   border: 1px solid var(--rborder) !important;
-  border-radius: 0 !important;
+  border-radius: var(--rrad) !important;
 }
 .section-heading h2 { color: var(--rtext) !important; }
 .section-heading p { color: var(--rsoft) !important; }
-.carousel .texto { background: rgba(0, 0, 0, 0.55) !important; color: #fff !important; border-radius: 0 !important; }
+.carousel, .carousel .slide, .carousel img { border-radius: var(--rrad) !important; }
+.carousel .texto { background: rgba(0, 0, 0, 0.55) !important; color: #fff !important; border-radius: 999px !important; font-weight: 700 !important; }
+
+/* ===== Modal de detalle ===== */
+.modal-contenido { background: var(--rsurface) !important; border: 1px solid var(--rborder2) !important; border-radius: var(--rrad) !important; }
+.modal-portada, .modal-hero-media, .galeria-thumb, .modal-highlight-card, .modal-resumen-box, .modal-detalle-box, .modal-cta-panel {
+  border-radius: var(--rrad-sm) !important;
+}
+.modal-kicker { color: var(--realm-2) !important; }
+.btn-descargar { background: linear-gradient(135deg, var(--gold), #ff9f43) !important; color: #2a1a00 !important; }
+
+/* ===== Subir proyecto (upload) ===== */
+.upload-container { gap: 22px !important; }
+.upload-form, .upload-preview {
+  background: var(--rsurface) !important;
+  border: 1px solid var(--rborder) !important;
+  border-radius: var(--rrad) !important;
+  box-shadow: var(--rshadow) !important;
+}
+.upload-form h2, .upload-preview h3 { color: var(--rtext) !important; }
+.upload-form label { color: var(--rsoft) !important; font-weight: 700 !important; }
+.field-help { color: var(--rfaint) !important; }
+#imgPreview { border-radius: var(--rrad-sm) !important; border: 1px solid var(--rborder) !important; }
+.preview-gallery-item img { border-radius: 8px !important; border: 1px solid var(--rborder) !important; }
+.descripcion-preview { color: var(--rsoft) !important; }
+input[type="file"] {
+  padding: 9px !important; cursor: pointer;
+}
+input[type="file"]::file-selector-button {
+  background: rgba(192,68,90,.16) !important; color: #f1a8b4 !important;
+  border: 1px solid rgba(192,68,90,.4) !important; border-radius: 8px !important;
+  padding: 7px 12px !important; margin-right: 10px !important; cursor: pointer; font-weight: 700;
+}
+
+/* ===== Panel admin de Realms ===== */
+.admin-shell { color: var(--rtext) !important; }
+.admin-intro h2 { color: var(--rtext) !important; }
+.admin-summary-card {
+  background: linear-gradient(135deg, rgba(192,68,90,.14), rgba(255,211,92,.06)) !important;
+  border: 1px solid rgba(192,68,90,.3) !important;
+  border-radius: var(--rrad) !important;
+}
+.admin-summary-card strong { color: var(--gold) !important; }
+.admin-card { background: var(--rsurface) !important; }
+.admin-actions { margin-top: 10px !important; }
