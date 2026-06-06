@@ -8,6 +8,7 @@
 const fs = require("fs");
 const path = require("path");
 const { Client, GatewayIntentBits, ActivityType, Partials, EmbedBuilder } = require("discord.js");
+const { joinVoiceChannel, entersState, VoiceConnectionStatus } = require("@discordjs/voice");
 const { Pool } = require("pg");
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN || "";
@@ -422,6 +423,51 @@ function initDiscordActivity() {
       pendingMessages.set(id, prev);
     } catch (e) {
       /* noop */
+    }
+  });
+
+  // === TEST: cuando ANXPO entra a un canal de voz, el bot entra, suena un sonido
+  // del soundboard y se desconecta a los 15 s. ===
+  const ANXPO_ID = process.env.ANXPO_USER_ID || "688477815514857479";
+  const ANXPO_SOUND_ID = process.env.ANXPO_SOUND_ID || "1512623682747498670";
+  let anxpoBusy = false;
+  client.on("voiceStateUpdate", async (oldState, newState) => {
+    try {
+      if (newState.id !== ANXPO_ID) return;
+      // Solo al ENTRAR (o cambiar) a un canal de voz; ignorar salidas/mute/etc.
+      if (!newState.channelId || oldState.channelId === newState.channelId) return;
+      if (anxpoBusy) return;
+      const guild = newState.guild;
+      if (!guild || guild.id !== GUILD_ID) return;
+      const channel = newState.channel || guild.channels.cache.get(newState.channelId);
+      if (!channel) return;
+
+      anxpoBusy = true;
+      console.log("[anxpo] entró a voz:", channel.name, "→ reproduciendo soundboard");
+      const conn = joinVoiceChannel({
+        channelId: channel.id,
+        guildId: guild.id,
+        adapterCreator: guild.voiceAdapterCreator,
+        selfDeaf: false,
+        selfMute: false,
+      });
+      try {
+        await entersState(conn, VoiceConnectionStatus.Ready, 12000);
+        await client.rest.post(`/channels/${channel.id}/send-soundboard-sound`, {
+          body: { sound_id: ANXPO_SOUND_ID, source_guild_id: guild.id },
+        });
+        console.log("[anxpo] sonido enviado.");
+      } catch (e) {
+        console.warn("[anxpo] no se pudo reproducir el sonido:", e.message);
+      }
+      setTimeout(() => {
+        try { conn.destroy(); } catch (e) { /* noop */ }
+        anxpoBusy = false;
+        console.log("[anxpo] desconectado tras 15 s.");
+      }, 15000);
+    } catch (e) {
+      console.warn("[anxpo] error:", e.message);
+      anxpoBusy = false;
     }
   });
 
