@@ -69,6 +69,31 @@ router.get("/api/admin/stats", requireAdmin, async (req, res) => {
   return res.json({ kpis, coinsFlow, activity });
 });
 
+// Búsqueda de miembros para autocompletar (escribir tras el @ en el panel admin).
+router.get("/api/admin/usuarios", requireAdmin, async (req, res) => {
+  if (!pool) return res.json([]);
+  const q = String(req.query.q || "").trim().slice(0, 60);
+  try {
+    let rows;
+    if (q) {
+      rows = (await pool.query(
+        `SELECT discord_id, username, display_name, avatar_url FROM discord_members
+         WHERE username ILIKE $1 OR display_name ILIKE $1
+         ORDER BY (username ILIKE $2 OR display_name ILIKE $2) DESC, display_name ASC NULLS LAST
+         LIMIT 8`,
+        [`%${q}%`, `${q}%`],
+      )).rows;
+    } else {
+      rows = (await pool.query(
+        "SELECT discord_id, username, display_name, avatar_url FROM discord_members ORDER BY display_name ASC NULLS LAST LIMIT 8",
+      )).rows;
+    }
+    return res.json(rows.map((r) => ({ discordId: r.discord_id, username: r.username, displayName: r.display_name, avatar: r.avatar_url })));
+  } catch (e) {
+    return res.json([]);
+  }
+});
+
 function initAdminStats() { /* sin tablas propias */ }
 
 module.exports = { router, initAdminStats };

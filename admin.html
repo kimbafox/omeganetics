@@ -83,6 +83,27 @@
     .hidden { display:none; }
     .coin-ic { width: 1.05em; height: 1.05em; border-radius: 50%; object-fit: cover; vertical-align: -0.18em; }
 
+    /* Herramientas de economía (forms más cuidados) */
+    .tool-form { display: flex; flex-direction: column; gap: 12px; }
+    .tool-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; }
+    .field.grow { flex: 2; }
+    .field label { font-size: 12px; font-weight: 800; color: var(--text-soft); letter-spacing: .02em; }
+    .field input, .field select { width: 100%; box-sizing: border-box; padding: 11px 13px; background: var(--surface-muted); border: 1px solid var(--border-strong); color: var(--text); border-radius: 10px; font: inherit; }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .tool-btn { padding: 12px 24px; white-space: nowrap; }
+
+    /* Autocompletar usuarios */
+    .ac-wrap { position: relative; }
+    .ac-list { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 60; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; overflow: hidden auto; box-shadow: 0 16px 40px rgba(0,0,0,.55); max-height: 280px; display: none; }
+    .ac-list.show { display: block; }
+    .ac-item { display: flex; align-items: center; gap: 11px; padding: 9px 12px; cursor: pointer; }
+    .ac-item:hover, .ac-item.active { background: rgba(255,255,255,.07); }
+    .ac-item img { width: 32px; height: 32px; border-radius: 50%; flex: none; background: #222; object-fit: cover; }
+    .ac-name { font-weight: 700; font-size: 14px; line-height: 1.1; }
+    .ac-user { color: var(--text-faint); font-size: 12px; }
+    .ac-empty { padding: 11px 12px; color: var(--text-faint); font-size: 13px; }
+
     /* Emojis exclusivos */
     .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
     .emoji-card { display: flex; align-items: center; gap: 12px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
@@ -172,23 +193,44 @@
       <div class="sec-grid">
         <section class="panel">
           <h2>🏅 Otorgar insignia</h2>
-          <p class="sub">Da una insignia manual. Por @usuario o ID de Discord.</p>
-          <div class="row">
-            <input id="badgeUser" placeholder="@usuario o ID" />
-            <select id="badgeKey"></select>
-            <button class="btn" id="badgeBtn" type="button">Otorgar</button>
+          <p class="sub">Escribe <b>@</b> o un nombre para buscar al miembro.</p>
+          <div class="tool-form">
+            <div class="tool-row">
+              <div class="field grow ac-wrap">
+                <label>Usuario</label>
+                <input id="badgeUser" placeholder="@usuario, nombre o ID" autocomplete="off" />
+                <div class="ac-list" id="badgeAc"></div>
+              </div>
+              <div class="field">
+                <label>Insignia</label>
+                <select id="badgeKey"></select>
+              </div>
+              <button class="btn tool-btn" id="badgeBtn" type="button">Otorgar</button>
+            </div>
             <span id="badgeMsg" class="msg"></span>
           </div>
         </section>
 
         <section class="panel">
           <h2><img class="coin-ic" src="/assets/omegacoin-actual.png" alt=""> Dar Omegacoins</h2>
-          <p class="sub">Otorga monedas (ej. premio semanal del ranking: 1000).</p>
-          <div class="row">
-            <input id="coinUser" placeholder="@usuario o ID" />
-            <input id="coinAmount" type="number" placeholder="Cantidad" style="max-width:120px;flex:none" />
-            <input id="coinReason" placeholder="Motivo (opcional)" />
-            <button class="btn" id="coinBtn" type="button">Dar</button>
+          <p class="sub">Otorga monedas (ej. premio semanal del ranking: 1000). Escribe <b>@</b> para buscar.</p>
+          <div class="tool-form">
+            <div class="tool-row">
+              <div class="field grow ac-wrap">
+                <label>Usuario</label>
+                <input id="coinUser" placeholder="@usuario, nombre o ID" autocomplete="off" />
+                <div class="ac-list" id="coinAc"></div>
+              </div>
+              <div class="field" style="flex:0 0 130px;min-width:110px">
+                <label>Cantidad</label>
+                <input id="coinAmount" type="number" placeholder="1000" />
+              </div>
+              <div class="field">
+                <label>Motivo (opcional)</label>
+                <input id="coinReason" placeholder="Ej: premio semanal" />
+              </div>
+              <button class="btn tool-btn" id="coinBtn" type="button">Dar</button>
+            </div>
             <span id="coinMsg" class="msg"></span>
           </div>
         </section>
@@ -485,6 +527,47 @@
       } catch (e) { $("coinMsg").textContent = "❌ " + e.message; $("coinMsg").className = "msg err"; }
     });
 
+    // Autocompletado de miembros: al escribir (tras @ o nombre) muestra una lista.
+    function attachAutocomplete(inputId, listId) {
+      const input = $(inputId), list = $(listId);
+      let items = [], active = -1, timer = null;
+      const close = () => { list.classList.remove("show"); list.innerHTML = ""; active = -1; };
+      const pick = (m) => { input.value = m.username ? "@" + m.username : m.discordId; close(); input.focus(); };
+      async function search() {
+        const q = input.value.replace(/^@/, "").trim();
+        if (q.length < 1) { close(); return; }
+        let data = [];
+        try {
+          const r = await fetch("/api/admin/usuarios?q=" + encodeURIComponent(q));
+          if (!r.ok) { close(); return; }
+          data = await r.json();
+        } catch (e) { close(); return; }
+        items = data; active = -1;
+        if (!items.length) { list.innerHTML = `<div class="ac-empty">Sin coincidencias</div>`; list.classList.add("show"); return; }
+        list.innerHTML = items.map((m, i) => `
+          <div class="ac-item" data-i="${i}">
+            <img src="${esc(m.avatar || "")}" alt="" onerror="this.style.visibility='hidden'">
+            <div><div class="ac-name">${esc(m.displayName || m.username || m.discordId)}</div><div class="ac-user">@${esc(m.username || m.discordId)}</div></div>
+          </div>`).join("");
+        list.classList.add("show");
+        list.querySelectorAll(".ac-item").forEach((el) => {
+          el.addEventListener("mousedown", (e) => { e.preventDefault(); pick(items[Number(el.dataset.i)]); });
+        });
+      }
+      input.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(search, 180); });
+      input.addEventListener("keydown", (e) => {
+        if (!list.classList.contains("show")) return;
+        const els = list.querySelectorAll(".ac-item");
+        if (!els.length) return;
+        if (e.key === "ArrowDown") { e.preventDefault(); active = Math.min(active + 1, els.length - 1); }
+        else if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(active - 1, 0); }
+        else if (e.key === "Enter") { if (active >= 0) { e.preventDefault(); pick(items[active]); } return; }
+        else if (e.key === "Escape") { close(); return; }
+        els.forEach((el, i) => el.classList.toggle("active", i === active));
+      });
+      input.addEventListener("blur", () => setTimeout(close, 150));
+    }
+
     async function init() {
       let me = null;
       try { const r = await fetch("/api/auth/me"); if (r.ok) me = await r.json(); } catch (e) {}
@@ -492,6 +575,8 @@
       if (!me || !me.isAdmin) { $("denied").classList.remove("hidden"); return; }
       $("content").classList.remove("hidden");
       $("whoAmI").innerHTML = `${me.avatar ? `<img src="${esc(me.avatar)}" alt="">` : ""}<b>${esc(me.globalName || me.username)}</b><span class="badge">ADMIN</span>`;
+      attachAutocomplete("badgeUser", "badgeAc");
+      attachAutocomplete("coinUser", "coinAc");
       loadStats(); loadEmojis();
       loadEvents(); loadCreators(); loadVideos(); loadStoreOrders(); loadStreams(); loadBadges();
     }
