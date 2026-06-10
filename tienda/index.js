@@ -28,13 +28,13 @@ const CATALOG = [
   { key: "emojis_vip", name: "Emojis VIP ✨", icon: "✨", desc: "Desbloquea los emojis exclusivos del servidor, reservados solo para quienes tienen este rol.", price: 9000, type: "role", roleName: "✨ Emojis VIP", color: 0xa878ff, hoist: false },
   { key: "vc_rename", name: "Renombrar canal de voz 24h", icon: "🎤", desc: "Le pones el nombre que quieras a un canal de voz por 24h (automático, con filtro).", price: 5000, type: "auto", pickChannel: true },
   { key: "shoutout", name: "Shoutout en anuncios", icon: "📢", desc: "Publicamos tu mensaje en anuncios al instante (automático, con filtro).", price: 8000, type: "auto", needsNote: "¿Qué quieres que anunciemos? (link/texto)" },
-  { key: "color_custom", name: "Color personalizado", icon: "🎨", desc: "Eliges el color EXACTO de tu nombre (permanente).", price: 9000, type: "order", needsNote: "Pon el color (ej: #ff3b3b)" },
+  { key: "color_custom", name: "Color personalizado", icon: "🎨", desc: "Elige tu color de nombre de una paleta y se aplica al instante (permanente).", price: 9000, type: "auto", pickColor: true },
   { key: "emoji", name: "Emoji al servidor", icon: "😎", desc: "Propones un emoji y lo agregamos al server (sujeto a aprobación).", price: 14000, type: "order", needsNote: "Link/imagen del emoji y nombre" },
   { key: "mecenas", name: "Mecenas", icon: "🎖️", desc: "Rol dorado destacado + 🎖️ junto a tu nombre (Discord y web).", price: 15000, type: "role", roleName: "🎖️ Mecenas", color: 0xffd35c, hoist: true, nameEmoji: "🎖️" },
   { key: "patron", name: "Patrón Omega", icon: "💜", desc: "Rol de prestigio morado + 💜 decorando tu nombre (Discord y web).", price: 25000, type: "role", roleName: "💜 Patrón Omega", color: 0xc084fc, hoist: true, nameEmoji: "💜" },
 ];
 const BYKEY = Object.fromEntries(CATALOG.map((i) => [i.key, i]));
-const pubItem = (i) => ({ key: i.key, name: i.name, icon: i.icon, desc: i.desc, price: i.price, type: i.type, needsNote: i.needsNote || "", pickChannel: !!i.pickChannel });
+const pubItem = (i) => ({ key: i.key, name: i.name, icon: i.icon, desc: i.desc, price: i.price, type: i.type, needsNote: i.needsNote || "", pickChannel: !!i.pickChannel, pickColor: !!i.pickColor });
 
 async function initTienda() {
   if (!pool) { console.warn("[tienda] sin DATABASE_URL: módulo deshabilitado."); return; }
@@ -54,6 +54,8 @@ async function initTienda() {
   `);
   // Decoración de nombre (emoji que se antepone al nombre en Discord y en la web).
   await pool.query("CREATE TABLE IF NOT EXISTS user_decoration (discord_id TEXT PRIMARY KEY, emoji TEXT NOT NULL DEFAULT '')");
+  // Rol de color personalizado por usuario (para actualizarlo al recomprar, sin duplicar roles).
+  await pool.query("CREATE TABLE IF NOT EXISTS custom_color_roles (discord_id TEXT PRIMARY KEY, role_id TEXT NOT NULL DEFAULT '')");
   // Backfill: quien ya compró Patrón/Mecenas antes de esta función, recibe su decoración.
   try {
     await pool.query(`
@@ -99,6 +101,7 @@ router.post("/api/tienda/comprar", requireUser, async (req, res) => {
   const channelId = String(req.body?.channelId || "");
   const buyerName = req.user.globalName || req.user.username || "Jugador";
   const da = require("../discord-activity");
+  let colorInt = null;
 
   // Validaciones (con filtro) de los canjes automáticos, ANTES de cobrar.
   if (item.key === "shoutout") {
@@ -110,6 +113,11 @@ router.post("/api/tienda/comprar", requireUser, async (req, res) => {
     if (!vcs.find((v) => v.id === channelId)) return res.status(400).json({ error: "Elige un canal de voz válido." });
     if (!note.trim()) return res.status(400).json({ error: "Escribe el nuevo nombre del canal." });
     if (hasBannedContent(note)) return res.status(400).json({ error: "Ese nombre tiene contenido no permitido." });
+  }
+  if (item.key === "color_custom") {
+    const hex = note.trim().replace(/^#/, "");
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return res.status(400).json({ error: "Color inválido. Elige un color de la paleta." });
+    colorInt = parseInt(hex, 16);
   }
 
   const spend = await spendCoins(req.user.discordId, item.price, `Tienda: ${item.name}`);
@@ -135,6 +143,15 @@ router.post("/api/tienda/comprar", requireUser, async (req, res) => {
     try { ok = await da.renameVoiceChannel(channelId, note, 24); } catch (e) { ok = false; }
     if (!ok) return refund("No se pudo renombrar el canal. Te reembolsamos.");
     detail = `Canal renombrado a "${note}" por 24h`;
+  } else if (item.key === "color_custom") {
+    let roleId = "";
+    try {
+      const ex = await pool.query("SELECT role_id FROM custom_color_roles WHERE discord_id = $1", [req.user.discordId]);
+      roleId = await da.grantCustomColor(req.user.discordId, colorInt, buyerName, ex.rows[0]?.role_id || "");
+    } catch (e) { roleId = ""; }
+    if (!roleId) return refund("No se pudo aplicar el color. Te reembolsamos.");
+    await pool.query("INSERT INTO custom_color_roles (discord_id, role_id) VALUES ($1,$2) ON CONFLICT (discord_id) DO UPDATE SET role_id = EXCLUDED.role_id", [req.user.discordId, roleId]);
+    detail = `Color #${colorInt.toString(16).padStart(6, "0")}`;
   } else {
     status = "pendiente"; // color_custom, emoji -> los cumple un admin
   }

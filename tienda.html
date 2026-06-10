@@ -150,7 +150,10 @@
       if (!key) return;
       const item = items.find((i) => i.key === key);
       if (!item) return;
-      if (item.pickChannel) {
+      if (item.pickColor) {
+        const color = await pickColor();
+        if (color) await purchase(item, { note: color });
+      } else if (item.pickChannel) {
         const extra = await pickChannel();
         if (extra) await purchase(item, extra);
       } else if (item.needsNote) {
@@ -176,6 +179,29 @@
         $("msg").className = "ok";
         render(); loadMine();
       } catch (err) { $("msg").textContent = "❌ " + err.message; $("msg").className = "err"; }
+    }
+
+    function pickColor() {
+      return new Promise((resolve) => {
+        const palette = [
+          ["Rojo", "#e74c3c"], ["Rojo oscuro", "#992d22"], ["Naranja", "#e67e22"], ["Ámbar", "#c27c0e"],
+          ["Dorado", "#f1c40f"], ["Verde", "#2ecc71"], ["Verde oscuro", "#1f8b4c"], ["Turquesa", "#1abc9c"],
+          ["Teal", "#11806a"], ["Aqua", "#00d9ff"], ["Azul", "#3498db"], ["Azul oscuro", "#206694"],
+          ["Morado", "#9b59b6"], ["Morado oscuro", "#71368a"], ["Rosa", "#e91e63"], ["Rosa claro", "#ff6fae"],
+          ["Magenta", "#ad1457"], ["Gris", "#95a5a6"], ["Pizarra", "#607d8b"], ["Blanco", "#ffffff"],
+        ];
+        let chosen = null;
+        const sw = $("colorSwatches");
+        const custom = $("colorCustomInput");
+        const mark = (h) => { chosen = h; sw.querySelectorAll(".cw").forEach((b) => { b.style.borderColor = b.dataset.h.toLowerCase() === h.toLowerCase() ? "#fff" : "transparent"; }); };
+        sw.innerHTML = palette.map(([n, h]) => `<button type="button" class="cw" data-h="${h}" title="${esc(n)}" style="height:40px;border-radius:8px;border:2px solid transparent;background:${h};cursor:pointer"></button>`).join("");
+        sw.querySelectorAll(".cw").forEach((b) => { b.onclick = () => { mark(b.dataset.h); custom.value = b.dataset.h; }; });
+        custom.oninput = () => mark(custom.value);
+        $("colorModal").style.display = "flex";
+        const cleanup = () => { $("colorOk").onclick = null; $("colorCancel").onclick = null; $("colorModal").style.display = "none"; };
+        $("colorOk").onclick = () => { const h = chosen || custom.value; cleanup(); resolve(h); };
+        $("colorCancel").onclick = () => { cleanup(); resolve(null); };
+      });
     }
 
     function pickChannel() {
@@ -204,6 +230,18 @@
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button id="vcCancel" class="buy" style="background:transparent;border:1px solid var(--border-strong);color:var(--text-soft)">Cancelar</button>
         <button id="vcOk" class="buy">Canjear</button>
+      </div>
+    </div>
+  </div>
+  <div id="colorModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.65);align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:16px;padding:24px;max-width:460px;width:100%">
+      <h3 style="margin-bottom:6px">🎨 Elige tu color de nombre</h3>
+      <p class="muted" style="font-size:13px;margin-bottom:14px">Toca un color de la paleta o usa el selector personalizado.</p>
+      <div id="colorSwatches" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:8px;margin-bottom:16px"></div>
+      <label class="muted" style="font-size:13px;display:flex;align-items:center;gap:10px">Personalizado: <input type="color" id="colorCustomInput" value="#5865f2" style="width:50px;height:34px;background:none;border:1px solid var(--border-strong);border-radius:8px;cursor:pointer"></label>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+        <button id="colorCancel" class="buy" style="background:transparent;border:1px solid var(--border-strong);color:var(--text-soft)">Cancelar</button>
+        <button id="colorOk" class="buy">Aplicar color</button>
       </div>
     </div>
   </div>

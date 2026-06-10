@@ -950,6 +950,35 @@ async function grantStoreRole(discordId, roleName, color, hoist) {
   }
 }
 
+// Color personalizado de la tienda: crea/actualiza UN rol de color por usuario, lo
+// posiciona alto (para que su color gane) y lo asigna. Devuelve el id del rol (o "").
+async function grantCustomColor(discordId, colorInt, displayName, existingRoleId) {
+  if (!client) return "";
+  try {
+    const guild = client.guilds.cache.get(GUILD_ID);
+    if (!guild) return "";
+    const member = await guild.members.fetch(discordId).catch(() => null);
+    if (!member) return "";
+
+    let role = existingRoleId ? guild.roles.cache.get(existingRoleId) : null;
+    if (role) {
+      await role.setColor(colorInt, "Color personalizado actualizado");
+    } else {
+      role = await guild.roles.create({ name: `🎨 ${displayName}`.slice(0, 90), color: colorInt, hoist: false, reason: "Color personalizado (tienda)" });
+    }
+    // Posiciona el rol lo más alto que el bot pueda, para que su color prevalezca.
+    try {
+      const myTop = guild.members.me?.roles?.highest;
+      if (myTop) await role.setPosition(Math.max(1, myTop.position - 1));
+    } catch (e) { /* best-effort */ }
+    if (!member.roles.cache.has(role.id)) await member.roles.add(role.id, "Color personalizado (tienda)");
+    return role.id;
+  } catch (e) {
+    console.warn("[color]", e.message);
+    return "";
+  }
+}
+
 // Decora el nombre (apodo) del miembro con un emoji. No funciona en admins/dueño (jerarquía).
 async function setNameDecoration(discordId, emoji) {
   if (!client || !emoji) return false;
@@ -1098,4 +1127,4 @@ async function setEmojiRoles(emojiId, roleNames) {
   } catch (e) { console.warn("[emojis]", e.message); return false; }
 }
 
-module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, setNameDecoration, notifyAdmins, getVoiceChannels, renameVoiceChannel, postShoutout, listGuildEmojis, listGuildRoles, setEmojiRoles };
+module.exports = { initDiscordActivity, announceEvent, announceContent, grantRole, dmUser, assignRankByLevel, announceTournamentWinner, grantStoreRole, grantCustomColor, setNameDecoration, notifyAdmins, getVoiceChannels, renameVoiceChannel, postShoutout, listGuildEmojis, listGuildRoles, setEmojiRoles };

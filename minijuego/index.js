@@ -23,10 +23,10 @@ const pool = databaseUrl
 // === Parámetros del minijuego (fáciles de ajustar si cambia la economía) ===
 const REWARD = { asteroid: 1, ship: 5 }; // monedas por objetivo destruido
 const COOLDOWN_HOURS = 24;               // espera entre partidas
-const MAX_COINS_PER_RUN = 500;           // tope de monedas por partida (se recorta)
+const MAX_COINS_PER_RUN = 1000;          // tope de monedas por partida (se recorta)
 const MIN_RUN_MS = 4000;                 // partidas más cortas no pagan (anti-spam)
 const MAX_RUN_MS = 30 * 60 * 1000;       // tope de duración creíble (30 min)
-const MAX_COINS_PER_SEC = 4;             // ritmo máximo creíble de farmeo
+const MAX_COINS_PER_SEC = 20;            // ritmo máximo creíble (sube para no recortar el bono de naves)
 const MAX_KILLS = 5000;                  // tope duro de objetivos por partida
 
 const COOLDOWN_MS = COOLDOWN_HOURS * 3600 * 1000;

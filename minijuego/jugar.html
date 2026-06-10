@@ -432,7 +432,8 @@
           return;
         }
         $("earnedAmt").textContent = (d.earned || 0).toLocaleString("es");
-        $("overDetail").textContent = `☄️ ${g.astKilled} asteroides · 🛸 ${g.shipKilled} naves · Saldo: ${(d.balance || 0).toLocaleString("es")} Ω · Vuelve en 24h`;
+        const aPts = g.astKilled * RULES.rewards.asteroid, sPts = g.shipKilled * RULES.rewards.ship;
+        $("overDetail").textContent = `☄️ ${g.astKilled} asteroides (+${aPts}) · 🛸 ${g.shipKilled} naves (+${sPts}) · Saldo: ${(d.balance || 0).toLocaleString("es")} Ω · Vuelve en 24h`;
       } catch (e) {
         $("earnedAmt").textContent = "0";
         $("overDetail").textContent = "Error de conexión al guardar.";
