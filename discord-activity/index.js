@@ -494,17 +494,68 @@ function initDiscordActivity() {
   });
 
   // Comando /omegacoins: muestra el saldo (mismo dato que la web).
+  // Traductor de texto (endpoint gratuito de Google, sin API key). Detecta el idioma
+  // y alterna español↔inglés (cualquier otro idioma se traduce a español).
+  async function translateText(text, target) {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
+    const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    const translated = (data[0] || []).map((s) => s[0]).filter(Boolean).join("");
+    return { translated, detected: data[2] || "auto" };
+  }
+  async function autoTranslate(text) {
+    let { translated, detected } = await translateText(text, "es");
+    let to = "es";
+    if (detected === "es") { const en = await translateText(text, "en"); translated = en.translated; to = "en"; }
+    return { translated, from: detected, to };
+  }
+  const LANG = { es: "🇪🇸 Español", en: "🇬🇧 Inglés", pt: "🇧🇷 Portugués", fr: "🇫🇷 Francés", auto: "🌐 detectado" };
+  const langName = (c) => LANG[c] || String(c || "").toUpperCase();
+  function translationEmbed(from, to, translated, user) {
+    return new EmbedBuilder()
+      .setColor(0x43d1ff)
+      .setAuthor({ name: "🌐 Traducción" })
+      .setDescription(`**${langName(from)} → ${langName(to)}**\n${translated.slice(0, 3900)}`)
+      .setFooter({ text: `Pedido por ${user.username}` });
+  }
+
   client.on("interactionCreate", async (i) => {
     try {
-      if (typeof i.isChatInputCommand !== "function" || !i.isChatInputCommand() || i.commandName !== "omegacoins") return;
-      const { getBalance } = require("../omegacoins");
-      const bal = await getBalance(i.user.id);
-      await i.reply({
-        content: `🪙 Tienes **${bal.toLocaleString("es")}** Omegacoins.\nGánalos por actividad, niveles y logros en https://omeganetics.com/perfil.html`,
-        ephemeral: true,
-      });
+      // /omegacoins — saldo
+      if (i.isChatInputCommand?.() && i.commandName === "omegacoins") {
+        const { getBalance } = require("../omegacoins");
+        const bal = await getBalance(i.user.id);
+        await i.reply({
+          content: `🪙 Tienes **${bal.toLocaleString("es")}** Omegacoins.\nGánalos por actividad, niveles y logros en https://omeganetics.com/perfil.html`,
+          ephemeral: true,
+        });
+        return;
+      }
+      // Menú contextual "Traducir" (clic derecho a un mensaje → Apps → Traducir)
+      if (i.isMessageContextMenuCommand?.() && i.commandName === "Traducir") {
+        const text = (i.targetMessage?.content || "").trim();
+        if (!text) { await i.reply({ content: "Ese mensaje no tiene texto para traducir.", ephemeral: true }); return; }
+        await i.deferReply();
+        const { translated, from, to } = await autoTranslate(text.slice(0, 1800));
+        await i.editReply({ embeds: [translationEmbed(from, to, translated, i.user)] });
+        return;
+      }
+      // /traducir texto:<...>
+      if (i.isChatInputCommand?.() && i.commandName === "traducir") {
+        const text = (i.options.getString("texto") || "").trim();
+        if (!text) { await i.reply({ content: "Escribe el texto a traducir.", ephemeral: true }); return; }
+        await i.deferReply();
+        const { translated, from, to } = await autoTranslate(text.slice(0, 1800));
+        await i.editReply({ embeds: [translationEmbed(from, to, translated, i.user)] });
+        return;
+      }
     } catch (e) {
-      console.warn("[omegacoins] interacción:", e.message);
+      console.warn("[interacción]", e.message);
+      try {
+        if (i.deferred) await i.editReply("⚠️ No se pudo traducir ahora mismo, intenta de nuevo.");
+        else if (i.isRepliable?.()) await i.reply({ content: "⚠️ No se pudo procesar.", ephemeral: true });
+      } catch (e2) { /* noop */ }
     }
   });
 
@@ -520,10 +571,16 @@ function initDiscordActivity() {
     setInterval(flushMessages, 60 * 1000); // los mensajes se guardan cada minuto
     try {
       await client.application.commands.set(
-        [{ name: "omegacoins", description: "Mira tu saldo de Omegacoins 🪙" }],
+        [
+          { name: "omegacoins", description: "Mira tu saldo de Omegacoins 🪙" },
+          // /traducir texto:<...>  (option type 3 = STRING)
+          { name: "traducir", description: "Traduce un texto (auto español↔inglés) 🌐", options: [{ name: "texto", description: "Texto a traducir", type: 3, required: true }] },
+          // Menú contextual de mensaje (type 3 = MESSAGE): clic derecho → Apps → Traducir
+          { name: "Traducir", type: 3 },
+        ],
         GUILD_ID,
       );
-      console.log("[omegacoins] comando /omegacoins registrado");
+      console.log("[comandos] /omegacoins, /traducir y menú 'Traducir' registrados");
     } catch (e) {
       console.warn("[omegacoins] no pude registrar el comando:", e.message);
     }
